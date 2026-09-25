@@ -262,7 +262,7 @@ function renderPDD(){
 function pddMarkdown(){
   const model = pddModel();
   const L = ["# Process Definition Document — draft", "", "Process: " + (S.name || "TBC"),
-             "Source: TQA Discovery Console capture, " + today(), "",
+             "Source: Process Discovery Console capture, " + today(), "",
              "Every TBC below is an unanswered field, not an omission. A TBC marked",
              "(by hand) is one the console has no way to capture; fill those in yourself.", ""];
   /* A reply is free text: Shift+Enter puts newlines in it and a pipe is an

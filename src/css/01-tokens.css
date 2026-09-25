@@ -1,12 +1,13 @@
 /* 01-tokens.css
    Design tokens, themes, resets and shared typography. */
 :root{
-  --tqa-green:#62FFCF;
-  --tqa-red:#EF6461;
-  --tqa-sky:#4BD3F2;
-  --tqa-mindaro:#CCFD7F;
-  --tqa-sun:#FFCF56;
-  --tqa-indigo:#6523EA;
+  /* The source palette. The area colours in 13-tags.js are these same hues. */
+  --hue-green:#62FFCF;
+  --hue-red:#EF6461;
+  --hue-sky:#4BD3F2;
+  --hue-mindaro:#CCFD7F;
+  --hue-sun:#FFCF56;
+  --hue-indigo:#6523EA;
 
   --canvas:#1b1b1b;
   --surface:#222222;

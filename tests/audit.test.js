@@ -12,7 +12,7 @@ const fs = require("fs");
 const path = require("path");
 
 const ROOT = path.dirname(__dirname);
-const BUNDLE = path.join(ROOT, "dist", "tqa-discovery-console.html");
+const BUNDLE = path.join(ROOT, "dist", "process-discovery-console.html");
 const DEMO = path.join(ROOT, "assets", "data", "demo-session-ach-returns.json");
 const STRESS = path.join(ROOT, "assets", "data", "stress-session-wire-callbacks.json");
 const html = fs.readFileSync(BUNDLE, "utf8");
@@ -44,7 +44,8 @@ function boot(opts){
       win.claude = { use: async n => n === "downloads"
         ? { save: async r => { win.__saved.push(r); return {status:"saved"}; } } : null };
       win.navigator.clipboard = { writeText: t => { win.__clip = t; return Promise.resolve(); } };
-      if(opts.storage) win.localStorage.setItem("tqa.discovery.console.v1", opts.storage);
+      if(opts.storage) win.localStorage.setItem("process.discovery.console.v1", opts.storage);
+      if(opts.legacyStorage) win.localStorage.setItem("tqa.discovery.console.v1", opts.legacyStorage);
     }
   });
   dom.window.addEventListener("error", e => errs.push(e.message));
@@ -384,7 +385,7 @@ async function run(){
 
   /* ---------------------------------------------------------- persistence */
   group("Persistence");
-  const stored = w.localStorage.getItem("tqa.discovery.console.v1");
+  const stored = w.localStorage.getItem("process.discovery.console.v1");
   ok("session written to localStorage", !!stored && JSON.parse(stored).items.length === 53);
   ok("no page errors in this run", ctx.errs.length === 0, ctx.errs.join(" | "));
 
@@ -512,7 +513,7 @@ async function run(){
   ok("New session is disabled again", dN.getElementById("newBtn").disabled);
   eq("theme preference survives the reset",
      dN.documentElement.getAttribute("data-theme"), "light");
-  const after = JSON.parse(wN.localStorage.getItem("tqa.discovery.console.v1"));
+  const after = JSON.parse(wN.localStorage.getItem("process.discovery.console.v1"));
   ok("the cleared session is what got persisted",
      after.items.length === 0 && after.notes.length === 0 &&
      after.marks.length === 0 && after.resolved.length === 0 &&
@@ -629,6 +630,31 @@ async function run(){
      stillDangling === 1, String(stillDangling));
   eq("PDD-04: no duplicate ids after merge", allIds.size, merged.items.length);
   ok("no page errors on the stress fixture", ctxS.errs.length === 0, ctxS.errs.join(" | "));
+
+  group("Renamed storage key");
+  /* The tool was renamed. A session left under the old key has to come across on
+     the next load, or the rename reads to the analyst as a cleared console. */
+  const legacyKeyed = JSON.stringify({
+    name:"Carried over", active:"Systems", resolved:["Systems::Confirm the owner of each system"],
+    notes:[], marks:[], seconds:120,
+    items:[{ id:"k1", section:"Systems", name:"System from the old key",
+             tags:["Web UI"], relations:[], replies:[], at:"09:00", ts:1 }]
+  });
+  const ctxK = boot({ legacyStorage: legacyKeyed });
+  await wait(150);
+  eq("a session under the old key still opens", ctxK.d.getElementById("cItems").textContent, "1");
+  eq("with its name", ctxK.d.getElementById("sessionName").value, "Carried over");
+  ok("and its answered questions",
+     JSON.parse(ctxK.w.localStorage.getItem("process.discovery.console.v1")).resolved.length === 1);
+  ok("it is rewritten under the new key",
+     !!ctxK.w.localStorage.getItem("process.discovery.console.v1"));
+  eq("and the old key is cleared",
+     String(ctxK.w.localStorage.getItem("tqa.discovery.console.v1")), "null");
+  ok("no page errors migrating", ctxK.errs.length === 0, ctxK.errs.join(" | "));
+
+  const ctxK2 = boot({ storage: stored, legacyStorage: legacyKeyed });
+  await wait(150);
+  eq("a session already on the new key wins", ctxK2.d.getElementById("cItems").textContent, "53");
 
   group("Theme");
   const ctx4 = boot(); await wait(120);

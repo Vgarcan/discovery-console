@@ -1,7 +1,8 @@
 /* 02-state.js
    Session state, localStorage persistence with migration, shared helpers and the toast. */
 const SECTIONS = Object.keys(DEF);
-const KEY = "tqa.discovery.console.v1";
+const KEY = "process.discovery.console.v1";
+const LEGACY_KEY = "tqa.discovery.console.v1";
 
 const DEFAULT_NAME = "Untitled walkthrough";
 
@@ -36,7 +37,17 @@ function save(){
 }
 function load(){
   try{
-    const raw = localStorage.getItem(KEY);
+    let raw = localStorage.getItem(KEY);
+    if(!raw){
+      /* A session saved under the name the tool used to carry is moved across
+         once, so a rename never looks to the analyst like a cleared console. */
+      const old = localStorage.getItem(LEGACY_KEY);
+      if(old){
+        raw = old;
+        localStorage.setItem(KEY, old);
+        localStorage.removeItem(LEGACY_KEY);
+      }
+    }
     if(raw) S = Object.assign(S, JSON.parse(raw));
   }catch(e){}
   let seq = 0;

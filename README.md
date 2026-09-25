@@ -1,4 +1,4 @@
-# TQA Discovery Console
+# Process Discovery Console
 
 A live capture instrument for the business analyst running a client process walkthrough.
 
@@ -8,7 +8,7 @@ Velera Process Definition Document asks for it.
 
 ## Live preview
 
-- **PREVIEW SITE** — [Console Live Preview](https://vgarcan.github.io/tqa-discovery-console)
+- **PREVIEW SITE** — [Console Live Preview](https://vgarcan.github.io/discovery-console)
 
 - **DEMO FILES** - [Download Arch Return](assets/data/demo-session-ach-returns.json) and [Download Stress Session 01](assets/data/stress-session-wire-callbacks.json)
 ---
@@ -250,8 +250,8 @@ a stray second click cannot reach and the export is one click away.
 ### Light theme and focus mode
 
 `[` and `]` collapse both panels down to the capture surface. The theme button switches
-between the dark console and a light one that follows the TQA rule of red accents on light
-backgrounds.
+between the dark console and a light one, which carries the red accent on a light ground
+rather than the mint used on the dark.
 
 ![Light theme with both panels collapsed](docs/images/11-light-focus.png)
 
@@ -275,7 +275,7 @@ src/js/                     behaviour, one file per responsibility
 ### Building
 
 ```
-python3 tools/build.py          # writes dist/tqa-discovery-console.html
+python3 tools/build.py          # writes dist/process-discovery-console.html
 python3 tools/build.py --check  # fails if dist is behind the sources
 ```
 
@@ -396,8 +396,9 @@ Three rules keep the boundaries honest, and `tools/audit.py` fails if any of the
 
 ## Data model
 
-One session object, persisted under the localStorage key `tqa.discovery.console.v1` and
-exportable as JSON.
+One session object, persisted under the localStorage key `process.discovery.console.v1` and
+exportable as JSON. A session left under the key the tool used to use is moved across on the
+next load, once, so the rename never reads as a cleared console.
 
 ```jsonc
 {

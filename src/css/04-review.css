@@ -29,8 +29,8 @@
 .cov .st{font-family:var(--mono);font-size:9.5px;color:var(--ink-3);white-space:nowrap}
 .cov.good .st{color:var(--accent)}
 .cov.good .bar i{background:var(--accent)}
-.cov.part .bar i{background:var(--tqa-sun)}
-.cov.part .st{color:var(--tqa-sun)}
+.cov.part .bar i{background:var(--hue-sun)}
+.cov.part .st{color:var(--hue-sun)}
 .cov.none .bar i{background:var(--alert)}
 
 .ioe{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line-soft);border:1px solid var(--line-soft)}

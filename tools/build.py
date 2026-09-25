@@ -6,7 +6,7 @@ index.html is the single source of truth for load order: this script reads the
 <link> and <script src> tags between the build markers and inlines them in the
 order they appear there. Add a module by adding its tag to index.html.
 
-    python3 tools/build.py            -> dist/tqa-discovery-console.html
+    python3 tools/build.py            -> dist/process-discovery-console.html
     python3 tools/build.py --check    -> verify dist matches the sources
 
 The bundle is what gets published as a Claude Artifact, which must be a single
@@ -19,7 +19,7 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INDEX = os.path.join(ROOT, "index.html")
-OUT = os.path.join(ROOT, "dist", "tqa-discovery-console.html")
+OUT = os.path.join(ROOT, "dist", "process-discovery-console.html")
 
 CSS_BLOCK = re.compile(r"<!-- build:css -->.*?<!-- endbuild -->", re.S)
 JS_BLOCK = re.compile(r"<!-- build:js -->.*?<!-- endbuild -->", re.S)

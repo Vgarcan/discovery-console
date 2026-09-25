@@ -26,7 +26,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "docs", "images")
 PORT = 8765
 DEMO = os.path.join(ROOT, "assets", "data", "demo-session-ach-returns.json")
-KEY = "tqa.discovery.console.v1"
+KEY = "process.discovery.console.v1"
 
 
 def serve():
