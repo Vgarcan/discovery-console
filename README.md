@@ -8,7 +8,7 @@ Velera Process Definition Document asks for it.
 
 ## Live preview
 
-**TBC** — a hosted link will go here.
+**PREVIEW SITE** — [Console Live Preview](https://vgarcan.github.io/tqa-discovery-console)
 
 ![The capture console](docs/images/01-capture-console.png)
 
