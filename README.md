@@ -10,7 +10,7 @@ Velera Process Definition Document asks for it.
 
 - **PREVIEW SITE** — [Console Live Preview](https://vgarcan.github.io/tqa-discovery-console)
 
-- **DEMO FILE** - [Download](assets/data/demo-session-ach-returns.json)
+- **DEMO FILES** - [Download Arch Return](assets/data/demo-session-ach-returns.json) and [Download Stress Session 01](assets/data/stress-session-wire-callbacks.json)
 ---
 
 ![The capture console](docs/images/01-capture-console.png)
@@ -51,6 +51,14 @@ To try it with real content before a live call, import the sample session:
 
 That loads an invented ACH returns process with 53 items, 21 relations, threads, notes and
 half the control questions answered, which is roughly what a first walkthrough leaves you.
+
+`assets/data/stress-session-wire-callbacks.json` is the other one, and it is not a demo. It is
+an invented wire-callback process built to break things: 58 items using every tag in the
+vocabulary, 41 relations, replies carrying pipes and newlines, markup characters in names, an
+item naming an area that does not exist, tags that are a string instead of an array, a relation
+pointing at nothing, and three junk entries in `resolved`. Import it and the PDD should read
+**103 of 112** with **38** by-hand fields and exactly nine open TBCs. Anything else means a
+regression. `tests/audit.test.js` drives it and names the finding each assertion guards.
 
 ---
 
@@ -247,7 +255,7 @@ tools/screenshots.py        regenerates the images in this README
 tests/audit.test.js         110 functional checks against the built bundle
 dist/                       the bundle that gets published
 docs/images/                README screenshots
-assets/data/                sample sessions
+assets/data/                the demo session and the stress fixture
 src/css/                    styles, one file per responsibility
 src/js/                     behaviour, one file per responsibility
 ```
@@ -278,6 +286,11 @@ node tests/audit.test.js                # 110 functional checks against dist
 person would trigger: capture, keyboard navigation, threads, gaps, relations, the map,
 review, the PDD draft, JSON import and export, persistence, legacy-session migration and both
 themes. It fails on any uncaught page error, so run it before publishing.
+
+The last groups drive `assets/data/stress-session-wire-callbacks.json` through replace, the PDD,
+the Markdown export and a merge, asserting the exact numbers that file is built to produce. They
+exist because the demo session cannot catch a whole class of problem: it was tagged through the
+detail sheet, so it never exercised what the capture grid actually stores.
 
 ### Screenshots
 

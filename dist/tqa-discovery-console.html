@@ -3315,7 +3315,7 @@ function doReplace(){
     $("sessionName").value = S.name;
     closeImport(); save(); renderAll(); setView("capture");
     toast("Session replaced, " + S.items.length + " items loaded" +
-          (stray ? ". " + stray + " had an unknown area and are in " + SECTIONS[0] : ""));
+          (stray ? ". " + stray + " moved to " + SECTIONS[0] + " from an unknown area" : ""));
   }catch(err){ $("importMsg").textContent = err.message; }
 }
 
@@ -3338,10 +3338,12 @@ $("importMerge").addEventListener("click", () => {
     S.items = S.items.concat(incoming);
     S.notes = S.notes.concat(normalise(o.notes, seq).map(n => Object.assign({}, n, {id:uid()})));
     S.marks = S.marks.concat(normalise(o.marks, seq).map(m => Object.assign({}, m, {id:uid()})));
-    (o.resolved || []).forEach(r => { if(!S.resolved.includes(r)) S.resolved.push(r); });
+    (o.resolved || []).forEach(r => {
+      if(typeof r === "string" && !S.resolved.includes(r)) S.resolved.push(r);
+    });
     closeImport(); save(); renderAll(); setView("capture");
     toast(incoming.length + " items merged in" +
-          (stray ? ", " + stray + " with an unknown area moved to " + SECTIONS[0] : ""));
+          (stray ? ", " + stray + " moved to " + SECTIONS[0] + " from an unknown area" : ""));
   }catch(err){ $("importMsg").textContent = err.message; }
 });
 

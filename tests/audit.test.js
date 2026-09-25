@@ -14,8 +14,10 @@ const path = require("path");
 const ROOT = path.dirname(__dirname);
 const BUNDLE = path.join(ROOT, "dist", "tqa-discovery-console.html");
 const DEMO = path.join(ROOT, "assets", "data", "demo-session-ach-returns.json");
+const STRESS = path.join(ROOT, "assets", "data", "stress-session-wire-callbacks.json");
 const html = fs.readFileSync(BUNDLE, "utf8");
 const demoJson = fs.readFileSync(DEMO, "utf8");
+const stressJson = fs.readFileSync(STRESS, "utf8");
 
 let pass = 0, fail = 0;
 const failures = [];
@@ -462,6 +464,115 @@ async function run(){
      Number(ctxR.d.getElementById("navResize").getAttribute("aria-valuenow")) > 238,
      ctxR.d.getElementById("navResize").getAttribute("aria-valuenow"));
   ok("no page errors resizing", ctxR.errs.length === 0, ctxR.errs.join(" | "));
+
+  group("Stress fixture");
+  /* assets/data/stress-session-wire-callbacks.json is built to fail loudly if any
+     of the PDD audit fixes regresses. Every assertion here names the finding it
+     guards. */
+  const ctxS = boot(); const aS = api(ctxS); await wait(120);
+  const dS = ctxS.d, wS = ctxS.w;
+  dS.getElementById("importBtn2").click();
+  aS.dropFile(stressJson, "stress.json");
+  await wait(120);
+  ok("stress fixture summarised before import", aS.text("importSummary").includes("58 items"),
+     aS.text("importSummary"));
+  dS.getElementById("importReplace").click();
+  await wait(450);
+  dS.getElementById("importReplace").click();
+  await wait(90);
+
+  eq("all 58 items load", aS.text("cItems"), "58");
+  ok("the unknown-area row is reported, not swallowed",
+     aS.text("toast").includes("1 moved to Systems from an unknown area"), aS.text("toast"));
+  eq("all nine areas populated",
+     [...dS.querySelectorAll(".channel-count")].filter(c => c.textContent !== "0").length, 9);
+
+  aS.view("pdd");
+  ok("PDD-05: the header scores cells", aS.text("pddMeta").startsWith("103 of 112"),
+     aS.text("pddMeta"));
+  eq("PDD-02: by-hand fields counted apart",
+     dS.querySelector("#pddMeta .byhand-count").textContent, "38");
+  eq("only nine cells are open questions",
+     dS.querySelectorAll("#pddDoc .tbc").length - dS.querySelectorAll("#pddDoc .tbc.byhand").length, 9);
+
+  const pdd = dS.getElementById("pddDoc").textContent;
+  ok("PDD-01: Volume reaches 1.3 Expected volumes", pdd.includes("About 85 wires a day"));
+  ok("PDD-01: Peak reaches 1.3 too", pdd.includes("Up to 260 on the last business day"));
+  ok("PDD-01: End reaches 2.1 and 2.3", pdd.includes("All wires either released or returned"));
+  ok("PDD-01: SOP reaches 2.2", pdd.includes("Existing wire callback SOP"));
+  ok("PDD-08: a Data item tagged Report reaches 2.8",
+     pdd.includes("Weekly callback compliance report"));
+
+  const appsRow = [...dS.querySelectorAll("#pddDoc .pdd-table tr")]
+    .find(r => r.textContent.includes("Citrix published desktop"));
+  const appsCells = [...appsRow.querySelectorAll("td")].map(c => c.textContent.trim());
+  ok("PDD-09: Remote fills Access Type and leaves Environment TBC",
+     appsCells[1] === "TBC" && appsCells[2] === "Remote", appsCells.join(" / "));
+
+  const excRow = [...dS.querySelectorAll("#pddDoc .pdd-table tr")]
+    .find(r => r.textContent.includes("no exception path yet"));
+  eq("PDD-10: a free-text tag is not promoted to Exception Type",
+     excRow.querySelectorAll("td")[1].textContent.trim(), "Business exception");
+  const unclRow = [...dS.querySelectorAll("#pddDoc .pdd-table tr")]
+    .find(r => r.textContent.includes("unfamiliar rejection code"));
+  eq("PDD-10: Unclassified is a usable exception type",
+     unclRow.querySelectorAll("td")[1].textContent.trim(), "Unclassified");
+
+  ok("no markup from captured text reaches the DOM",
+     dS.querySelectorAll("#pddDoc img, #pddDoc script").length === 0);
+  ok("angle brackets survive as text", pdd.includes("Vendor SFTP <drop>"));
+
+  dS.getElementById("copyPddBtn").click();
+  await wait(60);
+  const md = wS.__clip || "";
+  ok("PDD-03: the piped reply is escaped", md.includes("wires \\| daily.xlsx"),
+     (md.split("\n").find(l => l.includes("daily.xlsx")) || "not found").slice(0, 90));
+  ok("PDD-03: the newline stayed inside its cell", md.includes("never overwritten"));
+  let expectCols = 0, checkedRows = 0, ragged = 0;
+  md.split("\n").forEach(l => {
+    if(!l.startsWith("|")){ expectCols = 0; return; }
+    const cells = l.split(/(?<!\\)\|/).length - 2;
+    if(/^\|[-|]+\|$/.test(l)){ expectCols = cells; return; }
+    if(expectCols){ checkedRows++; if(cells !== expectCols) ragged++; }
+  });
+  ok("PDD-03: every markdown table row keeps its column count",
+     ragged === 0 && checkedRows > 20, checkedRows + " rows, " + ragged + " ragged");
+  ok("PDD-02: by-hand cells named in the markdown", md.includes("TBC (by hand)"));
+
+  aS.view("review");
+  ok("PDD-06: coverage reports fill, not item count",
+     [...dS.querySelectorAll("#rvCoverage .st")].every(x => /\d+\/\d+$/.test(x.textContent.trim())),
+     [...dS.querySelectorAll("#rvCoverage .st")].map(x => x.textContent).join(" | "));
+  dS.getElementById("dlJsonBtn").click();
+  await wait(80);
+  const savedS = JSON.parse(wS.__saved[wS.__saved.length - 1].data);
+  ok("PDD-13: non-string resolved keys dropped on replace",
+     savedS.resolved.every(r => typeof r === "string") && savedS.resolved.length === 10,
+     JSON.stringify(savedS.resolved.length));
+  ok("PDD-13: every item sits in a real area",
+     savedS.items.every(i => ["Systems","Data","Process","Operations","Rules","People",
+                              "Exceptions","Dependencies","Evidence"].includes(i.section)));
+  ok("PDD-13: tags and relations are arrays on every item",
+     savedS.items.every(i => Array.isArray(i.tags) && Array.isArray(i.relations)));
+
+  dS.getElementById("importBtn2").click();
+  aS.dropFile(stressJson, "stress.json");
+  await wait(120);
+  dS.getElementById("importMerge").click();
+  await wait(90);
+  eq("PDD-04: merge doubles the session", aS.text("cItems"), "116");
+  dS.getElementById("dlJsonBtn").click();
+  await wait(80);
+  const merged = JSON.parse(wS.__saved[wS.__saved.length - 1].data);
+  const allIds = new Set(merged.items.map(i => i.id));
+  const rels = merged.items.reduce((n, i) => n + i.relations.length, 0);
+  ok("PDD-04: relations survive the merge", rels === 81, String(rels));
+  const stillDangling = merged.items
+    .reduce((n, i) => n + i.relations.filter(r => !allIds.has(r.targetId)).length, 0);
+  ok("PDD-04: only the fixture's deliberate dangling relation is unresolved",
+     stillDangling === 1, String(stillDangling));
+  eq("PDD-04: no duplicate ids after merge", allIds.size, merged.items.length);
+  ok("no page errors on the stress fixture", ctxS.errs.length === 0, ctxS.errs.join(" | "));
 
   group("Theme");
   const ctx4 = boot(); await wait(120);

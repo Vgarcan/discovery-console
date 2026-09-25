@@ -1,0 +1,1207 @@
+{
+  "name": "Northgate CU — outbound wire callback verification (stress fixture)",
+  "active": "Exceptions",
+  "seconds": 5280,
+  "items": [
+    {
+      "id": "s01",
+      "section": "Systems",
+      "name": "Fiserv Premier core",
+      "tags": [
+        "Terminal UI",
+        "Internal",
+        "On-prem"
+      ],
+      "relations": [
+        {
+          "type": "owned by",
+          "targetId": "h01"
+        }
+      ],
+      "replies": [
+        {
+          "text": "Green screen, accessed through the branch terminal emulator.",
+          "at": "09:14",
+          "ts": 1764595290000
+        }
+      ],
+      "at": "09:14",
+      "ts": 1764595260000
+    },
+    {
+      "id": "s02",
+      "section": "Systems",
+      "name": "Callback verification portal",
+      "tags": [
+        "Web UI",
+        "Third party",
+        "Cloud"
+      ],
+      "relations": [
+        {
+          "type": "connects to",
+          "targetId": "s04"
+        },
+        {
+          "type": "depends on",
+          "targetId": "s03"
+        },
+        {
+          "type": "owned by",
+          "targetId": "h05"
+        }
+      ],
+      "replies": [
+        {
+          "text": "https://callback.vendor.example/ops - SSO from the staff directory.",
+          "at": "09:16",
+          "ts": 1764595350000
+        }
+      ],
+      "at": "09:16",
+      "ts": 1764595320000
+    },
+    {
+      "id": "s03",
+      "section": "Systems",
+      "name": "Citrix published desktop",
+      "tags": [
+        "Remote"
+      ],
+      "relations": [],
+      "replies": [
+        {
+          "text": "The portal is only reachable from inside this session.",
+          "at": "09:18",
+          "ts": 1764595410000
+        }
+      ],
+      "at": "09:18",
+      "ts": 1764595380000
+    },
+    {
+      "id": "s04",
+      "section": "Systems",
+      "name": "Payments API gateway",
+      "tags": [
+        "API",
+        "Internal",
+        "Cloud"
+      ],
+      "relations": [
+        {
+          "type": "reads from",
+          "targetId": "s01"
+        }
+      ],
+      "replies": [
+        {
+          "text": "REST, mutual TLS. Certificate rotation is handled by the platform team.",
+          "at": "09:20",
+          "ts": 1764595470000
+        }
+      ],
+      "at": "09:20",
+      "ts": 1764595440000
+    },
+    {
+      "id": "s05",
+      "section": "Systems",
+      "name": "In-house callback log & audit tool",
+      "tags": [
+        "Custom",
+        "On-prem"
+      ],
+      "relations": [
+        {
+          "type": "reads from",
+          "targetId": "s01"
+        },
+        {
+          "type": "owned by",
+          "targetId": "h01"
+        }
+      ],
+      "replies": [
+        {
+          "text": "Built by the payments team in 2019. No vendor support.",
+          "at": "09:22",
+          "ts": 1764595530000
+        }
+      ],
+      "at": "09:22",
+      "ts": 1764595500000
+    },
+    {
+      "id": "s06",
+      "section": "Systems",
+      "name": "Vendor SFTP <drop>",
+      "tags": [
+        "File transfer",
+        "Third party",
+        "Cloud"
+      ],
+      "relations": [
+        {
+          "type": "sends to",
+          "targetId": "s02"
+        }
+      ],
+      "replies": [
+        {
+          "text": "Keys live in the credential store. Never recorded here.",
+          "at": "09:24",
+          "ts": 1764595590000
+        }
+      ],
+      "at": "09:24",
+      "ts": 1764595560000
+    },
+    {
+      "id": "d01",
+      "section": "Data",
+      "name": "Daily wire request extract",
+      "tags": [
+        "Input",
+        "CSV",
+        "Internal"
+      ],
+      "relations": [
+        {
+          "type": "receives from",
+          "targetId": "s01"
+        },
+        {
+          "type": "used by",
+          "targetId": "p01"
+        }
+      ],
+      "replies": [
+        {
+          "text": "One row per outbound wire, dropped at 06:45 ET.",
+          "at": "09:26",
+          "ts": 1764595650000
+        }
+      ],
+      "at": "09:26",
+      "ts": 1764595620000
+    },
+    {
+      "id": "d02",
+      "section": "Data",
+      "name": "Member contact record",
+      "tags": [
+        "Input",
+        "Database record",
+        "Internal"
+      ],
+      "relations": [
+        {
+          "type": "reads from",
+          "targetId": "s01"
+        }
+      ],
+      "replies": [
+        {
+          "text": "Phone number of record, plus the date it was last changed.",
+          "at": "09:28",
+          "ts": 1764595710000
+        }
+      ],
+      "at": "09:28",
+      "ts": 1764595680000
+    },
+    {
+      "id": "d03",
+      "section": "Data",
+      "name": "Exception queue export",
+      "tags": [
+        "Output",
+        "Excel"
+      ],
+      "relations": [
+        {
+          "type": "writes to",
+          "targetId": "s06"
+        }
+      ],
+      "replies": [
+        {
+          "text": "Lands at /ops/exports/2026 | wires | daily.xlsx\nOne row per exception, never overwritten, kept for 7 years.",
+          "at": "09:30",
+          "ts": 1764595770000
+        }
+      ],
+      "at": "09:30",
+      "ts": 1764595740000
+    },
+    {
+      "id": "d04",
+      "section": "Data",
+      "name": "Weekly callback compliance report",
+      "tags": [
+        "Report",
+        "Output",
+        "Internal"
+      ],
+      "relations": [
+        {
+          "type": "writes to",
+          "targetId": "s05"
+        }
+      ],
+      "replies": [
+        {
+          "text": "Counts, *outcomes* and the #exceptions raised [by branch].",
+          "at": "09:32",
+          "ts": 1764595830000
+        }
+      ],
+      "at": "09:32",
+      "ts": 1764595800000
+    },
+    {
+      "id": "d05",
+      "section": "Data",
+      "name": "Callback evidence pack",
+      "tags": [
+        "Output",
+        "PDF",
+        "Internal"
+      ],
+      "relations": [
+        {
+          "type": "writes to",
+          "targetId": "s05"
+        },
+        {
+          "type": "used by",
+          "targetId": "h03"
+        }
+      ],
+      "replies": [
+        {
+          "text": "One PDF a wire: call time, outcome, who verified it.",
+          "at": "09:34",
+          "ts": 1764595890000
+        }
+      ],
+      "at": "09:34",
+      "ts": 1764595860000
+    },
+    {
+      "id": "p01",
+      "section": "Process",
+      "name": "Wire request arrives in the release queue",
+      "tags": [
+        "Trigger"
+      ],
+      "relations": [
+        {
+          "type": "triggered by",
+          "targetId": "d01"
+        },
+        {
+          "type": "triggered by",
+          "targetId": "o01"
+        }
+      ],
+      "replies": [
+        {
+          "text": "Queued by the branch, visible to operations within a minute.",
+          "at": "09:36",
+          "ts": 1764595950000
+        }
+      ],
+      "at": "09:36",
+      "ts": 1764595920000
+    },
+    {
+      "id": "p02",
+      "section": "Process",
+      "name": "All wires either released or returned",
+      "tags": [
+        "End"
+      ],
+      "relations": [],
+      "replies": [
+        {
+          "text": "Nothing may sit in the queue past the cutoff.",
+          "at": "09:38",
+          "ts": 1764596010000
+        }
+      ],
+      "at": "09:38",
+      "ts": 1764595980000
+    },
+    {
+      "id": "p03",
+      "section": "Process",
+      "name": "Analyst calls the member on the number of record",
+      "tags": [
+        "Flow cue"
+      ],
+      "relations": [
+        {
+          "type": "reads from",
+          "targetId": "d02"
+        },
+        {
+          "type": "depends on",
+          "targetId": "s02"
+        }
+      ],
+      "replies": [
+        {
+          "text": "Never the number on the request itself.",
+          "at": "09:40",
+          "ts": 1764596070000
+        }
+      ],
+      "at": "09:40",
+      "ts": 1764596040000
+    },
+    {
+      "id": "p04",
+      "section": "Process",
+      "name": "Second approver for wires over the threshold",
+      "tags": [
+        "Variation"
+      ],
+      "relations": [
+        {
+          "type": "depends on",
+          "targetId": "h03"
+        },
+        {
+          "type": "triggered by",
+          "targetId": "r01"
+        }
+      ],
+      "replies": [
+        {
+          "text": "Adds roughly two minutes to the callback.",
+          "at": "09:42",
+          "ts": 1764596130000
+        }
+      ],
+      "at": "09:42",
+      "ts": 1764596100000
+    },
+    {
+      "id": "p05",
+      "section": "Process",
+      "name": "Stop fraudulent wires before release",
+      "tags": [
+        "Purpose"
+      ],
+      "relations": [],
+      "replies": [],
+      "at": "09:44",
+      "ts": 1764596160000
+    },
+    {
+      "id": "p06",
+      "section": "Process",
+      "name": "Domestic outbound wires",
+      "tags": [
+        "In scope"
+      ],
+      "relations": [],
+      "replies": [],
+      "at": "09:46",
+      "ts": 1764596220000
+    },
+    {
+      "id": "p07",
+      "section": "Process",
+      "name": "International wires and internal book transfers",
+      "tags": [
+        "Out of scope"
+      ],
+      "relations": [],
+      "replies": [
+        {
+          "text": "Handled by the international desk under a separate procedure.",
+          "at": "09:48",
+          "ts": 1764596310000
+        }
+      ],
+      "at": "09:48",
+      "ts": 1764596280000
+    },
+    {
+      "id": "p08",
+      "section": "Process",
+      "name": "Fraud bulletin from the payments network",
+      "tags": [
+        "External"
+      ],
+      "relations": [],
+      "replies": [
+        {
+          "text": "Arrives weekly, changes which patterns need a callback.",
+          "at": "09:50",
+          "ts": 1764596370000
+        }
+      ],
+      "at": "09:50",
+      "ts": 1764596340000
+    },
+    {
+      "id": "o01",
+      "section": "Operations",
+      "name": "Every weekday, 07:00 to 16:00 ET",
+      "tags": [
+        "Frequency"
+      ],
+      "relations": [],
+      "replies": [],
+      "at": "09:52",
+      "ts": 1764596400000
+    },
+    {
+      "id": "o02",
+      "section": "Operations",
+      "name": "About 85 wires a day",
+      "tags": [
+        "Volume"
+      ],
+      "relations": [],
+      "replies": [],
+      "at": "09:54",
+      "ts": 1764596460000
+    },
+    {
+      "id": "o03",
+      "section": "Operations",
+      "name": "Up to 260 on the last business day of the month",
+      "tags": [
+        "Peak"
+      ],
+      "relations": [],
+      "replies": [],
+      "at": "09:56",
+      "ts": 1764596520000
+    },
+    {
+      "id": "o04",
+      "section": "Operations",
+      "name": "Around 6 minutes a callback",
+      "tags": [
+        "Manual effort"
+      ],
+      "relations": [],
+      "replies": [
+        {
+          "text": "Longer when the member does not answer the first time.",
+          "at": "09:58",
+          "ts": 1764596610000
+        }
+      ],
+      "at": "09:58",
+      "ts": 1764596580000
+    },
+    {
+      "id": "o05",
+      "section": "Operations",
+      "name": "Weekdays from 07:00 ET",
+      "tags": [
+        "Schedule"
+      ],
+      "relations": [],
+      "replies": [],
+      "at": "10:00",
+      "ts": 1764596640000
+    },
+    {
+      "id": "o06",
+      "section": "Operations",
+      "name": "Same-day release for anything queued before 15:00",
+      "tags": [
+        "SLA"
+      ],
+      "relations": [],
+      "replies": [],
+      "at": "10:02",
+      "ts": 1764596700000
+    },
+    {
+      "id": "o07",
+      "section": "Operations",
+      "name": "16:00 ET hard cutoff",
+      "tags": [
+        "Cutoff"
+      ],
+      "relations": [
+        {
+          "type": "used by",
+          "targetId": "p02"
+        }
+      ],
+      "replies": [
+        {
+          "text": "Anything unverified after this returns to the branch.",
+          "at": "10:04",
+          "ts": 1764596790000
+        }
+      ],
+      "at": "10:04",
+      "ts": 1764596760000
+    },
+    {
+      "id": "o08",
+      "section": "Operations",
+      "name": "About 12 percent go to manual callback",
+      "tags": [
+        "Exception rate"
+      ],
+      "relations": [],
+      "replies": [],
+      "at": "10:06",
+      "ts": 1764596820000
+    },
+    {
+      "id": "r01",
+      "section": "Rules",
+      "name": "Wires over 25,000 USD need supervisor approval",
+      "tags": [
+        "Approval"
+      ],
+      "relations": [
+        {
+          "type": "used by",
+          "targetId": "h03"
+        }
+      ],
+      "replies": [
+        {
+          "text": "Threshold is set in the portal, not in the core.",
+          "at": "10:08",
+          "ts": 1764596910000
+        }
+      ],
+      "at": "10:08",
+      "ts": 1764596880000
+    },
+    {
+      "id": "r02",
+      "section": "Rules",
+      "name": "Callback number must match the record on file",
+      "tags": [
+        "Matching",
+        "Validation"
+      ],
+      "relations": [
+        {
+          "type": "reads from",
+          "targetId": "d02"
+        }
+      ],
+      "replies": [
+        {
+          "text": "A mismatch is an automatic return, no judgement involved.",
+          "at": "10:10",
+          "ts": 1764596970000
+        }
+      ],
+      "at": "10:10",
+      "ts": 1764596940000
+    },
+    {
+      "id": "r03",
+      "section": "Rules",
+      "name": "Analyst judgement on a suspicious callback",
+      "tags": [
+        "Judgement"
+      ],
+      "relations": [],
+      "replies": [
+        {
+          "text": "If the member sounds coached, escalate rather than release.",
+          "at": "10:12",
+          "ts": 1764597030000
+        }
+      ],
+      "at": "10:12",
+      "ts": 1764597000000
+    },
+    {
+      "id": "r04",
+      "section": "Rules",
+      "name": "Wires to a first-time beneficiary always get a callback",
+      "tags": [
+        "Business rule",
+        "Filter"
+      ],
+      "relations": [
+        {
+          "type": "used by",
+          "targetId": "p03"
+        }
+      ],
+      "replies": [],
+      "at": "10:14",
+      "ts": 1764597060000
+    },
+    {
+      "id": "h01",
+      "section": "People",
+      "name": "Wire operations team",
+      "tags": [
+        "Team",
+        "Internal"
+      ],
+      "relations": [],
+      "replies": [],
+      "at": "10:16",
+      "ts": 1764597120000
+    },
+    {
+      "id": "h02",
+      "section": "People",
+      "name": "Payments subject matter expert",
+      "tags": [
+        "SME",
+        "Internal"
+      ],
+      "relations": [],
+      "replies": [
+        {
+          "text": "Wrote the current SOP and signs off changes to it.",
+          "at": "10:18",
+          "ts": 1764597210000
+        }
+      ],
+      "at": "10:18",
+      "ts": 1764597180000
+    },
+    {
+      "id": "h03",
+      "section": "People",
+      "name": "Branch operations manager",
+      "tags": [
+        "Process owner",
+        "Approval",
+        "Internal"
+      ],
+      "relations": [],
+      "replies": [],
+      "at": "10:20",
+      "ts": 1764597240000
+    },
+    {
+      "id": "h04",
+      "section": "People",
+      "name": "Fraud escalation desk",
+      "tags": [
+        "Escalation",
+        "Internal"
+      ],
+      "relations": [],
+      "replies": [],
+      "at": "10:22",
+      "ts": 1764597300000
+    },
+    {
+      "id": "h05",
+      "section": "People",
+      "name": "Vendor support desk",
+      "tags": [
+        "Handoff",
+        "External"
+      ],
+      "relations": [],
+      "replies": [
+        {
+          "text": "Contacted when the portal itself is down.",
+          "at": "10:24",
+          "ts": 1764597390000
+        }
+      ],
+      "at": "10:24",
+      "ts": 1764597360000
+    },
+    {
+      "id": "e01",
+      "section": "Exceptions",
+      "name": "Member unreachable after three attempts",
+      "tags": [
+        "Business exception"
+      ],
+      "relations": [
+        {
+          "type": "depends on",
+          "targetId": "d02"
+        },
+        {
+          "type": "sends to",
+          "targetId": "h01"
+        }
+      ],
+      "replies": [
+        {
+          "text": "Return the wire to the branch and note the attempts in the evidence pack.",
+          "at": "10:26",
+          "ts": 1764597450000
+        }
+      ],
+      "at": "10:26",
+      "ts": 1764597420000
+    },
+    {
+      "id": "e02",
+      "section": "Exceptions",
+      "name": "Callback portal times out mid-verification",
+      "tags": [
+        "System exception",
+        "Timeout"
+      ],
+      "relations": [
+        {
+          "type": "depends on",
+          "targetId": "s02"
+        },
+        {
+          "type": "sends to",
+          "targetId": "h05"
+        }
+      ],
+      "replies": [
+        {
+          "text": "Retry twice.\nIf it still fails | raise a P2 with the vendor support desk and hold the queue.",
+          "at": "10:28",
+          "ts": 1764597510000
+        }
+      ],
+      "at": "10:28",
+      "ts": 1764597480000
+    },
+    {
+      "id": "e03",
+      "section": "Exceptions",
+      "name": "Contact number missing from the member record",
+      "tags": [
+        "Data exception"
+      ],
+      "relations": [
+        {
+          "type": "depends on",
+          "targetId": "d02"
+        }
+      ],
+      "replies": [
+        {
+          "text": "Refer to the branch to confirm the number before anything else happens.",
+          "at": "10:30",
+          "ts": 1764597570000
+        }
+      ],
+      "at": "10:30",
+      "ts": 1764597540000
+    },
+    {
+      "id": "e04",
+      "section": "Exceptions",
+      "name": "Analyst lacks the release permission",
+      "tags": [
+        "Access exception"
+      ],
+      "relations": [
+        {
+          "type": "sends to",
+          "targetId": "h04"
+        }
+      ],
+      "replies": [
+        {
+          "text": "Hand to a colleague with the entitlement and raise an access request.",
+          "at": "10:32",
+          "ts": 1764597630000
+        }
+      ],
+      "at": "10:32",
+      "ts": 1764597600000
+    },
+    {
+      "id": "e05",
+      "section": "Exceptions",
+      "name": "Beneficiary bank returns an unfamiliar rejection code",
+      "tags": [
+        "Unclassified"
+      ],
+      "relations": [
+        {
+          "type": "sends to",
+          "targetId": "h02"
+        }
+      ],
+      "replies": [
+        {
+          "text": "Nobody on the call could say what happens here yet.",
+          "at": "10:34",
+          "ts": 1764597690000
+        }
+      ],
+      "at": "10:34",
+      "ts": 1764597660000
+    },
+    {
+      "id": "e06",
+      "section": "Exceptions",
+      "name": "Queue shows a wire with no exception path yet",
+      "tags": [
+        "no exception path yet",
+        "Business exception"
+      ],
+      "relations": [
+        {
+          "type": "sends to",
+          "targetId": "h02"
+        }
+      ],
+      "replies": [
+        {
+          "text": "Park it and ask the SME. This is the free-text tag probe: Exception Type must read Business exception, not the tag that merely contains the word.",
+          "at": "10:36",
+          "ts": 1764597750000
+        }
+      ],
+      "at": "10:36",
+      "ts": 1764597720000
+    },
+    {
+      "id": "y01",
+      "section": "Dependencies",
+      "name": "Payments network availability",
+      "tags": [
+        "Third party",
+        "External"
+      ],
+      "relations": [
+        {
+          "type": "used by",
+          "targetId": "p01"
+        }
+      ],
+      "replies": [
+        {
+          "text": "No network, no releases. Nothing else in the process matters.",
+          "at": "10:38",
+          "ts": 1764597810000
+        }
+      ],
+      "at": "10:38",
+      "ts": 1764597780000
+    },
+    {
+      "id": "y02",
+      "section": "Dependencies",
+      "name": "Nightly member file load",
+      "tags": [
+        "Upstream",
+        "File"
+      ],
+      "relations": [
+        {
+          "type": "depends on",
+          "targetId": "d02"
+        }
+      ],
+      "replies": [
+        {
+          "text": "If it fails the contact numbers are a day stale.",
+          "at": "10:40",
+          "ts": 1764597870000
+        }
+      ],
+      "at": "10:40",
+      "ts": 1764597840000
+    },
+    {
+      "id": "y03",
+      "section": "Dependencies",
+      "name": "Settlement batch consumes the released wires",
+      "tags": [
+        "Downstream"
+      ],
+      "relations": [
+        {
+          "type": "receives from",
+          "targetId": "p02"
+        }
+      ],
+      "replies": [],
+      "at": "10:42",
+      "ts": 1764597900000
+    },
+    {
+      "id": "y04",
+      "section": "Dependencies",
+      "name": "Citrix profile provisioned for the service account",
+      "tags": [
+        "Environment",
+        "Approval"
+      ],
+      "relations": [
+        {
+          "type": "depends on",
+          "targetId": "s03"
+        }
+      ],
+      "replies": [
+        {
+          "text": "Raised through IT, roughly a five-day lead time.",
+          "at": "10:44",
+          "ts": 1764597990000
+        }
+      ],
+      "at": "10:44",
+      "ts": 1764597960000
+    },
+    {
+      "id": "y05",
+      "section": "Dependencies",
+      "name": "Vendor SFTP key rotation window",
+      "tags": [
+        "Third party",
+        "Approval"
+      ],
+      "relations": [
+        {
+          "type": "depends on",
+          "targetId": "s06"
+        }
+      ],
+      "replies": [],
+      "at": "10:46",
+      "ts": 1764598020000
+    },
+    {
+      "id": "v01",
+      "section": "Evidence",
+      "name": "Callback walkthrough recording",
+      "tags": [
+        "Recording"
+      ],
+      "relations": [
+        {
+          "type": "owned by",
+          "targetId": "h02"
+        }
+      ],
+      "replies": [
+        {
+          "text": "42 minutes, covers the happy path and two exceptions.",
+          "at": "10:48",
+          "ts": 1764598110000
+        }
+      ],
+      "at": "10:48",
+      "ts": 1764598080000
+    },
+    {
+      "id": "v02",
+      "section": "Evidence",
+      "name": "Existing wire callback SOP",
+      "tags": [
+        "SOP"
+      ],
+      "relations": [
+        {
+          "type": "owned by",
+          "targetId": "h02"
+        }
+      ],
+      "replies": [
+        {
+          "text": "Version 4.1, last reviewed in March.",
+          "at": "10:50",
+          "ts": 1764598170000
+        }
+      ],
+      "at": "10:50",
+      "ts": 1764598140000
+    },
+    {
+      "id": "v03",
+      "section": "Evidence",
+      "name": "Portal screenshots — the \"release\" and \"hold\" screens",
+      "tags": [
+        "Screenshot"
+      ],
+      "relations": [],
+      "replies": [],
+      "at": "10:52",
+      "ts": 1764598200000
+    },
+    {
+      "id": "v04",
+      "section": "Evidence",
+      "name": "Sample callback evidence pack",
+      "tags": [
+        "Sample file"
+      ],
+      "relations": [],
+      "replies": [],
+      "at": "10:54",
+      "ts": 1764598260000
+    },
+    {
+      "id": "v05",
+      "section": "Evidence",
+      "name": "Portal URL",
+      "tags": [
+        "URL"
+      ],
+      "relations": [],
+      "replies": [
+        {
+          "text": "https://callback.vendor.example/ops",
+          "at": "10:56",
+          "ts": 1764598350000
+        }
+      ],
+      "at": "10:56",
+      "ts": 1764598320000
+    },
+    {
+      "id": "v06",
+      "section": "Evidence",
+      "name": "Monthly callback exceptions report",
+      "tags": [
+        "Report"
+      ],
+      "relations": [],
+      "replies": [],
+      "at": "10:58",
+      "ts": 1764598380000
+    },
+    {
+      "id": "v07",
+      "section": "Evidence",
+      "name": "Exception queue export schema",
+      "tags": [
+        "Needs verification"
+      ],
+      "relations": [],
+      "replies": [
+        {
+          "text": "Promised by the SME, not received yet.",
+          "at": "11:00",
+          "ts": 1764598470000
+        }
+      ],
+      "at": "11:00",
+      "ts": 1764598440000
+    },
+    {
+      "id": "x01",
+      "section": "Sistemas",
+      "name": "PROBE: unknown area, should be parked in Systems",
+      "tags": [
+        "Web UI"
+      ],
+      "relations": [],
+      "replies": [],
+      "at": "10:58",
+      "ts": 1764601100000
+    },
+    {
+      "id": "x02",
+      "section": "Data",
+      "name": "PROBE: tags is a string, not an array",
+      "tags": "Input",
+      "relations": [],
+      "replies": [],
+      "at": "10:59",
+      "ts": 1764601160000
+    },
+    {
+      "id": "x03",
+      "section": "Rules",
+      "name": "PROBE: relation points at an id that is not in this file",
+      "tags": [
+        "Decision"
+      ],
+      "relations": [
+        {
+          "type": "depends on",
+          "targetId": "does-not-exist"
+        }
+      ],
+      "replies": [],
+      "at": "11:00",
+      "ts": 1764601220000
+    },
+    {
+      "section": "People",
+      "name": "PROBE: legacy row with no id, ts or replies",
+      "tags": [
+        "Manual review",
+        "Internal"
+      ]
+    }
+  ],
+  "notes": [
+    {
+      "id": "n1",
+      "text": "Ask whether the 25,000 threshold is the same at every branch.",
+      "replies": [
+        {
+          "text": "SME thinks it is, wants to confirm with the manager.",
+          "at": "10:31",
+          "ts": 1764599500000
+        }
+      ],
+      "at": "10:24",
+      "ts": 1764599400000
+    },
+    {
+      "id": "n2",
+      "text": "PROBE: markup in free text — <img src=x onerror=alert(1)> & \"quoted\" 'text'",
+      "replies": [],
+      "at": "10:40",
+      "ts": 1764600000000
+    }
+  ],
+  "marks": [
+    {
+      "id": "m1",
+      "at": "09:47",
+      "seconds": 1500,
+      "replies": [],
+      "ts": 1764596700000
+    },
+    {
+      "id": "m2",
+      "at": "10:35",
+      "seconds": 4380,
+      "replies": [
+        {
+          "text": "Where the SME explains the return path.",
+          "at": "10:36",
+          "ts": 1764599600000
+        }
+      ],
+      "ts": 1764599580000
+    }
+  ],
+  "resolved": [
+    "Systems::Confirm the purpose of each system",
+    "Systems::Confirm environment for each system",
+    "Operations::Confirm process frequency",
+    "Operations::Confirm average volume",
+    "Operations::Confirm peak or seasonal volume",
+    "Operations::Confirm SLAs and deadlines",
+    "Process::Confirm what triggers the process",
+    "Process::Confirm the end condition",
+    "Exceptions::Confirm the type of each exception",
+    "Evidence::Capture a walkthrough recording or screenshots",
+    42,
+    null,
+    {
+      "not": "a key"
+    }
+  ]
+}
