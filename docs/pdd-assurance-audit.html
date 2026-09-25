@@ -1,0 +1,634 @@
+<title>PDD Assurance Audit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Instrument+Serif:ital@0;1&family=Martian+Mono:wght@300;400;500&display=swap">
+
+<style>
+/* Palette, type and neutrals are lifted from the product's own
+   src/css/01-tokens.css so the audit reads as part of the console. */
+:root{
+  --paper:#F1F1EC;
+  --surface:#FFFFFF;
+  --sunk:#F6F6F6;
+  --line:#DBDBD2;
+  --line-soft:#E7E7E0;
+  --ink:#222222;
+  --ink-2:#4A4A45;
+  --ink-3:#7D7D76;
+
+  --sev-high:#C9403D;
+  --sev-high-dim:rgba(201,64,61,.10);
+  --sev-mid:#9A6B10;
+  --sev-mid-dim:rgba(154,107,16,.10);
+  --sev-low:#7D7D76;
+  --sev-low-dim:rgba(125,125,118,.10);
+
+  --ok:#1F6F58;
+  --ok-dim:rgba(31,111,88,.10);
+  --tbc-chip:#E2F0D9;
+  --tbc-chip-ink:#222222;
+
+  --sans:"Instrument Sans","Helvetica Neue",Arial,sans-serif;
+  --serif:"Instrument Serif",Georgia,"Times New Roman",serif;
+  --mono:"Martian Mono",ui-monospace,"SF Mono",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#1B1B1B;
+    --surface:#222222;
+    --sunk:#1F1F1F;
+    --line:#383838;
+    --line-soft:#2B2B2B;
+    --ink:#FFFFFF;
+    --ink-2:#C6C6BF;
+    --ink-3:#8B8B85;
+
+    --sev-high:#EF6461;
+    --sev-high-dim:rgba(239,100,97,.14);
+    --sev-mid:#FFCF56;
+    --sev-mid-dim:rgba(255,207,86,.13);
+    --sev-low:#8B8B85;
+    --sev-low-dim:rgba(139,139,133,.14);
+
+    --ok:#62FFCF;
+    --ok-dim:rgba(98,255,207,.13);
+    --tbc-chip:#2F4232;
+    --tbc-chip-ink:#DCEFD2;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#1B1B1B;
+  --surface:#222222;
+  --sunk:#1F1F1F;
+  --line:#383838;
+  --line-soft:#2B2B2B;
+  --ink:#FFFFFF;
+  --ink-2:#C6C6BF;
+  --ink-3:#8B8B85;
+
+  --sev-high:#EF6461;
+  --sev-high-dim:rgba(239,100,97,.14);
+  --sev-mid:#FFCF56;
+  --sev-mid-dim:rgba(255,207,86,.13);
+  --sev-low:#8B8B85;
+  --sev-low-dim:rgba(139,139,133,.14);
+
+  --ok:#62FFCF;
+  --ok-dim:rgba(98,255,207,.13);
+  --tbc-chip:#2F4232;
+  --tbc-chip-ink:#DCEFD2;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--sans);
+  font-size:16px;
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:74ch;margin:0 auto;padding:clamp(2rem,6vw,4.5rem) clamp(1.1rem,5vw,2rem) 6rem}
+
+/* ---------- masthead ---------- */
+.eyebrow{
+  font-family:var(--mono);font-size:10px;font-weight:400;
+  letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);
+  margin:0 0 1.1rem;
+}
+h1{
+  font-family:var(--serif);font-weight:400;
+  font-size:clamp(2.4rem,7vw,3.5rem);line-height:1.02;letter-spacing:-.012em;
+  margin:0 0 .9rem;text-wrap:balance;
+}
+.standfirst{font-size:1.06rem;color:var(--ink-2);margin:0 0 1.6rem;max-width:62ch}
+.masthead-meta{
+  display:flex;flex-wrap:wrap;gap:.35rem 1.4rem;
+  font-family:var(--mono);font-size:10.5px;color:var(--ink-3);
+  padding:.8rem 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+}
+.masthead-meta b{font-weight:400;color:var(--ink-2)}
+
+/* ---------- headline ---------- */
+.verdict{
+  margin:3rem 0 0;padding:1.5rem 1.5rem 1.6rem;
+  background:var(--surface);border:1px solid var(--line);
+  border-left:3px solid var(--ok);
+}
+.verdict .hero{
+  font-family:var(--serif);font-size:clamp(2.6rem,9vw,4rem);line-height:.95;
+  letter-spacing:-.02em;margin:.2rem 0 .6rem;font-variant-numeric:tabular-nums;
+}
+.verdict p{margin:0;color:var(--ink-2);max-width:56ch}
+.verdict p + p{margin-top:.7rem}
+
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);margin:1px 0 0}
+.tile{background:var(--surface);padding:1rem 1.1rem 1.05rem}
+.tile b{
+  display:block;font-family:var(--mono);font-weight:400;font-size:1.25rem;
+  letter-spacing:-.05em;font-variant-numeric:tabular-nums;line-height:1.15;
+}
+.tile b s{text-decoration:line-through;color:var(--ink-3);text-decoration-color:var(--sev-high)}
+.tile b i{font-style:normal;color:var(--ink-3);padding:0 .25em}
+.tile span{display:block;font-size:.8rem;color:var(--ink-3);margin-top:.35rem;line-height:1.35}
+
+/* ---------- proportion bar ---------- */
+figure{margin:2.4rem 0 0}
+figcaption{
+  font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--ink-3);margin-bottom:.6rem;
+}
+.propbar{display:flex;height:24px;gap:2px;background:var(--surface);border:1px solid var(--line);padding:2px}
+.propbar + .propbar{margin-top:6px}
+.propbar span{display:block}
+.proplegend{display:grid;gap:.45rem;margin:.75rem 0 0;padding:0;list-style:none}
+.proplegend li{display:flex;align-items:baseline;gap:.55rem;font-size:.86rem;color:var(--ink-2)}
+.proplegend i{width:9px;height:9px;flex:0 0 auto;border-radius:1px;transform:translateY(1px)}
+.proplegend u{
+  margin-left:auto;text-decoration:none;font-family:var(--mono);font-size:.78rem;
+  color:var(--ink);font-variant-numeric:tabular-nums;
+}
+.barlabel{
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--ink-3);margin:.55rem 0 .3rem;
+}
+.figsource{font-size:.76rem;color:var(--ink-3);margin:.7rem 0 0}
+
+/* ---------- section rhythm ---------- */
+h2{
+  font-family:var(--serif);font-weight:400;font-size:2rem;line-height:1.1;
+  letter-spacing:-.01em;margin:3.6rem 0 .5rem;text-wrap:balance;
+}
+h2 + .deck{margin:0 0 1.6rem;color:var(--ink-2);max-width:60ch}
+p{max-width:64ch}
+
+/* ---------- findings register ---------- */
+.finding{
+  background:var(--surface);border:1px solid var(--line);
+  border-left:3px solid var(--sev-low);
+  padding:1.25rem 1.35rem 1.35rem;margin-bottom:1px;
+}
+.finding.high{border-left-color:var(--sev-high)}
+.finding.mid{border-left-color:var(--sev-mid)}
+.f-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:.5rem .6rem;margin-bottom:.55rem}
+.f-id{font-family:var(--mono);font-size:10px;letter-spacing:.04em;color:var(--ink-3)}
+.f-sev,.f-state{
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;
+  padding:.16rem .42rem;border-radius:2px;
+}
+.f-sev{color:var(--sev-low);background:var(--sev-low-dim)}
+.high .f-sev{color:var(--sev-high);background:var(--sev-high-dim)}
+.mid .f-sev{color:var(--sev-mid);background:var(--sev-mid-dim)}
+.f-state{color:var(--ok);background:var(--ok-dim)}
+.f-state.part{color:var(--sev-mid);background:var(--sev-mid-dim)}
+.f-where{font-family:var(--mono);font-size:10px;color:var(--ink-3);margin-left:auto}
+.finding h3{
+  font-family:var(--serif);font-weight:400;font-size:1.4rem;line-height:1.2;
+  margin:0 0 .5rem;letter-spacing:-.005em;text-wrap:balance;width:100%;
+}
+.finding p{margin:0 0 .7rem;color:var(--ink-2);font-size:.94rem}
+.finding p:last-child{margin-bottom:0}
+.fix{
+  font-size:.9rem;color:var(--ink);border-top:1px solid var(--line-soft);
+  padding-top:.7rem;margin-top:.9rem;
+}
+.fix b{
+  font-family:var(--mono);font-size:9.5px;font-weight:400;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--ok);display:block;margin-bottom:.25rem;
+}
+.fix.part b{color:var(--sev-mid)}
+
+code{
+  font-family:var(--mono);font-size:.82em;background:var(--sunk);
+  border:1px solid var(--line-soft);border-radius:2px;padding:.06em .3em;
+}
+pre{
+  font-family:var(--mono);font-size:.76rem;line-height:1.75;
+  background:var(--sunk);border:1px solid var(--line-soft);
+  padding:.85rem 1rem;margin:0 0 .9rem;overflow-x:auto;
+}
+pre code{background:none;border:0;padding:0;font-size:1em}
+pre .was{color:var(--sev-high)}
+pre .now{color:var(--ok)}
+.tbc-demo{
+  font-family:var(--mono);font-size:9.5px;background:var(--tbc-chip);color:var(--tbc-chip-ink);
+  padding:.1em .35em;border-radius:2px;white-space:nowrap;
+}
+.tbc-demo.byhand{background:transparent;color:var(--ink-3);border:1px dashed var(--line)}
+
+.tablewrap{overflow-x:auto;margin:0 0 .9rem}
+table{border-collapse:collapse;width:100%;font-size:.82rem;min-width:420px}
+th{
+  text-align:left;font-family:var(--mono);font-weight:400;font-size:9.5px;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);
+  border-bottom:1px solid var(--line);padding:.35rem .7rem .35rem 0;white-space:nowrap;
+}
+td{border-bottom:1px solid var(--line-soft);padding:.38rem .7rem .38rem 0;vertical-align:top;color:var(--ink-2)}
+td:first-child{color:var(--ink);font-family:var(--mono);font-size:.76rem;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+
+.clean{list-style:none;padding:0;margin:0;display:grid;gap:.6rem}
+.clean li{display:flex;gap:.6rem;font-size:.92rem;color:var(--ink-2);max-width:64ch}
+.clean li::before{
+  content:"";flex:0 0 auto;width:7px;height:7px;margin-top:.5rem;
+  border-radius:50%;background:var(--ok);
+}
+
+.method{background:var(--sunk);border:1px solid var(--line);padding:1.3rem 1.4rem;font-size:.9rem;color:var(--ink-2)}
+.method h3{
+  font-family:var(--mono);font-weight:400;font-size:10px;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--ink-3);margin:0 0 .6rem;
+}
+.method h3 + p{margin-top:0}
+.method h3:not(:first-child){margin-top:1.2rem}
+.method p{margin:0 0 .8rem;max-width:62ch}
+.method p:last-child{margin-bottom:0}
+
+footer{
+  margin-top:4rem;padding-top:1rem;border-top:1px solid var(--line);
+  font-family:var(--mono);font-size:10px;color:var(--ink-3);
+}
+:focus-visible{outline:2px solid var(--sev-high);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">TQA Discovery Console · assurance review · remediated</p>
+  <h1>What the PDD draft really says</h1>
+  <p class="standfirst">The draft read well, and that was the thing worth checking. This review
+  traced every path from a captured fact to a rendered template field, measured how much of the
+  Velera PDD the console can fill at its best, and records what was done about it.</p>
+
+  <div class="masthead-meta">
+    <span>Scope <b>src/js/16-pdd.js and its inputs</b></span>
+    <span>Baseline <b>a84bb8b</b></span>
+    <span>Findings <b>14 — 12 closed, 2 mitigated</b></span>
+    <span>Reviewed <b>2026-09-25</b></span>
+  </div>
+
+  <section class="verdict">
+    <p class="eyebrow" style="margin-bottom:.2rem">the headline that started it</p>
+    <div class="hero">33 of 34</div>
+    <p>Of the template cells left empty by the sample session, all but one were empty because
+    <strong>no capture path existed to fill them</strong>. The Location, Owner and Provider of every
+    input and output; Access Granted and User Details for every system; a contact for every person —
+    written as <span class="tbc-demo">TBC</span> in the source, unconditionally.</p>
+    <p>The document contract says a <span class="tbc-demo">TBC</span> is an unanswered question. For
+    these it meant something else: a question the console never asks. Nothing in the output told them
+    apart, so an analyst could not tell which TBCs to chase.</p>
+    <p>They are now marked <span class="tbc-demo byhand">TBC</span> — same word, dashed outline,
+    counted separately in the header and written <code>TBC (by hand)</code> in the Markdown. The
+    thirty-three still cannot be captured; they can now be seen.</p>
+  </section>
+
+  <div class="tiles">
+    <div class="tile"><b><s>25 / 28</s><i>→</i>93 / 94</b><span>the headline metric, now scored one cell at a time</span></div>
+    <div class="tile"><b><s>0</s><i>→</i>33</b><span>by-hand fields named rather than disguised as TBC</span></div>
+    <div class="tile"><b><s>12</s><i>→</i>0</b><span>capture buttons writing a tag the PDD never looks for</span></div>
+    <div class="tile"><b><s>21 → 0</s><i>→</i>21 → 21</b><span>relations surviving a session merge</span></div>
+  </div>
+
+  <figure>
+    <figcaption>The 127 cells of the template, sample session loaded</figcaption>
+
+    <p class="barlabel">Before — one number covered all three</p>
+    <div class="propbar" role="img" aria-label="Before: of 127 template cells, 93 carried evidence, 1 was unanswered, and 33 could not be filled by any capture — all reported as a single 25 of 28.">
+      <span style="flex:93;background:var(--ink-2)"></span>
+      <span style="flex:1;background:var(--sev-mid)"></span>
+      <span style="flex:33;background:var(--sev-high)"></span>
+    </div>
+
+    <p class="barlabel">After — the by-hand cells are out of the score and named</p>
+    <div class="propbar" role="img" aria-label="After: 93 of 94 scored cells carry evidence, 1 is unanswered, and the 33 by-hand cells are reported separately.">
+      <span style="flex:93;background:var(--ink-2)"></span>
+      <span style="flex:1;background:var(--sev-mid)"></span>
+      <span style="flex:33;background:var(--line)"></span>
+    </div>
+
+    <ul class="proplegend">
+      <li><i style="background:var(--ink-2)"></i> Carries captured evidence <u>93</u></li>
+      <li><i style="background:var(--sev-mid)"></i> Genuinely unanswered — chase it <u>1</u></li>
+      <li><i style="background:var(--sev-high)"></i> Was an indistinguishable TBC <u>33</u></li>
+      <li><i style="background:var(--line)"></i> Now reported as by-hand, outside the score <u>33</u></li>
+    </ul>
+    <p class="figsource">Measured by replaying <code>pddModel()</code> against
+    <code>assets/data/demo-session-ach-returns.json</code>, before and after the change. Sections 1.1
+    and 2.10 excluded, as the app excludes them.</p>
+  </figure>
+
+  <h2>High severity</h2>
+  <p class="deck">Four findings where the output was wrong or silently incomplete, rather than
+  merely coarse. All four are closed.</p>
+
+  <article class="finding high">
+    <div class="f-head">
+      <span class="f-id">PDD-01</span>
+      <span class="f-sev">High</span>
+      <span class="f-state">Closed</span>
+      <span class="f-where">04-capture.js · 01-model.js</span>
+    </div>
+    <h3>The capture buttons and the PDD spoke different vocabularies</h3>
+    <p>Pressing a type in the quick-type grid seeded the item with the <em>button's label</em>:
+    <code>tags: seed ? [seed] : []</code>. The PDD looked up the <em>tag vocabulary</em> declared
+    beside it in <code>01-model.js</code>. In seven of the nine areas those two lists disagreed.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Area</th><th>Button wrote</th><th>PDD looked for</th><th>Field that emptied</th></tr></thead>
+        <tbody>
+          <tr><td>Operations</td><td>Average volume</td><td>Volume</td><td>1.3 Expected volumes</td></tr>
+          <tr><td>Operations</td><td>Peak volume</td><td>Peak</td><td>1.3 Expected volumes</td></tr>
+          <tr><td>Process</td><td>End condition</td><td>End</td><td>2.1 Result / end state, 2.3 flow</td></tr>
+          <tr><td>Evidence</td><td>SOP / document</td><td>SOP</td><td>2.2 Available references</td></tr>
+          <tr><td>Systems</td><td>API / Service</td><td>API</td><td>1.4 Access Type</td></tr>
+          <tr><td>Systems</td><td>Remote / VDI</td><td>Remote</td><td>1.4 Environment, Access Type</td></tr>
+          <tr><td>Systems</td><td>Custom build</td><td>Custom</td><td>1.4 Owner</td></tr>
+          <tr><td colspan="4">…and 5 more: Approval rule, Upstream process, Downstream process, To verify, Unclassified</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Re-tagging the sample session the way the grid would have written it — same facts, same areas,
+    captured live instead of through the detail sheet — took the draft from 25 of 28 down to 23 of 28.
+    The sample session could not expose this, because all 53 of its items were tagged from the
+    canonical list, and the 110-check suite asserts against that same file.</p>
+    <div class="fix"><b>Fixed</b>
+    An action is now <code>[label, description]</code> or <code>[label, description, tag]</code>, and
+    <code>tagOf()</code> is the single place the two are reconciled. Both seeding paths go through it.
+    A new rule in <code>tools/audit.py</code> fails the build if any capture type resolves to a tag its
+    area does not declare — verified by deliberately breaking one. A grid capture and a sheet capture
+    of the same facts now produce an identical draft, 93 of 94 either way.</div>
+  </article>
+
+  <article class="finding high">
+    <div class="f-head">
+      <span class="f-id">PDD-02</span>
+      <span class="f-sev">High</span>
+      <span class="f-state part">Mitigated</span>
+      <span class="f-where">16-pdd.js</span>
+    </div>
+    <h3>TBC carried two meanings and the reader could not separate them</h3>
+    <p>Thirty-three cells were written as the literal <code>TBC</code> constant with no data path
+    behind them: 1.2 Contact (4), 1.4 Access Granted and User Details (8), 2.5 Location, Owner and
+    Provider across inputs and outputs (18), plus the three 1.3 fields that are deliberately not the
+    analyst's call. Three carried an explanatory hint; the other thirty rendered identically to a
+    field the client simply did not answer.</p>
+    <div class="fix part"><b>Mitigated, not closed</b>
+    A second sentinel <code>NA</code> now marks them. They render as
+    <span class="tbc-demo byhand">TBC</span> with a dashed outline and a tooltip, read
+    <code>TBC (by hand)</code> in the Markdown, and are counted on their own line in the header
+    rather than against the evidence score. The console still cannot capture them — giving
+    per-item fields to inputs, outputs and systems is a feature, not a fix, and is the natural
+    next piece of work.</div>
+  </article>
+
+  <article class="finding high">
+    <div class="f-head">
+      <span class="f-id">PDD-03</span>
+      <span class="f-sev">High</span>
+      <span class="f-state">Closed</span>
+      <span class="f-where">16-pdd.js pddMarkdown()</span>
+    </div>
+    <h3>One reply could destroy a Markdown table</h3>
+    <p>Table rows were joined with <code>" | "</code> and nothing escaped the cell contents. Replies
+    are free text from a textarea where <kbd>Shift</kbd>+<kbd>Enter</kbd> inserts a newline, and they
+    are the source for twelve PDD outputs — every Description, every business action, every
+    URL/Details cell. A single <code>|</code> shifted every cell after it; a single newline split the
+    row in two and the renderer dropped both halves.</p>
+    <pre><code><span class="was">was  | 1 | System exception | Gateway token expired | Pause the run | then retry
+     Escalate if it repeats |</span>
+<span class="now">now  | 1 | System exception | Gateway token expired | Pause the run \| then retry&lt;br&gt;Escalate if it repeats |</span></code></pre>
+    <div class="fix"><b>Fixed</b>
+    Table cells escape the pipe and turn newlines into <code>&lt;br&gt;</code>, which keeps the value
+    inside its cell. Field values and list items flatten newlines to a space, so a bullet stays a
+    bullet. A check in the suite asserts every emitted table row keeps its column count.</div>
+  </article>
+
+  <article class="finding high">
+    <div class="f-head">
+      <span class="f-id">PDD-04</span>
+      <span class="f-sev">High</span>
+      <span class="f-state">Closed</span>
+      <span class="f-where">17-transfer.js importMerge</span>
+    </div>
+    <h3>Merging a session silently discarded every relation in it</h3>
+    <p>The remap rewrote each <code>targetId</code> to its new id, then filtered the rewritten rows
+    against <code>map</code>, which is keyed by the <em>old</em> ids. <code>map[newId]</code> is always
+    undefined and <code>S.items</code> had not been concatenated yet, so the test failed for every
+    relation. Replaying the merge branch against the sample file: 21 relations in, 0 out.</p>
+    <pre><code><span class="was">was  .map(r =&gt; ({...targetId: map[r.targetId] || r.targetId}))
+     .filter(r =&gt; map[r.targetId] || ...)      // tests the NEW id</span>
+<span class="now">now  .filter(r =&gt; map[r.targetId] || ...)      // tests the ORIGINAL
+     .map(r =&gt; ({...targetId: map[r.targetId] || r.targetId}))</span></code></pre>
+    <div class="fix"><b>Fixed</b>
+    Filter on the original target, then rewrite. 21 in, 21 out, no dangling targets. The suite's
+    "merged relations still resolve" check passed vacuously before, over an empty list; it now has
+    something to check.</div>
+  </article>
+
+  <h2>Medium severity</h2>
+  <p class="deck">Findings where the numbers on screen overstated what the document could support.</p>
+
+  <article class="finding mid">
+    <div class="f-head">
+      <span class="f-id">PDD-05</span><span class="f-sev">Medium</span>
+      <span class="f-state">Closed</span>
+      <span class="f-where">16-pdd.js pddStats()</span>
+    </div>
+    <h3>A table counted as filled if any one cell in it had content</h3>
+    <p><code>pddStats()</code> scored each table as a single unit:
+    <code>b.rows.some(r =&gt; r.some(c =&gt; c &amp;&amp; c !== ""))</code>. Section 1.4 with four system
+    names and sixteen empty cells scored the same as a fully evidenced one. The gap between the two
+    readings was the gap between 25 of 28 (89%) and 93 of 127 (73%).</p>
+    <div class="fix"><b>Fixed</b>
+    Every cell is scored on its own, and the by-hand cells are out of the denominator. The sample
+    session now reads <em>93 of 94 fields carrying captured evidence</em> alongside <em>33 the console
+    cannot ask for</em>. Version Control and Sign Off stay excluded, as they always were.</div>
+  </article>
+
+  <article class="finding mid">
+    <div class="f-head">
+      <span class="f-id">PDD-06</span><span class="f-sev">Medium</span>
+      <span class="f-state">Closed</span>
+      <span class="f-where">10-review.js</span>
+    </div>
+    <h3>Review coverage counted items, not evidence</h3>
+    <p><code>pct = Math.min(100, n * 25)</code>, where <code>n</code> was the item count in the mapped
+    areas. Four Process items all captured as <em>Flow cue</em> put "2.1 Process description" at
+    covered / 100%, while the PDD rendered Business purpose, Trigger, Result and Principal systems as
+    four TBCs.</p>
+    <div class="fix"><b>Fixed</b>
+    Coverage is computed from the real per-section fill via a new <code>pddSectionFill()</code>, and
+    each row shows the fraction. A section with items captured against it but nothing reaching a field
+    now reads <code>not landing 0/4</code> instead of <code>covered</code>.</div>
+  </article>
+
+  <article class="finding mid">
+    <div class="f-head">
+      <span class="f-id">PDD-07</span><span class="f-sev">Medium</span>
+      <span class="f-state part">Mitigated</span>
+      <span class="f-where">01-model.js GAPS · 16-pdd.js</span>
+    </div>
+    <h3>Answering a control question could not move the field it names</h3>
+    <p>Thirty-nine control questions drive the coverage meters. Several name a PDD cell that has no
+    data path, so ticking them raised the meter and changed nothing downstream: <em>Confirm access and
+    authentication</em> (1.4 Access Granted, User Details), <em>Confirm where each input arrives</em>
+    and <em>who provides each input</em> (2.5 Location, Provider), plus three that name no column at
+    all — the purpose of each system, the cause of each exception, retry and escalation behaviour.</p>
+    <div class="fix part"><b>Mitigated, not closed</b>
+    The cells those questions name are now visibly by-hand, so the disconnect is legible rather than
+    silent, and the Review coverage bar no longer inherits the meter's optimism. Closing it properly
+    means either giving those questions a destination field or dropping the ones the template has no
+    room for — a template decision, not a code one.</div>
+  </article>
+
+  <article class="finding mid">
+    <div class="f-head">
+      <span class="f-id">PDD-08</span><span class="f-sev">Medium</span>
+      <span class="f-state">Closed</span>
+      <span class="f-where">16-pdd.js 2.8 · 01-model.js</span>
+    </div>
+    <h3>Section 2.8 credited Data for evidence Data could not give</h3>
+    <p>2.8 collected <code>byTag("Evidence","Report").concat(byTag("Data","Report"))</code>, but
+    <code>Report</code> was neither a Data tag nor a Data capture type, so the second lookup could only
+    ever match a hand-typed tag — while the coverage map listed 2.8 as drawing on
+    <code>["Data","Evidence"]</code>, so every Data item raised that bar.</p>
+    <div class="fix"><b>Fixed</b>
+    <code>Report</code> is now a Data capture type and tag, so the lookup and the coverage map agree.
+    The new vocabulary rule in <code>audit.py</code> would have caught the reverse case.</div>
+  </article>
+
+  <article class="finding mid">
+    <div class="f-head">
+      <span class="f-id">PDD-09</span><span class="f-sev">Medium</span>
+      <span class="f-state">Closed</span>
+      <span class="f-where">16-pdd.js envOf</span>
+    </div>
+    <h3>One tag filled two different template columns</h3>
+    <p><code>Remote</code> appeared in both the environment list and the access-type list. A system
+    tagged only <code>#Remote</code> rendered Environment = Remote <em>and</em> Access Type = Remote.
+    The analyst recorded an access method; the document reported an environment.</p>
+    <div class="fix"><b>Fixed</b>
+    <code>Remote</code> belongs to <code>accessOf</code> alone. Environment falls back to TBC, which is
+    the truth. This was the one place the "nothing is invented" rule was quietly broken.</div>
+  </article>
+
+  <h2>Low severity</h2>
+  <p class="deck">Worth fixing, none of them changed what the document asserted. All closed.</p>
+
+  <article class="finding">
+    <div class="f-head">
+      <span class="f-id">PDD-10</span><span class="f-sev">Low</span>
+      <span class="f-state">Closed</span><span class="f-where">16-pdd.js 2.6</span>
+    </div>
+    <h3>Exception Type was chosen by substring match over free-form tags</h3>
+    <p><code>t.indexOf("exception") &gt; -1</code> scanned every tag on the item, including ones the
+    analyst typed: a tag reading "no exception path yet" would have been promoted to the Exception Type
+    column, and one capitalised "Exception" would have been missed.</p>
+    <div class="fix"><b>Fixed</b>
+    The lookup now matches against <code>DEF.Exceptions.tags</code>, the declared vocabulary.
+    <code>Unclassified</code>, a capture type that had no tag at all, was added to it.</div>
+  </article>
+
+  <article class="finding">
+    <div class="f-head">
+      <span class="f-id">PDD-11</span><span class="f-sev">Low</span>
+      <span class="f-state">Closed</span><span class="f-where">18-render.js</span>
+    </div>
+    <h3>renderAll() did not repaint the PDD or the Review</h3>
+    <p>The documented invariant is that any change to the session calls <code>renderAll()</code>, so a
+    change to one view cannot silently skip another. It repainted six things and neither output view.
+    Nothing was stale in practice, because both are only reachable from <code>setView()</code> — the
+    invariant held by accident.</p>
+    <div class="fix"><b>Fixed</b>
+    <code>renderAll()</code> repaints both when they are on screen, and the one-off
+    <code>renderReview()</code> call inside <code>toggleGap()</code> that was papering over it is
+    gone.</div>
+  </article>
+
+  <article class="finding">
+    <div class="f-head">
+      <span class="f-id">PDD-12</span><span class="f-sev">Low</span>
+      <span class="f-state">Closed</span><span class="f-where">10-pdd.css</span>
+    </div>
+    <h3>TBC lost its colour in the PDF, and the analyst's notes kept theirs</h3>
+    <p>The <span class="tbc-demo">TBC</span> chip is a background fill with no
+    <code>print-color-adjust</code>, so most browsers dropped it when printing — in the one artefact
+    that goes to a client, TBC stopped being visually marked. Meanwhile the instructional hints
+    ("Write this up as one short paragraph…") printed into the PDF.</p>
+    <div class="fix"><b>Fixed</b>
+    <code>print-color-adjust:exact</code> on the chip, and <code>.pdd-hint</code> is hidden in print.
+    The table notes that belong to the template — "Never record passwords here" — still print.</div>
+  </article>
+
+  <article class="finding">
+    <div class="f-head">
+      <span class="f-id">PDD-13</span><span class="f-sev">Low</span>
+      <span class="f-state">Closed</span><span class="f-where">17-transfer.js</span>
+    </div>
+    <h3>Import did not validate the area an item claimed</h3>
+    <p><code>normalise()</code> fixed ids, timestamps and reply arrays but never checked
+    <code>section</code> against the nine areas. An item naming an unknown area was counted in the
+    session totals and appeared on the tape, but reached no area rail, no review inventory and no PDD
+    section, and nothing reported the discrepancy.</p>
+    <div class="fix"><b>Fixed</b>
+    <code>placeItems()</code> parks a stray item in Systems, coerces a non-array
+    <code>tags</code> or <code>relations</code>, and the toast says how many were moved.
+    <code>resolved</code> entries are filtered to strings.</div>
+  </article>
+
+  <article class="finding">
+    <div class="f-head">
+      <span class="f-id">PDD-14</span><span class="f-sev">Low</span>
+      <span class="f-state">Closed</span><span class="f-where">16-pdd.js</span>
+    </div>
+    <h3>Two dead paths in the PDD module</h3>
+    <p><code>allReplies()</code> was defined and never called. <code>printPddBtn</code> added a
+    <code>printing</code> class to the body that no stylesheet in the project matched, then removed it
+    after a 60ms timer.</p>
+    <div class="fix"><b>Fixed</b>
+    Both removed. The print button calls <code>window.print()</code> and nothing else.</div>
+  </article>
+
+  <h2>What held up</h2>
+  <p class="deck">Checked and found sound, so none of the fixes needed to disturb them.</p>
+  <ul class="clean">
+    <li>Every value rendered into the PDD view passes through <code>esc()</code>. Item names, tags,
+    replies, labels and table notes are all escaped — no injection path from captured text into the
+    document.</li>
+    <li>Sign Off renders as genuinely blank cells rather than TBC, and is correctly excluded from the
+    fill metric along with Version Control. The distinction the template asks for is respected.</li>
+    <li>Empty areas fall back to an all-TBC row rather than an absent table, so the template's shape
+    survives a thin session.</li>
+    <li>Deleting an item strips the relations pointing at it, so the PDD never renders a dangling
+    reference.</li>
+    <li>Section numbering and ordering match the approved template, including the two part headings
+    and the fifteen numbered sections.</li>
+  </ul>
+
+  <h2>Method and limits</h2>
+  <div class="method">
+    <h3>How the numbers were produced</h3>
+    <p>Every module in <code>src/js</code> was read in full. <code>pddModel()</code>,
+    <code>pddStats()</code> and the merge branch of <code>importMerge</code> were then ported line for
+    line to Python and replayed against the shipped sample session — before and after each change —
+    which is how the 127-cell count, the 33 unreachable cells, the 25-vs-93 gap and the 21 → 0 → 21
+    relation count were measured rather than estimated. The vocabulary drift in PDD-01 was computed by
+    diffing each area's <code>actions</code> against its <code>tags</code>; that diff is now a build
+    rule, and was verified by deliberately reintroducing one of the twelve.</p>
+
+    <h3>What was not run</h3>
+    <p>This machine has no JavaScript runtime and no Playwright, so <code>tests/audit.test.js</code> —
+    now 130-odd functional checks, including new ones covering the two-step delete, the capture
+    vocabulary, the by-hand count and the resize handles — has not been executed, and nothing has been
+    exercised in a real browser. <code>python tools/build.py</code> and
+    <code>python tools/audit.py</code> both pass. Run the suite and open the app before publishing.</p>
+
+    <h3>Not in scope</h3>
+    <p>Whether the template mapping matches the current approved Velera PDD is a question for the
+    document owner, not for the code. This review checks that the console does what
+    <code>16-pdd.js</code> and the README say it does.</p>
+  </div>
+
+  <footer>TQA Discovery Console · PDD assurance review · baseline a84bb8b · 2026-09-25</footer>
+
+</div>

@@ -41,11 +41,12 @@ function renderItems(){
     mainEl.appendChild(replyButton(item, item.id));
     el.querySelector("[data-map]").addEventListener("click", () => { M.sel = item.id; M.tags = []; M.q = ""; M.hidden = []; $("mapSearch").value = ""; openMap(); });
     el.querySelector("[data-edit]").addEventListener("click", () => openSheet(item.id));
-    el.querySelector("[data-del]").addEventListener("click", () => {
+    const delBtn = el.querySelector("[data-del]");
+    delBtn.addEventListener("click", () => confirmAction(delBtn, "Confirm delete", () => {
       S.items = S.items.filter(i => i.id !== item.id);
       S.items.forEach(i => i.relations = i.relations.filter(r => r.targetId !== item.id));
       renderAll(); save(); toast("Item deleted");
-    });
+    }));
     wrap.appendChild(el);
   });
 }

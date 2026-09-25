@@ -57,16 +57,25 @@ function renderReview(){
     });
   }
 
+  /* Coverage reports how much of each PDD section the captured evidence actually
+     fills. It used to be item count x 25%, which showed four flow cues as a
+     covered Process Description while every field in it rendered TBC. */
   const cw = $("rvCoverage");
   cw.innerHTML = "";
+  const fill = pddSectionFill();
   PDD.forEach(([label,secs]) => {
-    const n = secs.reduce((a,s) => a + inSection(s).length, 0);
-    const pct = Math.min(100, n * 25);
+    const no = label.split(" ")[0];
+    const f = fill[no] || {filled:0, total:0};
+    const captured = secs.reduce((a,s) => a + inSection(s).length, 0);
+    const pct = f.total ? Math.round(100 * f.filled / f.total) : 0;
     const cls = pct >= 75 ? "good" : pct >= 25 ? "part" : "none";
-    const st = pct >= 75 ? "covered" : pct >= 25 ? "partial" : "empty";
+    const st = !captured ? "empty"
+             : pct >= 75 ? "covered"
+             : pct >= 25 ? "partial" : "not landing";
     const d = document.createElement("div");
     d.className = "cov " + cls;
-    d.innerHTML = "<span>" + esc(label) + '</span><span class="bar"><i style="width:' + pct + '%"></i></span><span class="st">' + st + "</span>";
+    d.innerHTML = "<span>" + esc(label) + '</span><span class="bar"><i style="width:' + pct + '%"></i></span>' +
+                  '<span class="st">' + esc(st) + " " + f.filled + "/" + f.total + "</span>";
     cw.appendChild(d);
   });
 

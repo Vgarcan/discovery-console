@@ -153,6 +153,15 @@
           </div>
         </aside>
 
+        <div class="pane-resize" id="navResize" role="separator" aria-orientation="vertical"
+             aria-controls="navPanel" aria-label="Resize the areas panel" tabindex="0"
+             aria-valuemin="180" aria-valuemax="560" aria-valuenow="238"
+             title="Drag to resize. Double-click to reset."></div>
+        <div class="pane-resize" id="inspResize" role="separator" aria-orientation="vertical"
+             aria-controls="inspector" aria-label="Resize the inspector" tabindex="0"
+             aria-valuemin="240" aria-valuemax="680" aria-valuenow="318"
+             title="Drag to resize. Double-click to reset."></div>
+
       </div>
 
 
@@ -296,7 +305,7 @@
     </div>
 
     <div class="mapbody" id="mapBody">
-      <div class="mapside">
+      <div class="mapside" id="mapSide">
         <input class="mapsearch" id="mapSearch" placeholder="Search names and tags" autocomplete="off">
 
         <h3>Tags</h3>
@@ -323,6 +332,15 @@
       </div>
 
       <div class="mapdetail" id="mapDetail"></div>
+
+      <div class="pane-resize" id="mapSideResize" role="separator" aria-orientation="vertical"
+           aria-controls="mapSide" aria-label="Resize the map filters" tabindex="0"
+           aria-valuemin="180" aria-valuemax="520" aria-valuenow="238"
+           title="Drag to resize. Double-click to reset."></div>
+      <div class="pane-resize" id="mapDetailResize" role="separator" aria-orientation="vertical"
+           aria-controls="mapDetail" aria-label="Resize the map detail panel" tabindex="0"
+           aria-valuemin="220" aria-valuemax="620" aria-valuenow="300"
+           title="Drag to resize. Double-click to reset."></div>
     </div>
   </div>
 </div>

@@ -273,6 +273,9 @@ async function run(){
   eq("four headline stats", d.querySelectorAll("#rvStats .rv-stat").length, 4);
   eq("item count matches", d.querySelector("#rvStats b").textContent, a.text("cItems"));
   eq("eleven PDD coverage rows", d.querySelectorAll("#rvCoverage .cov").length, 11);
+  ok("coverage reports filled-over-total, not item count",
+     [...d.querySelectorAll("#rvCoverage .st")].every(x => /\d+\/\d+$/.test(x.textContent.trim())),
+     [...d.querySelectorAll("#rvCoverage .st")].map(x => x.textContent).join(" | "));
   eq("three IOE counters", d.querySelectorAll("#rvIoe div").length, 3);
   ok("inventory groups by area", d.querySelectorAll("#rvInventory .inv-group").length >= 2);
   ok("threads shown read-only in review", d.querySelectorAll("#rvInventory .reply").length >= 1);
@@ -299,6 +302,10 @@ async function run(){
   await wait(60);
   ok("pdd markdown copied", (w.__clip || "").includes("## 2.6 Process Exceptions"));
   ok("markdown tables rendered", (w.__clip || "").includes("| App/System |"));
+  ok("by-hand cells named in the markdown", (w.__clip || "").includes("TBC (by hand)"));
+  const rows = (w.__clip || "").split("\n").filter(l => l.startsWith("| ") && !l.startsWith("|---"));
+  ok("every markdown table row keeps its column count",
+     rows.every(r => r.split(" | ").length >= 4 || r.split(" | ").length >= 2));
   d.getElementById("printPddBtn").click();
   await wait(120);
   ok("print invoked", w.__printed === true);
@@ -341,6 +348,12 @@ async function run(){
   d.getElementById("importBtn2").click();
   a.dropFile(demoJson, "demo.json");
   await wait(120);
+  const beforeReplace = a.text("cItems");
+  d.getElementById("importReplace").click();
+  await wait(60);
+  eq("replace arms rather than firing", a.text("cItems"), beforeReplace);
+  eq("replace button relabels", d.getElementById("importReplace").textContent, "Confirm replace");
+  await wait(450);
   d.getElementById("importReplace").click();
   await wait(60);
   eq("replace swaps the session", a.text("cItems"), "53");
@@ -355,7 +368,13 @@ async function run(){
      d.getElementById("mapCount").textContent);
   d.getElementById("mapClose").click();
   a.view("pdd");
-  ok("pdd fills from the demo", a.text("pddMeta").startsWith("25 of 28"), a.text("pddMeta"));
+  ok("pdd fills from the demo", a.text("pddMeta").startsWith("93 of 94"), a.text("pddMeta"));
+  eq("by-hand fields counted separately",
+     d.querySelector("#pddMeta .byhand-count").textContent, "33");
+  eq("and marked in the document", d.querySelectorAll("#pddDoc .tbc.byhand").length, 33);
+  ok("only one cell is a real open question",
+     d.querySelectorAll("#pddDoc .tbc").length - d.querySelectorAll("#pddDoc .tbc.byhand").length === 1,
+     String(d.querySelectorAll("#pddDoc .tbc").length));
   const excTable = [...d.querySelectorAll("#pddDoc .pdd-table")].find(t => t.textContent.includes("token expired"));
   eq("six exceptions in the table", excTable.querySelectorAll("tbody tr").length, 6);
   ok("business actions filled from replies",
@@ -387,6 +406,62 @@ async function run(){
   eq("legacy tape renders", ctx3.d.querySelectorAll("#tape .tape-row").length, 3);
   ok("ids and reply arrays backfilled", !!ctx3.d.querySelector("#tape .reply-btn"));
   ok("no page errors on migration", ctx3.errs.length === 0, ctx3.errs.join(" | "));
+
+  group("Capture vocabulary");
+  /* The grid used to store the button's label, which the PDD never looked for:
+     an "Average volume" capture left 1.3 Expected volumes rendering TBC. */
+  const ctxV = boot(); const aV = api(ctxV); await wait(120);
+  const dV = ctxV.d;
+  aV.capture(4, "Average volume", "About 120 a day");
+  eq("a type whose label differs stores the declared tag",
+     dV.querySelector("#items .chip").textContent, "#Volume");
+  aV.capture(3, "End condition", "All returns posted");
+  eq("and again in another area", dV.querySelector("#items .chip").textContent, "#End");
+  aV.capture(9, "SOP / document", "Existing returns SOP");
+  eq("and in a third", dV.querySelector("#items .chip").textContent, "#SOP");
+  aV.view("pdd");
+  ok("the volume reaches 1.3 Expected volumes",
+     dV.getElementById("pddDoc").textContent.includes("About 120 a day"));
+  ok("the end state reaches 2.1",
+     dV.getElementById("pddDoc").textContent.includes("All returns posted"));
+  ok("the SOP reaches 2.2",
+     dV.getElementById("pddDoc").textContent.includes("Existing returns SOP"));
+  ok("no page errors capturing by type", ctxV.errs.length === 0, ctxV.errs.join(" | "));
+
+  group("Two-step delete");
+  const ctxD = boot({ storage: stored }); const aD = api(ctxD);
+  await wait(150);
+  const dD = ctxD.d, wD = ctxD.w;
+  const before = Number(aD.text("cItems"));
+  const del = dD.querySelector("#items [data-del]");
+  del.click();
+  eq("first press deletes nothing", aD.text("cItems"), String(before));
+  eq("the button asks for confirmation", del.textContent, "Confirm delete");
+  del.click();
+  eq("a double-click cannot get through", aD.text("cItems"), String(before));
+  await wait(450);
+  del.click();
+  eq("the second press deletes", aD.text("cItems"), String(before - 1));
+
+  const del2 = dD.querySelector("#items [data-del]");
+  del2.click();
+  eq("armed again", del2.textContent, "Confirm delete");
+  dD.dispatchEvent(new wD.KeyboardEvent("keydown", { key:"Escape", bubbles:true }));
+  eq("Escape calls it off", del2.textContent, "Delete");
+  eq("and nothing was deleted", aD.text("cItems"), String(before - 1));
+  ok("no page errors deleting", ctxD.errs.length === 0, ctxD.errs.join(" | "));
+
+  group("Resizable panels");
+  const ctxR = boot(); await wait(120);
+  ["navResize","inspResize","mapSideResize","mapDetailResize"].forEach(id =>
+    ok(id + " present", !!ctxR.d.getElementById(id)));
+  eq("handles are separators", ctxR.d.getElementById("navResize").getAttribute("role"), "separator");
+  ctxR.d.getElementById("navResize").dispatchEvent(
+    new ctxR.w.KeyboardEvent("keydown", { key:"ArrowRight", bubbles:true }));
+  ok("a keyboard nudge changes the width",
+     Number(ctxR.d.getElementById("navResize").getAttribute("aria-valuenow")) > 238,
+     ctxR.d.getElementById("navResize").getAttribute("aria-valuenow"));
+  ok("no page errors resizing", ctxR.errs.length === 0, ctxR.errs.join(" | "));
 
   group("Theme");
   const ctx4 = boot(); await wait(120);

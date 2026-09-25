@@ -30,9 +30,9 @@ function renderThread(box, ent){
     const rm = document.createElement("button");
     rm.className = "icon-btn danger"; rm.type = "button"; rm.textContent = "×";
     rm.title = "Delete this reply";
-    rm.addEventListener("click", () => {
+    rm.addEventListener("click", () => confirmAction(rm, "Confirm", () => {
       ent.replies.splice(idx,1); save(); renderAll();
-    });
+    }));
     d.appendChild(rm);
     box.appendChild(d);
   });

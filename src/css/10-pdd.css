@@ -42,7 +42,16 @@
 .tbc{
   background:#E2F0D9;color:#222222;font-family:var(--mono);font-size:9.5px;
   padding:.08rem .3rem;border-radius:2px;white-space:nowrap;
+  /* the green is the signal, so keep it when the draft is printed */
+  -webkit-print-color-adjust:exact;print-color-adjust:exact;
 }
+/* A TBC the console has no way to ask for. Same word, different promise: this
+   one will never fill itself in, whatever the client answers. */
+.tbc.byhand{
+  background:transparent;color:var(--ink-3);
+  border:1px dashed var(--line);cursor:help;
+}
+.pdd-meta .byhand-count{margin-left:1.1rem}
 #importBox{font-family:var(--mono);font-size:.74rem;line-height:1.5;resize:vertical}
 
 @media print{
@@ -56,4 +65,8 @@
   .pdd-table{min-width:0}
   .pdd-key,.pdd-val,.pdd-note,.pdd-hint,.pdd-table th,.pdd-table td{color:#000}
   .pdd-meta{display:none}
+  /* Guidance for the analyst writing the draft, not for whoever receives it. */
+  .pdd-hint{display:none}
+  .tbc{border-color:#888888}
+  .tbc.byhand{color:#444444}
 }

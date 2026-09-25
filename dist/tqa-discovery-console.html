@@ -299,6 +299,18 @@ kbd{
 .icon-btn:hover{background:var(--raise-2);color:var(--ink)}
 .icon-btn.danger:hover{color:var(--alert)}
 
+/* Armed state for a two-step delete. Wider and red, so the second press is a
+   deliberate one, and forced visible because the rows that hold these buttons
+   only reveal them on hover. Also covers .btn, defined earlier in 02-topbar. */
+.icon-btn.armed,.btn.armed{
+  background:var(--alert);border-color:var(--alert);color:#ffffff;
+  font-weight:600;opacity:1;padding-left:.5rem;padding-right:.5rem;
+}
+.icon-btn.armed:hover,.btn.armed:hover{
+  background:var(--alert);border-color:var(--alert);color:#ffffff;filter:brightness(1.08);
+}
+.item-acts.arming,.reply.arming .icon-btn,.linkrow.arming .icon-btn{opacity:1}
+
 .empty{
   padding:1.6rem 0;color:var(--ink-3);font-size:.85rem;max-width:46ch;
 }
@@ -376,7 +388,7 @@ kbd{
 .cov:last-child{border-bottom:0}
 .bar{height:3px;background:var(--line-soft)}
 .bar i{display:block;height:100%;background:var(--accent);transition:width .4s}
-.cov .st{font-family:var(--mono);font-size:9.5px;color:var(--ink-3)}
+.cov .st{font-family:var(--mono);font-size:9.5px;color:var(--ink-3);white-space:nowrap}
 .cov.good .st{color:var(--accent)}
 .cov.good .bar i{background:var(--accent)}
 .cov.part .bar i{background:var(--tqa-sun)}
@@ -498,8 +510,16 @@ kbd{
 }
 .maphead h2{margin:.15rem 0 0;font-size:1rem;font-weight:600;letter-spacing:-.02em}
 .maphead .grow{flex:1 1 auto}
-.mapbody{display:grid;grid-template-columns:238px minmax(0,1fr) 0;min-height:0}
-.mapbody.detail{grid-template-columns:238px minmax(0,1fr) 300px}
+.mapbody{
+  position:relative;display:grid;min-height:0;
+  --mapsidew:238px;--mapdetailw:300px;
+  grid-template-columns:var(--mapsidew) minmax(0,1fr) 0;
+}
+.mapbody.detail{grid-template-columns:var(--mapsidew) minmax(0,1fr) var(--mapdetailw)}
+/* handle geometry; the shared .pane-resize look lives in 08-shell.css */
+#mapSideResize{left:calc(var(--mapsidew) - 5px)}
+#mapDetailResize{right:calc(var(--mapdetailw) - 5px)}
+.mapbody:not(.detail) #mapDetailResize{display:none}
 
 .mapside{
   border-right:1px solid var(--line);background:var(--rail);
@@ -583,6 +603,7 @@ kbd{
   .mapwin{height:100%;width:100%;border-radius:0}
   .mapbody,.mapbody.detail{grid-template-columns:1fr;grid-template-rows:auto minmax(260px,1fr) auto}
   .mapside{border-right:0;border-bottom:1px solid var(--line);max-height:34vh}
+  #mapSideResize,#mapDetailResize{display:none}
   .mapdetail{border-left:0;border-top:1px solid var(--line);max-height:38vh}
 }
 
@@ -600,7 +621,10 @@ kbd{
 .shell{
   flex:1 1 auto;min-height:0;
   display:grid;grid-template-columns:66px minmax(0,1fr);
-  --navw:238px;--inspw:318px;
+  /* -*-open is the width the analyst has set; -*-w is what the grid uses, so a
+     collapse can zero the track without losing the chosen width. */
+  --navw-open:238px;--inspw-open:318px;
+  --navw:var(--navw-open);--inspw:var(--inspw-open);
 }
 .shell[data-nav="off"]{--navw:0px}
 .shell[data-insp="off"]{--inspw:0px}
@@ -626,7 +650,7 @@ kbd{
 
 .col2{min-width:0;display:flex;flex-direction:column}
 .work{
-  flex:1 1 auto;min-height:0;
+  flex:1 1 auto;min-height:0;position:relative;
   display:grid;
   grid-template-columns:var(--navw) minmax(0,1fr) var(--inspw);
   transition:grid-template-columns .22s cubic-bezier(.2,.8,.2,1);
@@ -635,7 +659,7 @@ kbd{
 
 .navpanel{background:var(--rail);border-right:1px solid var(--line);overflow:hidden;min-width:0}
 .shell[data-nav="off"] .navpanel{border-right:0}
-.np-inner{width:238px;height:100%;overflow-y:auto;padding:1rem 0 1.5rem;display:flex;flex-direction:column}
+.np-inner{width:var(--navw-open);height:100%;overflow-y:auto;padding:1rem 0 1.5rem;display:flex;flex-direction:column}
 .np-head{padding:0 1.1rem .7rem}
 .np-foot{margin-top:auto;padding:1.1rem 1.1rem 0;border-top:1px solid var(--line-soft)}
 .np-keys{margin:.9rem 0 0;font-size:.72rem;color:var(--ink-3);line-height:1.7}
@@ -645,7 +669,7 @@ kbd{
 
 .inspector{background:var(--rail);border-left:1px solid var(--line);overflow:hidden;min-width:0}
 .shell[data-insp="off"] .inspector{border-left:0}
-.insp-inner{width:318px;height:100%;display:flex;flex-direction:column}
+.insp-inner{width:var(--inspw-open);height:100%;display:flex;flex-direction:column}
 .tabs{display:flex;border-bottom:1px solid var(--line);flex:0 0 auto}
 .tab{
   flex:1;background:none;border:0;border-bottom:2px solid transparent;
@@ -663,9 +687,30 @@ kbd{
 .pane .tape-block{padding:0 0 1.1rem;margin-bottom:1.1rem}
 .pane .tape-block:last-child{border-bottom:0}
 
+
+/* ---------- drag-to-resize handles ---------- */
+.pane-resize{
+  position:absolute;top:0;bottom:0;width:11px;z-index:6;
+  background:none;border:0;padding:0;cursor:col-resize;touch-action:none;
+  transition:left .22s cubic-bezier(.2,.8,.2,1),right .22s cubic-bezier(.2,.8,.2,1);
+}
+.pane-resize::after{
+  content:"";position:absolute;top:0;bottom:0;left:50%;width:2px;
+  transform:translateX(-50%);background:transparent;border-radius:2px;
+  transition:background .12s;
+}
+.pane-resize:hover::after,.pane-resize.dragging::after{background:var(--accent)}
+.pane-resize:focus{outline:0}
+.pane-resize:focus-visible::after{background:var(--accent)}
+#navResize{left:calc(var(--navw) - 5px)}
+#inspResize{right:calc(var(--inspw) - 5px)}
+.shell[data-nav="off"] #navResize,.shell[data-insp="off"] #inspResize{display:none}
+
+body.resizing{cursor:col-resize;user-select:none}
+body.resizing .work,body.resizing .pane-resize{transition:none}
+
 @media (max-width:1180px){
-  .shell{--inspw:288px}
-  .insp-inner{width:288px}
+  .shell{--inspw-open:288px}
   .stage-inner{padding:1.6rem 1.6rem 3rem}
 }
 @media (max-width:900px){
@@ -692,6 +737,7 @@ kbd{
   .stage-inner{padding:1.2rem 1rem 2.5rem;max-width:none}
   .pane{max-height:46vh}
   .pane-toggle{display:none}
+  .pane-resize{display:none}
 }
 
 /* 09-tape.css
@@ -778,7 +824,16 @@ kbd{
 .tbc{
   background:#E2F0D9;color:#222222;font-family:var(--mono);font-size:9.5px;
   padding:.08rem .3rem;border-radius:2px;white-space:nowrap;
+  /* the green is the signal, so keep it when the draft is printed */
+  -webkit-print-color-adjust:exact;print-color-adjust:exact;
 }
+/* A TBC the console has no way to ask for. Same word, different promise: this
+   one will never fill itself in, whatever the client answers. */
+.tbc.byhand{
+  background:transparent;color:var(--ink-3);
+  border:1px dashed var(--line);cursor:help;
+}
+.pdd-meta .byhand-count{margin-left:1.1rem}
 #importBox{font-family:var(--mono);font-size:.74rem;line-height:1.5;resize:vertical}
 
 @media print{
@@ -792,6 +847,10 @@ kbd{
   .pdd-table{min-width:0}
   .pdd-key,.pdd-val,.pdd-note,.pdd-hint,.pdd-table th,.pdd-table td{color:#000}
   .pdd-meta{display:none}
+  /* Guidance for the analyst writing the draft, not for whoever receives it. */
+  .pdd-hint{display:none}
+  .tbc{border-color:#888888}
+  .tbc.byhand{color:#444444}
 }
 
 /* 11-transfer.css
@@ -952,6 +1011,15 @@ kbd{
           </div>
         </aside>
 
+        <div class="pane-resize" id="navResize" role="separator" aria-orientation="vertical"
+             aria-controls="navPanel" aria-label="Resize the areas panel" tabindex="0"
+             aria-valuemin="180" aria-valuemax="560" aria-valuenow="238"
+             title="Drag to resize. Double-click to reset."></div>
+        <div class="pane-resize" id="inspResize" role="separator" aria-orientation="vertical"
+             aria-controls="inspector" aria-label="Resize the inspector" tabindex="0"
+             aria-valuemin="240" aria-valuemax="680" aria-valuenow="318"
+             title="Drag to resize. Double-click to reset."></div>
+
       </div>
 
 
@@ -1095,7 +1163,7 @@ kbd{
     </div>
 
     <div class="mapbody" id="mapBody">
-      <div class="mapside">
+      <div class="mapside" id="mapSide">
         <input class="mapsearch" id="mapSearch" placeholder="Search names and tags" autocomplete="off">
 
         <h3>Tags</h3>
@@ -1122,6 +1190,15 @@ kbd{
       </div>
 
       <div class="mapdetail" id="mapDetail"></div>
+
+      <div class="pane-resize" id="mapSideResize" role="separator" aria-orientation="vertical"
+           aria-controls="mapSide" aria-label="Resize the map filters" tabindex="0"
+           aria-valuemin="180" aria-valuemax="520" aria-valuenow="238"
+           title="Drag to resize. Double-click to reset."></div>
+      <div class="pane-resize" id="mapDetailResize" role="separator" aria-orientation="vertical"
+           aria-controls="mapDetail" aria-label="Resize the map detail panel" tabindex="0"
+           aria-valuemin="220" aria-valuemax="620" aria-valuenow="300"
+           title="Drag to resize. Double-click to reset."></div>
     </div>
   </div>
 </div>
@@ -1162,36 +1239,41 @@ kbd{
 
 <script>
 /* 01-model.js
-   Static domain model: the nine discovery areas, their types and tags, the gap rules and the PDD coverage map. No DOM, no state. */
+   Static domain model: the nine discovery areas, their types and tags, the gap rules and the PDD coverage map. No DOM, no state.
+
+   An action is [label, description] or [label, description, tag]. The label is what
+   the grid shows; the tag is what gets stored and what the PDD looks up. They are
+   the same word unless a third element says otherwise, and tools/audit.py fails if
+   any action resolves to a tag the area does not declare. */
 const DEF = {
   Systems:{
     title:"What system just appeared?",
     help:"Name the thing first. Detail can wait until review.",
-    actions:[["Web UI","Browser-based application"],["Desktop UI","Installed or local application"],["Terminal UI","Green screen or text host"],["Database","Database or data store"],["API / Service","Service or integration endpoint"],["File transfer","SFTP, FTP or transfer service"],["Remote / VDI","Citrix, RDP or virtual session"],["Custom build","Internally built system"]],
+    actions:[["Web UI","Browser-based application"],["Desktop UI","Installed or local application"],["Terminal UI","Green screen or text host"],["Database","Database or data store"],["API / Service","Service or integration endpoint","API"],["File transfer","SFTP, FTP or transfer service"],["Remote / VDI","Citrix, RDP or virtual session","Remote"],["Custom build","Internally built system","Custom"]],
     tags:["Web UI","Desktop UI","Terminal UI","Database","API","File transfer","Custom","Third party","Internal","Cloud","On-prem","Remote"]
   },
   Data:{
     title:"What input or output just appeared?",
     help:"Files, documents, records and generated data all count as objects.",
-    actions:[["Input","Consumed by the process"],["Output","Produced or updated"],["Excel","Spreadsheet or workbook"],["CSV","Delimited file"],["PDF","PDF document"],["Email","Email content or attachment"],["Database record","Record or table data"],["Document","Any other document type"]],
-    tags:["Input","Output","Excel","CSV","PDF","Email","Database record","Document","Structured","Unstructured","Internal","External"]
+    actions:[["Input","Consumed by the process"],["Output","Produced or updated"],["Excel","Spreadsheet or workbook"],["CSV","Delimited file"],["PDF","PDF document"],["Email","Email content or attachment"],["Database record","Record or table data"],["Document","Any other document type"],["Report","Existing or generated report"]],
+    tags:["Input","Output","Excel","CSV","PDF","Email","Database record","Document","Report","Structured","Unstructured","Internal","External"]
   },
   Process:{
     title:"What did you just learn about the flow?",
     help:"High-level facts only. Formal steps come later.",
-    actions:[["Trigger","What starts the process"],["End condition","What means it is finished"],["Flow cue","A useful as-is sequence marker"],["Variation","Alternate route or scenario"],["In scope","Included scenario"],["Out of scope","Excluded scenario"],["Purpose","Why the process exists"],["External source","Information from outside"]],
+    actions:[["Trigger","What starts the process"],["End condition","What means it is finished","End"],["Flow cue","A useful as-is sequence marker"],["Variation","Alternate route or scenario"],["In scope","Included scenario"],["Out of scope","Excluded scenario"],["Purpose","Why the process exists"],["External source","Information from outside","External"]],
     tags:["Trigger","End","Flow cue","Variation","In scope","Out of scope","Purpose","External"]
   },
   Operations:{
     title:"What operational fact just appeared?",
     help:"Volume and timing usually arrive as a number in passing. Catch it.",
-    actions:[["Frequency","Daily, weekly or ad hoc"],["Average volume","Normal case volume"],["Peak volume","Peak or seasonal maximum"],["Manual effort","Human processing time"],["Schedule","Run window"],["SLA","Service deadline"],["Cutoff","Hard cutoff time"],["Exception rate","Expected manual fallout"]],
+    actions:[["Frequency","Daily, weekly or ad hoc"],["Average volume","Normal case volume","Volume"],["Peak volume","Peak or seasonal maximum","Peak"],["Manual effort","Human processing time"],["Schedule","Run window"],["SLA","Service deadline"],["Cutoff","Hard cutoff time"],["Exception rate","Expected manual fallout"]],
     tags:["Frequency","Volume","Peak","Manual effort","Schedule","SLA","Cutoff","Exception rate"]
   },
   Rules:{
     title:"What rule or decision appeared?",
     help:"Capture the rule now. The precise criteria can be confirmed later.",
-    actions:[["Business rule","Deterministic rule"],["Decision","Branch or choice"],["Validation","Check or eligibility test"],["Calculation","Formula or derived value"],["Matching","Reconciliation or lookup"],["Filter","Include or exclude logic"],["Approval rule","Requires approval"],["Judgement","Human judgement involved"]],
+    actions:[["Business rule","Deterministic rule"],["Decision","Branch or choice"],["Validation","Check or eligibility test"],["Calculation","Formula or derived value"],["Matching","Reconciliation or lookup"],["Filter","Include or exclude logic"],["Approval rule","Requires approval","Approval"],["Judgement","Human judgement involved"]],
     tags:["Business rule","Decision","Validation","Calculation","Matching","Filter","Approval","Judgement"]
   },
   People:{
@@ -1205,21 +1287,27 @@ const DEF = {
     help:"Record the exception now. How it is handled can stay unknown.",
     risk:true,
     actions:[["Business exception","Expected business condition"],["System exception","Application or infrastructure failure"],["Data exception","Bad, missing or invalid data"],["Access exception","Credential or permission problem"],["Timeout","Timing or response failure"],["Not found","Missing case or record"],["Manual referral","Sent to a human"],["Unclassified","Not yet understood"]],
-    tags:["Business exception","System exception","Data exception","Access exception","Timeout","Not found","Manual referral"]
+    tags:["Business exception","System exception","Data exception","Access exception","Timeout","Not found","Manual referral","Unclassified"]
   },
   Dependencies:{
     title:"What does this depend on?",
     help:"Anything that must be available for the process to run at all.",
-    actions:[["System","Another system"],["Team","Internal team dependency"],["Third party","External provider"],["File","Required file or feed"],["Approval","Required approval"],["Upstream process","Must happen before"],["Downstream process","Consumes the result"],["Environment","Infrastructure dependency"]],
+    actions:[["System","Another system"],["Team","Internal team dependency"],["Third party","External provider"],["File","Required file or feed"],["Approval","Required approval"],["Upstream process","Must happen before","Upstream"],["Downstream process","Consumes the result","Downstream"],["Environment","Infrastructure dependency"]],
     tags:["System","Team","Third party","File","Approval","Upstream","Downstream","Environment","External","Internal"]
   },
   Evidence:{
     title:"What evidence did you get?",
     help:"Proof and source material, logged without breaking the conversation.",
-    actions:[["Screenshot","Useful screenshot"],["Recording","Walkthrough recording"],["Sample file","Example input or output"],["SOP / document","Existing documentation"],["URL","Application or source link"],["Report","Existing report"],["Email","Email evidence"],["To verify","Needs evidence later"]],
+    actions:[["Screenshot","Useful screenshot"],["Recording","Walkthrough recording"],["Sample file","Example input or output"],["SOP / document","Existing documentation","SOP"],["URL","Application or source link"],["Report","Existing report"],["Email","Email evidence"],["To verify","Needs evidence later","Needs verification"]],
     tags:["Screenshot","Recording","Sample file","SOP","URL","Report","Email","Needs verification"]
   }
 };
+
+/* The tag an action stores, which is not always the label it shows. */
+function tagOf(sec, label){
+  const a = ((DEF[sec] || {}).actions || []).find(x => x[0] === label);
+  return a ? (a[2] || a[0]) : label;
+}
 
 const GAPS = {
   Systems:["Confirm the purpose of each system","Confirm environment for each system","Confirm access and authentication","Confirm the owner of each system","Confirm URLs, paths or connection details","Confirm infrastructure or access restrictions"],
@@ -1294,6 +1382,50 @@ function load(){
     if(!Array.isArray(e.relations) && list === S.items) e.relations = [];
   }));
 }
+
+/* ---------- two-step destructive actions ---------- */
+/* Deleting is one keystroke away from the capture flow, so it arms on the first
+   press and only runs on the second. The armed button widens and turns red, and
+   a short dead time after arming swallows a double-click that would otherwise
+   sail straight through both presses. */
+const ARM_DEAD_MS = 400;
+const ARM_LIFE_MS = 4000;
+let armed = null;
+let armTimer = 0;
+
+function disarm(){
+  if(!armed) return;
+  armed.btn.textContent = armed.label;
+  armed.btn.classList.remove("armed");
+  if(armed.host) armed.host.classList.remove("arming");
+  armed = null;
+  clearTimeout(armTimer);
+}
+
+/* First call arms btn and relabels it; the second runs fn. */
+function confirmAction(btn, label, fn){
+  if(armed && armed.btn === btn){
+    if(Date.now() - armed.at < ARM_DEAD_MS) return;
+    disarm();
+    fn();
+    return;
+  }
+  disarm();
+  armed = {
+    btn:btn, label:btn.textContent, at:Date.now(),
+    host:btn.closest(".item-acts, .reply, .linkrow")
+  };
+  btn.textContent = label;
+  btn.classList.add("armed");
+  if(armed.host) armed.host.classList.add("arming");
+  armTimer = setTimeout(disarm, ARM_LIFE_MS);
+}
+
+/* Anything else the analyst does calls the delete off. */
+document.addEventListener("pointerdown", e => {
+  if(armed && !armed.btn.contains(e.target)) disarm();
+}, true);
+document.addEventListener("keydown", e => { if(e.key === "Escape") disarm(); });
 
 /* ---------- toast ---------- */
 let toastTimer;
@@ -1472,7 +1604,7 @@ function commit(){
   if(!name){ toast("Pick a type or type a name first"); return; }
   S.items.push({
     id:uid(), section:S.active, name:name,
-    tags: seed ? [seed] : [], relations:[], replies:[], at:now(), ts:Date.now()
+    tags: seed ? [tagOf(S.active, seed)] : [], relations:[], replies:[], at:now(), ts:Date.now()
   });
   capture.value = "";
   closeSuggest();
@@ -1526,11 +1658,12 @@ function renderItems(){
     mainEl.appendChild(replyButton(item, item.id));
     el.querySelector("[data-map]").addEventListener("click", () => { M.sel = item.id; M.tags = []; M.q = ""; M.hidden = []; $("mapSearch").value = ""; openMap(); });
     el.querySelector("[data-edit]").addEventListener("click", () => openSheet(item.id));
-    el.querySelector("[data-del]").addEventListener("click", () => {
+    const delBtn = el.querySelector("[data-del]");
+    delBtn.addEventListener("click", () => confirmAction(delBtn, "Confirm delete", () => {
       S.items = S.items.filter(i => i.id !== item.id);
       S.items.forEach(i => i.relations = i.relations.filter(r => r.targetId !== item.id));
       renderAll(); save(); toast("Item deleted");
-    });
+    }));
     wrap.appendChild(el);
   });
 }
@@ -1567,9 +1700,9 @@ function renderThread(box, ent){
     const rm = document.createElement("button");
     rm.className = "icon-btn danger"; rm.type = "button"; rm.textContent = "×";
     rm.title = "Delete this reply";
-    rm.addEventListener("click", () => {
+    rm.addEventListener("click", () => confirmAction(rm, "Confirm", () => {
       ent.replies.splice(idx,1); save(); renderAll();
-    });
+    }));
     d.appendChild(rm);
     box.appendChild(d);
   });
@@ -1743,7 +1876,6 @@ function toggleGap(sec, text){
   const k = gapKey(sec,text);
   S.resolved = S.resolved.includes(k) ? S.resolved.filter(x => x !== k) : S.resolved.concat(k);
   renderAll(); save();
-  if($("reviewView").classList.contains("on")) renderReview();
 }
 
 function gapRow(g){
@@ -1815,7 +1947,7 @@ function openSheet(id, prefillName){
   editingId = id;
   const item = id ? S.items.find(i => i.id === id) : null;
   const sec = item ? item.section : S.active;
-  draftTags = item ? item.tags.slice() : (seed ? [seed] : []);
+  draftTags = item ? item.tags.slice() : (seed ? [tagOf(sec, seed)] : []);
   draftRels = item ? item.relations.slice() : [];
 
   $("sheetLabel").textContent = sec.toLowerCase();
@@ -1970,16 +2102,25 @@ function renderReview(){
     });
   }
 
+  /* Coverage reports how much of each PDD section the captured evidence actually
+     fills. It used to be item count x 25%, which showed four flow cues as a
+     covered Process Description while every field in it rendered TBC. */
   const cw = $("rvCoverage");
   cw.innerHTML = "";
+  const fill = pddSectionFill();
   PDD.forEach(([label,secs]) => {
-    const n = secs.reduce((a,s) => a + inSection(s).length, 0);
-    const pct = Math.min(100, n * 25);
+    const no = label.split(" ")[0];
+    const f = fill[no] || {filled:0, total:0};
+    const captured = secs.reduce((a,s) => a + inSection(s).length, 0);
+    const pct = f.total ? Math.round(100 * f.filled / f.total) : 0;
     const cls = pct >= 75 ? "good" : pct >= 25 ? "part" : "none";
-    const st = pct >= 75 ? "covered" : pct >= 25 ? "partial" : "empty";
+    const st = !captured ? "empty"
+             : pct >= 75 ? "covered"
+             : pct >= 25 ? "partial" : "not landing";
     const d = document.createElement("div");
     d.className = "cov " + cls;
-    d.innerHTML = "<span>" + esc(label) + '</span><span class="bar"><i style="width:' + pct + '%"></i></span><span class="st">' + st + "</span>";
+    d.innerHTML = "<span>" + esc(label) + '</span><span class="bar"><i style="width:' + pct + '%"></i></span>' +
+                  '<span class="st">' + esc(st) + " " + f.filled + "/" + f.total + "</span>";
     cw.appendChild(d);
   });
 
@@ -2565,12 +2706,12 @@ function renderMapDetail(){
     const rm = document.createElement("button");
     rm.className = "icon-btn danger"; rm.type = "button"; rm.textContent = "×";
     rm.title = "Remove this relation";
-    rm.addEventListener("click", () => {
+    rm.addEventListener("click", () => confirmAction(rm, "Confirm", () => {
       const src = r.dir === "out" ? item : r.other;
       const tgt = r.dir === "out" ? r.other : item;
       src.relations = src.relations.filter(x => !(x.targetId === tgt.id && x.type === r.type));
       save(); renderAll(); rebuildMap(false);
-    });
+    }));
     row.appendChild(rm);
     dl.appendChild(row);
   });
@@ -2675,19 +2816,143 @@ document.addEventListener("keydown", e => {
   if(e.key === "]"){ e.preventDefault(); setPanel("insp", !S.ui.insp); }
 });
 
+/* =================== RESIZABLE PANELS =================== */
+/* Four side panels can be dragged by their inner edge: the areas rail and the
+   inspector on the capture view, the filters and the detail panel in the map.
+   Each one writes a --*-open custom property; the collapse rules still zero the
+   grid track, so hiding a panel never forgets the width the analyst chose. */
+const STAGE_MIN = 320;
+
+const PANES = {
+  nav:{
+    handle:"navResize", host:"shell", prop:"--navw-open", key:"navw",
+    min:180, max:560, def:238, grow:1, sib:"insp", room:() => $("liveView").clientWidth
+  },
+  insp:{
+    handle:"inspResize", host:"shell", prop:"--inspw-open", key:"inspw",
+    min:240, max:680, def:318, grow:-1, sib:"nav", room:() => $("liveView").clientWidth
+  },
+  mapside:{
+    handle:"mapSideResize", host:"mapBody", prop:"--mapsidew", key:"mapsidew",
+    min:180, max:520, def:238, grow:1, sib:"mapdetail", room:() => $("mapBody").clientWidth,
+    after:() => { sizeMap(); fitMap(); }
+  },
+  mapdetail:{
+    handle:"mapDetailResize", host:"mapBody", prop:"--mapdetailw", key:"mapdetailw",
+    min:220, max:620, def:300, grow:-1, sib:"mapside", room:() => $("mapBody").clientWidth,
+    after:() => { sizeMap(); fitMap(); }
+  }
+};
+
+function paneCollapsed(which){
+  if(which === "nav") return S.ui.nav === false;
+  if(which === "insp") return S.ui.insp === false;
+  if(which === "mapdetail") return !$("mapBody").classList.contains("detail");
+  return false;
+}
+
+function paneWidth(which){
+  const p = PANES[which];
+  const v = parseFloat(getComputedStyle($(p.host)).getPropertyValue(p.prop));
+  return isFinite(v) && v > 0 ? v : p.def;
+}
+
+function setPaneWidth(which, w, persist){
+  const p = PANES[which];
+  const taken = paneCollapsed(p.sib) ? 0 : paneWidth(p.sib);
+  const room = (p.room() || 1200) - taken - STAGE_MIN;
+  const max = Math.max(p.min, Math.min(p.max, room));
+  const v = Math.round(Math.max(p.min, Math.min(w, max)));
+  $(p.host).style.setProperty(p.prop, v + "px");
+  $(p.handle).setAttribute("aria-valuenow", v);
+  if(persist){ S.ui[p.key] = v; save(); }
+  return v;
+}
+
+/* Only a width the analyst actually set is replayed, so the stylesheet keeps
+   owning the defaults and the narrow-window breakpoints. */
+function applyPaneWidths(){
+  /* twice: the first pass clamps each pane against its sibling's default, the
+     second against the width that pass has just put there. */
+  for(let pass = 0; pass < 2; pass++){
+    Object.keys(PANES).forEach(which => {
+      const w = S.ui[PANES[which].key];
+      if(typeof w === "number" && isFinite(w)) setPaneWidth(which, w, false);
+    });
+  }
+}
+
+function wirePaneResize(which){
+  const p = PANES[which];
+  const h = $(p.handle);
+
+  h.addEventListener("pointerdown", e => {
+    if(e.button !== 0) return;
+    const startX = e.clientX, startW = paneWidth(which);
+    try{ h.setPointerCapture(e.pointerId); }catch(err){}
+    h.classList.add("dragging");
+    document.body.classList.add("resizing");
+
+    const move = ev => setPaneWidth(which, startW + p.grow * (ev.clientX - startX), false);
+    const stop = () => {
+      h.removeEventListener("pointermove", move);
+      h.removeEventListener("pointerup", stop);
+      h.removeEventListener("pointercancel", stop);
+      h.classList.remove("dragging");
+      document.body.classList.remove("resizing");
+      setPaneWidth(which, paneWidth(which), true);
+      if(p.after) p.after();
+    };
+    h.addEventListener("pointermove", move);
+    h.addEventListener("pointerup", stop);
+    h.addEventListener("pointercancel", stop);
+  });
+
+  /* no preventDefault on pointerdown, so the double-click reset still fires;
+     body.resizing carries user-select:none, which is what selection needs. */
+  h.addEventListener("dragstart", e => e.preventDefault());
+
+  h.addEventListener("dblclick", () => { setPaneWidth(which, p.def, true); if(p.after) p.after(); });
+
+  h.addEventListener("keydown", e => {
+    const step = e.shiftKey ? 48 : 16;
+    let w = null;
+    if(e.key === "ArrowLeft") w = paneWidth(which) - step;
+    else if(e.key === "ArrowRight") w = paneWidth(which) + step;
+    else if(e.key === "Home") w = p.def;
+    if(w === null) return;
+    e.preventDefault();
+    setPaneWidth(which, w, true);
+    if(p.after) p.after();
+  });
+}
+Object.keys(PANES).forEach(wirePaneResize);
+
+/* A narrower window must not let a stored width squeeze the stage away. The
+   stored preference is left alone; only what is rendered is re-clamped. */
+window.addEventListener("resize", () => {
+  Object.keys(PANES).forEach(which => {
+    const w = S.ui[PANES[which].key];
+    if(typeof w === "number" && isFinite(w)) setPaneWidth(which, w, false);
+  });
+});
+
 /* 16-pdd.js
    PDD draft: maps captured evidence onto the approved Velera template, renders it and exports Markdown. */
 /* =================== PDD DRAFT =================== */
+/* Two ways a field can be empty, and the difference matters to whoever reads
+   the draft. TBC: the question belongs to the walkthrough and has not been
+   answered yet, so chase it. NA: the console has no field that could ever
+   carry it, so it falls to the analyst to fill in by hand. Both print as TBC
+   in the template; only TBC counts against the evidence score. */
 const TBC = null;
+const NA = {byHand:true};
 
 function byTag(sec, ...tags){
   return inSection(sec).filter(i => tags.some(t => i.tags.includes(t)));
 }
 function firstReply(i){
   return (i.replies && i.replies[0]) ? i.replies[0].text : "";
-}
-function allReplies(i){
-  return (i.replies || []).map(r => r.text).join(" ");
 }
 function joinNames(items){
   return items.length ? items.map(i => i.name + (firstReply(i) ? " (" + firstReply(i) + ")" : "")).join("; ") : TBC;
@@ -2702,7 +2967,9 @@ function pddModel(){
         ops = inSection("Operations"), rules = inSection("Rules"), ppl = inSection("People"),
         exc = inSection("Exceptions"), dep = inSection("Dependencies"), ev = inSection("Evidence");
 
-  const envOf = i => (i.tags.find(t => ["Cloud","On-prem","Remote"].includes(t))) || TBC;
+  /* Remote belongs to accessOf only. Letting it answer both columns made one
+     captured tag assert an environment the client never stated. */
+  const envOf = i => (i.tags.find(t => ["Cloud","On-prem"].includes(t))) || TBC;
   const accessOf = i => (i.tags.find(t => ["Web UI","Desktop UI","Terminal UI","API","File transfer","Remote"].includes(t))) || TBC;
   const ownerOf = i => (i.tags.find(t => ["Internal","Third party","Custom"].includes(t))) || TBC;
   const formatOf = i => (i.tags.find(t => ["Excel","CSV","PDF","Email","Database record","Document"].includes(t))) || TBC;
@@ -2716,7 +2983,7 @@ function pddModel(){
 
    {no:"1.1", title:"Version Control", blocks:[
      {type:"table", columns:["Version No.","Change Description","Date","Author"],
-      rows:[["1.0","Initial Documentation", today(), TBC]]}
+      rows:[["1.0","Initial Documentation", today(), NA]]}
    ]},
 
    {no:"1.2", title:"RPA Projects Team", blocks:[
@@ -2724,8 +2991,8 @@ function pddModel(){
       rows: ppl.length ? ppl.map(p => [
         p.tags.find(t => ["SME","Process owner","Team","Approval","Escalation"].includes(t)) || TBC,
         p.tags.includes("External") ? "External" : (p.tags.includes("Internal") ? "Internal" : TBC),
-        p.name, TBC
-      ]) : [[TBC,TBC,TBC,TBC]]}
+        p.name, NA
+      ]) : [[TBC,TBC,TBC,NA]]}
    ]},
 
    {no:"1.3", title:"General Process Information", blocks:[
@@ -2736,10 +3003,11 @@ function pddModel(){
      {type:"list", label:"Dependencies", items:dep.map(d =>
         d.name + (d.tags.length ? " — " + d.tags.join(", ") : "") + (firstReply(d) ? ". " + firstReply(d) : ""))},
      {type:"field", label:"Exception Rate", value:joinNames(byTag("Operations","Exception rate"))},
-     {type:"field", label:"Orchestrator Available/Link", value:TBC},
-     {type:"field", label:"Attended/Unattended Process(es)", value:TBC,
+     {type:"field", label:"Orchestrator Available/Link", value:NA,
+      hint:"Platform detail, not a walkthrough question."},
+     {type:"field", label:"Attended/Unattended Process(es)", value:NA,
       hint:"Agreed classification, not a Business Analyst decision."},
-     {type:"field", label:"(In)Stability Factors", value:TBC,
+     {type:"field", label:"(In)Stability Factors", value:NA,
       hint:"Known slow reports or intermittent application behaviour."},
      {type:"list", label:"External Sources of Information",
       items:byTag("Process","External source","External").concat(byTag("Dependencies","Third party","External"))
@@ -2748,8 +3016,8 @@ function pddModel(){
 
    {no:"1.4", title:"Applications & Environments", blocks:[
      {type:"table", columns:["App/System","Environment","Access Type","Access Granted","URL/Details","User Details","Owner"],
-      rows: sys.length ? sys.map(s => [s.name, envOf(s), accessOf(s), TBC, firstReply(s) || TBC, TBC, ownerOf(s)])
-                       : [[TBC,TBC,TBC,TBC,TBC,TBC,TBC]],
+      rows: sys.length ? sys.map(s => [s.name, envOf(s), accessOf(s), NA, firstReply(s) || TBC, NA, ownerOf(s)])
+                       : [[TBC,TBC,TBC,NA,TBC,NA,TBC]],
       note:"Never record passwords, MFA codes or tokens here. Document the access method or credential store instead."}
    ]},
 
@@ -2788,11 +3056,11 @@ function pddModel(){
 
    {no:"2.5", title:"Inputs/Outputs", blocks:[
      {type:"table", label:"Inputs", columns:["Name","Description","Format","Location","Owner","Provider"],
-      rows: inputs.length ? inputs.map(i => [i.name, firstReply(i) || TBC, formatOf(i), TBC, TBC, TBC])
-                          : [[TBC,TBC,TBC,TBC,TBC,TBC]]},
+      rows: inputs.length ? inputs.map(i => [i.name, firstReply(i) || TBC, formatOf(i), NA, NA, NA])
+                          : [[TBC,TBC,TBC,NA,NA,NA]]},
      {type:"table", label:"Outputs", columns:["Name","Description","Format","Location","Owner","Provider"],
-      rows: outputs.length ? outputs.map(i => [i.name, firstReply(i) || TBC, formatOf(i), TBC, TBC, TBC])
-                           : [[TBC,TBC,TBC,TBC,TBC,TBC]],
+      rows: outputs.length ? outputs.map(i => [i.name, firstReply(i) || TBC, formatOf(i), NA, NA, NA])
+                           : [[TBC,TBC,TBC,NA,NA,NA]],
       note:"Business-level artifacts only. Granular runtime values belong in the IOE."}
    ]},
 
@@ -2800,7 +3068,7 @@ function pddModel(){
      {type:"table", label:"Exceptions", columns:["No.","Exception Type","Exception Code / Message","Process / Business Action"],
       rows: exc.length ? exc.map((e,idx) => [
         String(idx+1),
-        e.tags.find(t => t.indexOf("exception") > -1 || t === "Timeout" || t === "Not found" || t === "Manual referral") || TBC,
+        e.tags.find(t => DEF.Exceptions.tags.includes(t)) || TBC,
         e.name,
         firstReply(e) || TBC
       ]) : [[TBC,TBC,TBC,TBC]],
@@ -2831,19 +3099,42 @@ function pddModel(){
 }
 
 /* ----- render ----- */
+/* Every cell the template asks for is scored on its own. Scoring a table as a
+   single unit let one system name stand in for sixteen empty cells, which is how
+   the draft came to report 89% of a document that was 73% filled. Version Control
+   and Sign Off stay out of the count, as they always did. */
 function pddStats(model){
-  let filled = 0, total = 0;
-  model.forEach(s => (s.blocks||[]).forEach(b => {
-    if(b.type === "field"){ total++; if(b.value) filled++; }
-    if(b.type === "list" || b.type === "numbered"){ total++; if(b.items && b.items.length) filled++; }
-    if(b.type === "table" && s.no !== "2.10" && s.no !== "1.1"){
-      total++; if(b.rows.some(r => r.some(c => c && c !== ""))) filled++;
-    }
-  }));
-  return {filled:filled, total:total};
+  let filled = 0, total = 0, byHand = 0;
+
+  function score(v){
+    if(v && v.byHand){ byHand++; return; }
+    if(v === "") return;
+    total++;
+    if(v) filled++;
+  }
+
+  model.forEach(s => {
+    if(s.head || s.no === "1.1" || s.no === "2.10") return;
+    (s.blocks||[]).forEach(b => {
+      if(b.type === "field"){ score(b.value); return; }
+      if(b.type === "list" || b.type === "numbered"){ score(b.items && b.items.length ? true : TBC); return; }
+      if(b.type === "table") b.rows.forEach(r => r.forEach(c => score(c)));
+    });
+  });
+  return {filled:filled, total:total, byHand:byHand};
+}
+
+/* Per-section fill, so Review can report what the template actually holds
+   instead of how many items happened to be captured near it. */
+function pddSectionFill(){
+  const out = {};
+  pddModel().forEach(s => { if(!s.head) out[s.no] = pddStats([s]); });
+  return out;
 }
 
 function cell(v){
+  if(v && v.byHand)
+    return '<span class="tbc byhand" title="The console has no field for this. Fill it in by hand.">TBC</span>';
   return v ? esc(v) : '<span class="tbc">TBC</span>';
 }
 
@@ -2851,7 +3142,10 @@ function renderPDD(){
   const model = pddModel();
   const st = pddStats(model);
   $("pddTitle").textContent = S.name || "Process Definition Document";
-  $("pddMeta").innerHTML = '<b>' + st.filled + " of " + st.total + "</b><span>fields carrying captured evidence</span>";
+  $("pddMeta").innerHTML =
+    '<b>' + st.filled + " of " + st.total + "</b><span>fields carrying captured evidence</span>" +
+    (st.byHand ? '<b class="byhand-count">' + st.byHand +
+      "</b><span>the console cannot ask for, to fill in by hand</span>" : "");
 
   const wrap = $("pddDoc");
   wrap.innerHTML = "";
@@ -2908,8 +3202,16 @@ function pddMarkdown(){
   const model = pddModel();
   const L = ["# Process Definition Document — draft", "", "Process: " + (S.name || "TBC"),
              "Source: TQA Discovery Console capture, " + today(), "",
-             "Every TBC below is an unanswered field, not an omission.", ""];
-  const v = x => x ? x : "TBC";
+             "Every TBC below is an unanswered field, not an omission. A TBC marked",
+             "(by hand) is one the console has no way to capture; fill those in yourself.", ""];
+  /* A reply is free text: Shift+Enter puts newlines in it and a pipe is an
+     ordinary character. Either one used to break the table it landed in. */
+  const flat = x => String(x).replace(/\r?\n/g, " ");
+  const piped = x => String(x).replace(/\|/g, "\\|").replace(/\r?\n/g, "<br>");
+  const v = x => (x && x.byHand) ? "TBC (by hand)" : (x ? flat(x) : "TBC");
+  const cellv = x => x === "" ? " "
+                   : (x && x.byHand) ? "TBC (by hand)"
+                   : (x ? piped(x) : "TBC");
   model.forEach(sec => {
     if(sec.head){ L.push("# " + sec.no + ". " + sec.title, ""); return; }
     L.push("## " + sec.no + " " + sec.title, "");
@@ -2918,7 +3220,7 @@ function pddMarkdown(){
       if(b.type === "field"){ L.push("- **" + b.label + ":** " + v(b.value)); return; }
       if(b.type === "list" || b.type === "numbered"){
         if(b.label) L.push("", "**" + b.label + "**", "");
-        if(b.items && b.items.length) b.items.forEach((x,i) => L.push((b.type === "numbered" ? (i+1)+". " : "- ") + x));
+        if(b.items && b.items.length) b.items.forEach((x,i) => L.push((b.type === "numbered" ? (i+1)+". " : "- ") + flat(x)));
         else L.push("- TBC");
         L.push("");
         return;
@@ -2927,7 +3229,7 @@ function pddMarkdown(){
         if(b.label) L.push("", "**" + b.label + "**", "");
         L.push("| " + b.columns.join(" | ") + " |");
         L.push("|" + b.columns.map(() => "---").join("|") + "|");
-        b.rows.forEach(r => L.push("| " + r.map(c => c === "" ? " " : v(c)).join(" | ") + " |"));
+        b.rows.forEach(r => L.push("| " + r.map(cellv).join(" | ") + " |"));
         if(b.note) L.push("", "> " + b.note);
         L.push("");
       }
@@ -2943,7 +3245,7 @@ function pddMarkdown(){
 }
 
 $("copyPddBtn").addEventListener("click", () => copyText(pddMarkdown(), "PDD draft copied as Markdown"));
-$("printPddBtn").addEventListener("click", () => { document.body.classList.add("printing"); setTimeout(() => { window.print(); document.body.classList.remove("printing"); }, 60); });
+$("printPddBtn").addEventListener("click", () => window.print());
 
 /* 17-transfer.js
    Session transfer: JSON import by file or paste, and saving files through the artifact downloads capability. */
@@ -2982,39 +3284,64 @@ function normalise(list, seq){
   });
 }
 
-$("importReplace").addEventListener("click", () => {
+/* An item naming an area the console does not have used to be counted in the
+   session totals and then be unreachable everywhere else: no area rail, no
+   review inventory, no PDD section. Park it in the first area instead and say
+   so, rather than letting the item count lie. */
+function placeItems(list){
+  let stray = 0;
+  list.forEach(i => {
+    if(!DEF[i.section]){ i.section = SECTIONS[0]; stray++; }
+    if(!Array.isArray(i.tags)) i.tags = [];
+    if(!Array.isArray(i.relations)) i.relations = [];
+  });
+  return stray;
+}
+
+$("importReplace").addEventListener("click", () =>
+  confirmAction($("importReplace"), "Confirm replace", doReplace));
+
+function doReplace(){
   try{
     const o = parseSession($("importBox").value);
     const seq = {n:0};
     S.name = o.name || S.name;
-    S.items = normalise(o.items, seq).map(i => Object.assign({relations:[], tags:[]}, i));
+    S.items = normalise(o.items, seq);
+    const stray = placeItems(S.items);
     S.notes = normalise(o.notes, seq);
     S.marks = normalise(o.marks, seq);
-    S.resolved = o.resolved || [];
+    S.resolved = Array.isArray(o.resolved) ? o.resolved.filter(r => typeof r === "string") : [];
     if(typeof o.seconds === "number") S.seconds = o.seconds;
     $("sessionName").value = S.name;
     closeImport(); save(); renderAll(); setView("capture");
-    toast("Session replaced, " + S.items.length + " items loaded");
+    toast("Session replaced, " + S.items.length + " items loaded" +
+          (stray ? ". " + stray + " had an unknown area and are in " + SECTIONS[0] : ""));
   }catch(err){ $("importMsg").textContent = err.message; }
-});
+}
 
 $("importMerge").addEventListener("click", () => {
   try{
     const o = parseSession($("importBox").value);
     const seq = {n:Date.now()};
     const map = {};
-    const incoming = normalise(o.items, seq).map(i => Object.assign({relations:[], tags:[]}, i));
+    const incoming = normalise(o.items, seq);
+    const stray = placeItems(incoming);
     incoming.forEach(i => { const old = i.id; i.id = uid(); map[old] = i.id; });
+    /* Filter on the ORIGINAL target, then rewrite it. Rewriting first and then
+       testing the new id against a map keyed by the old ones dropped every
+       relation in the imported set. */
     incoming.forEach(i => {
-      i.relations = (i.relations || []).map(r => ({type:r.type, targetId:map[r.targetId] || r.targetId}))
-                                       .filter(r => map[r.targetId] || S.items.some(x => x.id === r.targetId));
+      i.relations = i.relations
+        .filter(r => map[r.targetId] || S.items.some(x => x.id === r.targetId))
+        .map(r => ({type:r.type, targetId:map[r.targetId] || r.targetId}));
     });
     S.items = S.items.concat(incoming);
     S.notes = S.notes.concat(normalise(o.notes, seq).map(n => Object.assign({}, n, {id:uid()})));
     S.marks = S.marks.concat(normalise(o.marks, seq).map(m => Object.assign({}, m, {id:uid()})));
     (o.resolved || []).forEach(r => { if(!S.resolved.includes(r)) S.resolved.push(r); });
     closeImport(); save(); renderAll(); setView("capture");
-    toast(incoming.length + " items merged in");
+    toast(incoming.length + " items merged in" +
+          (stray ? ", " + stray + " with an unknown area moved to " + SECTIONS[0] : ""));
   }catch(err){ $("importMsg").textContent = err.message; }
 });
 
@@ -3119,6 +3446,10 @@ function renderAll(){
   if($("mapScrim").classList.contains("on")) rebuildMap(false);
   renderTape();
   renderGaps();
+  /* The two output views repaint here too, so the invariant in the comment
+     above holds by construction rather than by nothing having reached them. */
+  if($("reviewView").classList.contains("on")) renderReview();
+  if($("pddView").classList.contains("on")) renderPDD();
   $("cItems").textContent = S.items.length;
   $("cNotes").textContent = S.notes.length;
   $("cMarks").textContent = S.marks.length;
@@ -3132,6 +3463,7 @@ function renderAll(){
 load();
 S.ui = Object.assign({nav:true, insp:true, tab:"tape"}, S.ui || {});
 document.documentElement.setAttribute("data-theme", S.theme || "dark");
+applyPaneWidths();
 setPanel("nav", S.ui.nav !== false);
 setPanel("insp", S.ui.insp !== false);
 setTab(S.ui.tab || "tape");

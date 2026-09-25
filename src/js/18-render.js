@@ -8,6 +8,10 @@ function renderAll(){
   if($("mapScrim").classList.contains("on")) rebuildMap(false);
   renderTape();
   renderGaps();
+  /* The two output views repaint here too, so the invariant in the comment
+     above holds by construction rather than by nothing having reached them. */
+  if($("reviewView").classList.contains("on")) renderReview();
+  if($("pddView").classList.contains("on")) renderPDD();
   $("cItems").textContent = S.items.length;
   $("cNotes").textContent = S.notes.length;
   $("cMarks").textContent = S.marks.length;

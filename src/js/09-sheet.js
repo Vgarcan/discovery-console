@@ -5,7 +5,7 @@ function openSheet(id, prefillName){
   editingId = id;
   const item = id ? S.items.find(i => i.id === id) : null;
   const sec = item ? item.section : S.active;
-  draftTags = item ? item.tags.slice() : (seed ? [seed] : []);
+  draftTags = item ? item.tags.slice() : (seed ? [tagOf(sec, seed)] : []);
   draftRels = item ? item.relations.slice() : [];
 
   $("sheetLabel").textContent = sec.toLowerCase();

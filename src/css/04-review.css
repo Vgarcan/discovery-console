@@ -26,7 +26,7 @@
 .cov:last-child{border-bottom:0}
 .bar{height:3px;background:var(--line-soft)}
 .bar i{display:block;height:100%;background:var(--accent);transition:width .4s}
-.cov .st{font-family:var(--mono);font-size:9.5px;color:var(--ink-3)}
+.cov .st{font-family:var(--mono);font-size:9.5px;color:var(--ink-3);white-space:nowrap}
 .cov.good .st{color:var(--accent)}
 .cov.good .bar i{background:var(--accent)}
 .cov.part .bar i{background:var(--tqa-sun)}

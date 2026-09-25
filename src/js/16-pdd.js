@@ -1,16 +1,19 @@
 /* 16-pdd.js
    PDD draft: maps captured evidence onto the approved Velera template, renders it and exports Markdown. */
 /* =================== PDD DRAFT =================== */
+/* Two ways a field can be empty, and the difference matters to whoever reads
+   the draft. TBC: the question belongs to the walkthrough and has not been
+   answered yet, so chase it. NA: the console has no field that could ever
+   carry it, so it falls to the analyst to fill in by hand. Both print as TBC
+   in the template; only TBC counts against the evidence score. */
 const TBC = null;
+const NA = {byHand:true};
 
 function byTag(sec, ...tags){
   return inSection(sec).filter(i => tags.some(t => i.tags.includes(t)));
 }
 function firstReply(i){
   return (i.replies && i.replies[0]) ? i.replies[0].text : "";
-}
-function allReplies(i){
-  return (i.replies || []).map(r => r.text).join(" ");
 }
 function joinNames(items){
   return items.length ? items.map(i => i.name + (firstReply(i) ? " (" + firstReply(i) + ")" : "")).join("; ") : TBC;
@@ -25,7 +28,9 @@ function pddModel(){
         ops = inSection("Operations"), rules = inSection("Rules"), ppl = inSection("People"),
         exc = inSection("Exceptions"), dep = inSection("Dependencies"), ev = inSection("Evidence");
 
-  const envOf = i => (i.tags.find(t => ["Cloud","On-prem","Remote"].includes(t))) || TBC;
+  /* Remote belongs to accessOf only. Letting it answer both columns made one
+     captured tag assert an environment the client never stated. */
+  const envOf = i => (i.tags.find(t => ["Cloud","On-prem"].includes(t))) || TBC;
   const accessOf = i => (i.tags.find(t => ["Web UI","Desktop UI","Terminal UI","API","File transfer","Remote"].includes(t))) || TBC;
   const ownerOf = i => (i.tags.find(t => ["Internal","Third party","Custom"].includes(t))) || TBC;
   const formatOf = i => (i.tags.find(t => ["Excel","CSV","PDF","Email","Database record","Document"].includes(t))) || TBC;
@@ -39,7 +44,7 @@ function pddModel(){
 
    {no:"1.1", title:"Version Control", blocks:[
      {type:"table", columns:["Version No.","Change Description","Date","Author"],
-      rows:[["1.0","Initial Documentation", today(), TBC]]}
+      rows:[["1.0","Initial Documentation", today(), NA]]}
    ]},
 
    {no:"1.2", title:"RPA Projects Team", blocks:[
@@ -47,8 +52,8 @@ function pddModel(){
       rows: ppl.length ? ppl.map(p => [
         p.tags.find(t => ["SME","Process owner","Team","Approval","Escalation"].includes(t)) || TBC,
         p.tags.includes("External") ? "External" : (p.tags.includes("Internal") ? "Internal" : TBC),
-        p.name, TBC
-      ]) : [[TBC,TBC,TBC,TBC]]}
+        p.name, NA
+      ]) : [[TBC,TBC,TBC,NA]]}
    ]},
 
    {no:"1.3", title:"General Process Information", blocks:[
@@ -59,10 +64,11 @@ function pddModel(){
      {type:"list", label:"Dependencies", items:dep.map(d =>
         d.name + (d.tags.length ? " — " + d.tags.join(", ") : "") + (firstReply(d) ? ". " + firstReply(d) : ""))},
      {type:"field", label:"Exception Rate", value:joinNames(byTag("Operations","Exception rate"))},
-     {type:"field", label:"Orchestrator Available/Link", value:TBC},
-     {type:"field", label:"Attended/Unattended Process(es)", value:TBC,
+     {type:"field", label:"Orchestrator Available/Link", value:NA,
+      hint:"Platform detail, not a walkthrough question."},
+     {type:"field", label:"Attended/Unattended Process(es)", value:NA,
       hint:"Agreed classification, not a Business Analyst decision."},
-     {type:"field", label:"(In)Stability Factors", value:TBC,
+     {type:"field", label:"(In)Stability Factors", value:NA,
       hint:"Known slow reports or intermittent application behaviour."},
      {type:"list", label:"External Sources of Information",
       items:byTag("Process","External source","External").concat(byTag("Dependencies","Third party","External"))
@@ -71,8 +77,8 @@ function pddModel(){
 
    {no:"1.4", title:"Applications & Environments", blocks:[
      {type:"table", columns:["App/System","Environment","Access Type","Access Granted","URL/Details","User Details","Owner"],
-      rows: sys.length ? sys.map(s => [s.name, envOf(s), accessOf(s), TBC, firstReply(s) || TBC, TBC, ownerOf(s)])
-                       : [[TBC,TBC,TBC,TBC,TBC,TBC,TBC]],
+      rows: sys.length ? sys.map(s => [s.name, envOf(s), accessOf(s), NA, firstReply(s) || TBC, NA, ownerOf(s)])
+                       : [[TBC,TBC,TBC,NA,TBC,NA,TBC]],
       note:"Never record passwords, MFA codes or tokens here. Document the access method or credential store instead."}
    ]},
 
@@ -111,11 +117,11 @@ function pddModel(){
 
    {no:"2.5", title:"Inputs/Outputs", blocks:[
      {type:"table", label:"Inputs", columns:["Name","Description","Format","Location","Owner","Provider"],
-      rows: inputs.length ? inputs.map(i => [i.name, firstReply(i) || TBC, formatOf(i), TBC, TBC, TBC])
-                          : [[TBC,TBC,TBC,TBC,TBC,TBC]]},
+      rows: inputs.length ? inputs.map(i => [i.name, firstReply(i) || TBC, formatOf(i), NA, NA, NA])
+                          : [[TBC,TBC,TBC,NA,NA,NA]]},
      {type:"table", label:"Outputs", columns:["Name","Description","Format","Location","Owner","Provider"],
-      rows: outputs.length ? outputs.map(i => [i.name, firstReply(i) || TBC, formatOf(i), TBC, TBC, TBC])
-                           : [[TBC,TBC,TBC,TBC,TBC,TBC]],
+      rows: outputs.length ? outputs.map(i => [i.name, firstReply(i) || TBC, formatOf(i), NA, NA, NA])
+                           : [[TBC,TBC,TBC,NA,NA,NA]],
       note:"Business-level artifacts only. Granular runtime values belong in the IOE."}
    ]},
 
@@ -123,7 +129,7 @@ function pddModel(){
      {type:"table", label:"Exceptions", columns:["No.","Exception Type","Exception Code / Message","Process / Business Action"],
       rows: exc.length ? exc.map((e,idx) => [
         String(idx+1),
-        e.tags.find(t => t.indexOf("exception") > -1 || t === "Timeout" || t === "Not found" || t === "Manual referral") || TBC,
+        e.tags.find(t => DEF.Exceptions.tags.includes(t)) || TBC,
         e.name,
         firstReply(e) || TBC
       ]) : [[TBC,TBC,TBC,TBC]],
@@ -154,19 +160,42 @@ function pddModel(){
 }
 
 /* ----- render ----- */
+/* Every cell the template asks for is scored on its own. Scoring a table as a
+   single unit let one system name stand in for sixteen empty cells, which is how
+   the draft came to report 89% of a document that was 73% filled. Version Control
+   and Sign Off stay out of the count, as they always did. */
 function pddStats(model){
-  let filled = 0, total = 0;
-  model.forEach(s => (s.blocks||[]).forEach(b => {
-    if(b.type === "field"){ total++; if(b.value) filled++; }
-    if(b.type === "list" || b.type === "numbered"){ total++; if(b.items && b.items.length) filled++; }
-    if(b.type === "table" && s.no !== "2.10" && s.no !== "1.1"){
-      total++; if(b.rows.some(r => r.some(c => c && c !== ""))) filled++;
-    }
-  }));
-  return {filled:filled, total:total};
+  let filled = 0, total = 0, byHand = 0;
+
+  function score(v){
+    if(v && v.byHand){ byHand++; return; }
+    if(v === "") return;
+    total++;
+    if(v) filled++;
+  }
+
+  model.forEach(s => {
+    if(s.head || s.no === "1.1" || s.no === "2.10") return;
+    (s.blocks||[]).forEach(b => {
+      if(b.type === "field"){ score(b.value); return; }
+      if(b.type === "list" || b.type === "numbered"){ score(b.items && b.items.length ? true : TBC); return; }
+      if(b.type === "table") b.rows.forEach(r => r.forEach(c => score(c)));
+    });
+  });
+  return {filled:filled, total:total, byHand:byHand};
+}
+
+/* Per-section fill, so Review can report what the template actually holds
+   instead of how many items happened to be captured near it. */
+function pddSectionFill(){
+  const out = {};
+  pddModel().forEach(s => { if(!s.head) out[s.no] = pddStats([s]); });
+  return out;
 }
 
 function cell(v){
+  if(v && v.byHand)
+    return '<span class="tbc byhand" title="The console has no field for this. Fill it in by hand.">TBC</span>';
   return v ? esc(v) : '<span class="tbc">TBC</span>';
 }
 
@@ -174,7 +203,10 @@ function renderPDD(){
   const model = pddModel();
   const st = pddStats(model);
   $("pddTitle").textContent = S.name || "Process Definition Document";
-  $("pddMeta").innerHTML = '<b>' + st.filled + " of " + st.total + "</b><span>fields carrying captured evidence</span>";
+  $("pddMeta").innerHTML =
+    '<b>' + st.filled + " of " + st.total + "</b><span>fields carrying captured evidence</span>" +
+    (st.byHand ? '<b class="byhand-count">' + st.byHand +
+      "</b><span>the console cannot ask for, to fill in by hand</span>" : "");
 
   const wrap = $("pddDoc");
   wrap.innerHTML = "";
@@ -231,8 +263,16 @@ function pddMarkdown(){
   const model = pddModel();
   const L = ["# Process Definition Document — draft", "", "Process: " + (S.name || "TBC"),
              "Source: TQA Discovery Console capture, " + today(), "",
-             "Every TBC below is an unanswered field, not an omission.", ""];
-  const v = x => x ? x : "TBC";
+             "Every TBC below is an unanswered field, not an omission. A TBC marked",
+             "(by hand) is one the console has no way to capture; fill those in yourself.", ""];
+  /* A reply is free text: Shift+Enter puts newlines in it and a pipe is an
+     ordinary character. Either one used to break the table it landed in. */
+  const flat = x => String(x).replace(/\r?\n/g, " ");
+  const piped = x => String(x).replace(/\|/g, "\\|").replace(/\r?\n/g, "<br>");
+  const v = x => (x && x.byHand) ? "TBC (by hand)" : (x ? flat(x) : "TBC");
+  const cellv = x => x === "" ? " "
+                   : (x && x.byHand) ? "TBC (by hand)"
+                   : (x ? piped(x) : "TBC");
   model.forEach(sec => {
     if(sec.head){ L.push("# " + sec.no + ". " + sec.title, ""); return; }
     L.push("## " + sec.no + " " + sec.title, "");
@@ -241,7 +281,7 @@ function pddMarkdown(){
       if(b.type === "field"){ L.push("- **" + b.label + ":** " + v(b.value)); return; }
       if(b.type === "list" || b.type === "numbered"){
         if(b.label) L.push("", "**" + b.label + "**", "");
-        if(b.items && b.items.length) b.items.forEach((x,i) => L.push((b.type === "numbered" ? (i+1)+". " : "- ") + x));
+        if(b.items && b.items.length) b.items.forEach((x,i) => L.push((b.type === "numbered" ? (i+1)+". " : "- ") + flat(x)));
         else L.push("- TBC");
         L.push("");
         return;
@@ -250,7 +290,7 @@ function pddMarkdown(){
         if(b.label) L.push("", "**" + b.label + "**", "");
         L.push("| " + b.columns.join(" | ") + " |");
         L.push("|" + b.columns.map(() => "---").join("|") + "|");
-        b.rows.forEach(r => L.push("| " + r.map(c => c === "" ? " " : v(c)).join(" | ") + " |"));
+        b.rows.forEach(r => L.push("| " + r.map(cellv).join(" | ") + " |"));
         if(b.note) L.push("", "> " + b.note);
         L.push("");
       }
@@ -266,4 +306,4 @@ function pddMarkdown(){
 }
 
 $("copyPddBtn").addEventListener("click", () => copyText(pddMarkdown(), "PDD draft copied as Markdown"));
-$("printPddBtn").addEventListener("click", () => { document.body.classList.add("printing"); setTimeout(() => { window.print(); document.body.classList.remove("printing"); }, 60); });
+$("printPddBtn").addEventListener("click", () => window.print());

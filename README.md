@@ -8,7 +8,10 @@ Velera Process Definition Document asks for it.
 
 ## Live preview
 
-**PREVIEW SITE** — [Console Live Preview](https://vgarcan.github.io/tqa-discovery-console)
+- **PREVIEW SITE** — [Console Live Preview](https://vgarcan.github.io/tqa-discovery-console)
+
+- **DEMO FILE** - [Download](assets/data/demo-session-ach-returns.json)
+---
 
 ![The capture console](docs/images/01-capture-console.png)
 
@@ -98,6 +101,12 @@ and you do that after the call.
 | `⌘/Ctrl + G` | Open and close the relationship map |
 | `[` `]` | Collapse the areas panel and the inspector |
 
+Both side panels, and both panels in the map, resize by dragging their inner edge. The
+cursor turns into a resize handle a few pixels either side of the border. Double-click the
+edge to go back to the default width, or focus it with `Tab` and use `←` `→` (`Shift` for
+larger steps, `Home` to reset). Widths are saved with the session, and are re-clamped if the
+window gets too narrow to hold them, so the capture surface never disappears.
+
 ### The inspector
 
 Three tabs on the right, one at a time.
@@ -163,6 +172,10 @@ What you have, what is still open, and how much of the PDD each section can supp
 The open questions are tickable here too, grouped by area, so a five-minute post-call pass
 turns a vague sense of "we covered most of it" into a list you can send the client.
 
+The coverage bars measure how much of each PDD section the evidence actually fills, section
+by section, and show the fraction. A section reading `not landing 1/4` has items captured
+against it that are not reaching any field — usually a missing tag or a missing reply.
+
 ### The PDD draft
 
 The **PDD** view arranges everything into the approved Velera template: sections 1.1 through
@@ -173,9 +186,17 @@ The **PDD** view arranges everything into the approved Velera template: sections
 Two rules govern it.
 
 **Nothing is invented.** Any field without evidence behind it is marked `TBC` in the
-template's soft green. Fields that are not the analyst's decision to make, like
-Attended/Unattended or the Orchestrator link, stay `TBC` with a note saying whose call it is.
-Sign Off is left blank on purpose rather than marked `TBC`.
+template's soft green. Sign Off is left blank on purpose rather than marked `TBC`.
+
+A `TBC` in a dashed outline is a different animal: the console has no field that could
+ever carry it, so no amount of asking will fill it. Contact details, Access Granted, the
+Location/Owner/Provider of each input — those are yours to type in by hand, and the header
+counts them separately from the ones still worth chasing. In the Markdown export they read
+`TBC (by hand)`.
+
+The header reads *93 of 94 fields carrying captured evidence* on the sample session, and it
+counts one cell at a time. A table with one system name and sixteen blanks does not score as
+a filled table.
 
 **Replies become the long-form answers.** The first reply on an item fills the field that
 needs a sentence rather than a name. Reply to an exception with "Report to the SME team and
@@ -195,9 +216,16 @@ anything is touched.
 
 ![Importing a session file](docs/images/10-import-session.png)
 
-**Replace** swaps the open session. **Merge** adds the file on top of what you have,
-reassigning ids and rewriting relation targets inside the imported set, so two analysts'
-sessions can be joined without collisions.
+**Replace** swaps the open session, and asks once before it does. **Merge** adds the file on
+top of what you have, reassigning ids and rewriting relation targets inside the imported set,
+so two analysts' sessions can be joined without collisions. An item naming an area the console
+does not have is parked in Systems rather than silently vanishing, and the toast says how many.
+
+### Deleting
+
+Deleting an item, a reply or a relation takes two presses. The first turns the button red and
+relabels it; the second does the work. A double-click cannot get through both, and anything
+else you click, or `Esc`, calls it off. Nothing here has an undo, which is why.
 
 ### Light theme and focus mode
 
@@ -214,7 +242,7 @@ backgrounds.
 ```
 index.html                  dev entry, and the single source of truth for load order
 tools/build.py              bundles everything into one self-contained file
-tools/audit.py              module dependency graph, fails on drift
+tools/audit.py              module dependency graph and capture vocabulary, fails on drift
 tools/screenshots.py        regenerates the images in this README
 tests/audit.test.js         110 functional checks against the built bundle
 dist/                       the bundle that gets published
@@ -241,7 +269,7 @@ its tag to `index.html`; nothing else knows the file list.
 
 ```
 python3 tools/build.py --check          # dist is in step with the sources
-python3 tools/audit.py                  # dependency graph, fails on drift
+python3 tools/audit.py                  # dependency graph and capture vocabulary, fails on drift
 node tests/audit.test.js                # 110 functional checks against dist
 ```
 
@@ -277,10 +305,14 @@ than using ES modules, so the whole thing still runs from `file://` with no tool
 `19-boot.js` is the only module that calls anything at load time; every other module defines
 functions and attaches listeners.
 
-Two rules keep the boundaries honest, and `tools/audit.py` fails if either breaks:
+Three rules keep the boundaries honest, and `tools/audit.py` fails if any of them breaks:
 
 - `01-model.js` depends on nothing. Everything the tool knows about discovery areas, types,
   tags and gap rules lives there and nowhere else.
+- Every capture type resolves to a tag its area declares. An action is `[label, description]`,
+  or `[label, description, tag]` when the button's label is not the tag to store — `Average
+  volume` stores `Volume`. The PDD looks tags up, so a label that is not a declared tag renders
+  the field `TBC` on a live capture while the sample session fills it.
 - Anything that changes the session calls `renderAll()` from `18-render.js`. No module
   repaints the whole app itself, so a change to one view cannot silently skip another.
 
@@ -295,7 +327,7 @@ Two rules keep the boundaries honest, and `tools/audit.py` fails if either break
 | `05-sheet.css` | Item detail sheet and toast |
 | `06-tags.css` | Tag filter chips, shared by the stage and the map |
 | `07-map.css` | Map window: filters, graph, detail panel |
-| `08-shell.css` | Icon bar, collapsible nav panel, tabbed inspector |
+| `08-shell.css` | Icon bar, collapsible nav panel, resize handles, tabbed inspector |
 | `09-tape.css` | Tape colour coding, kind filter, reply threads |
 | `10-pdd.css` | PDD draft document and the print stylesheet |
 | `11-transfer.css` | Import drop zone and paste fallback |
@@ -318,7 +350,7 @@ Two rules keep the boundaries honest, and `tools/audit.py` fails if either break
 | `12-settings.js` | Theme, global shortcuts, session clock |
 | `13-tags.js` | Stage tag filtering, area colours, incoming-relation lookup |
 | `14-map.js` | Map filtering, force layout, rendering, interaction, linking |
-| `15-shell.js` | View switching, collapsible panels, inspector tabs |
+| `15-shell.js` | View switching, collapsible and resizable panels, inspector tabs |
 | `16-pdd.js` | Maps captured evidence onto the approved PDD template and exports it |
 | `17-transfer.js` | JSON import by file or paste, file saving via the downloads capability |
 | `18-render.js` | The single repaint orchestrator |
@@ -369,6 +401,8 @@ Three things worth knowing:
 
 - `relations` are directional but read both ways. An item shows what it points at and what
   points at it, and the map draws one edge per relation.
+- `tags` hold the declared tag, not the capture button's label. `tagOf()` in `01-model.js` is
+  the only place the two are reconciled.
 - The first entry in `replies` is the long-form answer when the PDD draft is built.
 - `resolved` holds `"Area::gap text"` keys. These drive the coverage meters, so they are the
   closest thing to a completeness score.

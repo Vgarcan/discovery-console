@@ -157,6 +157,18 @@ kbd{
 .icon-btn:hover{background:var(--raise-2);color:var(--ink)}
 .icon-btn.danger:hover{color:var(--alert)}
 
+/* Armed state for a two-step delete. Wider and red, so the second press is a
+   deliberate one, and forced visible because the rows that hold these buttons
+   only reveal them on hover. Also covers .btn, defined earlier in 02-topbar. */
+.icon-btn.armed,.btn.armed{
+  background:var(--alert);border-color:var(--alert);color:#ffffff;
+  font-weight:600;opacity:1;padding-left:.5rem;padding-right:.5rem;
+}
+.icon-btn.armed:hover,.btn.armed:hover{
+  background:var(--alert);border-color:var(--alert);color:#ffffff;filter:brightness(1.08);
+}
+.item-acts.arming,.reply.arming .icon-btn,.linkrow.arming .icon-btn{opacity:1}
+
 .empty{
   padding:1.6rem 0;color:var(--ink-3);font-size:.85rem;max-width:46ch;
 }

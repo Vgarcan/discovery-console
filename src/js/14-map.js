@@ -400,12 +400,12 @@ function renderMapDetail(){
     const rm = document.createElement("button");
     rm.className = "icon-btn danger"; rm.type = "button"; rm.textContent = "×";
     rm.title = "Remove this relation";
-    rm.addEventListener("click", () => {
+    rm.addEventListener("click", () => confirmAction(rm, "Confirm", () => {
       const src = r.dir === "out" ? item : r.other;
       const tgt = r.dir === "out" ? r.other : item;
       src.relations = src.relations.filter(x => !(x.targetId === tgt.id && x.type === r.type));
       save(); renderAll(); rebuildMap(false);
-    });
+    }));
     row.appendChild(rm);
     dl.appendChild(row);
   });

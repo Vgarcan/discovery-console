@@ -14,7 +14,6 @@ function toggleGap(sec, text){
   const k = gapKey(sec,text);
   S.resolved = S.resolved.includes(k) ? S.resolved.filter(x => x !== k) : S.resolved.concat(k);
   renderAll(); save();
-  if($("reviewView").classList.contains("on")) renderReview();
 }
 
 function gapRow(g){

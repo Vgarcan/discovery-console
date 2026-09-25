@@ -35,39 +35,64 @@ function normalise(list, seq){
   });
 }
 
-$("importReplace").addEventListener("click", () => {
+/* An item naming an area the console does not have used to be counted in the
+   session totals and then be unreachable everywhere else: no area rail, no
+   review inventory, no PDD section. Park it in the first area instead and say
+   so, rather than letting the item count lie. */
+function placeItems(list){
+  let stray = 0;
+  list.forEach(i => {
+    if(!DEF[i.section]){ i.section = SECTIONS[0]; stray++; }
+    if(!Array.isArray(i.tags)) i.tags = [];
+    if(!Array.isArray(i.relations)) i.relations = [];
+  });
+  return stray;
+}
+
+$("importReplace").addEventListener("click", () =>
+  confirmAction($("importReplace"), "Confirm replace", doReplace));
+
+function doReplace(){
   try{
     const o = parseSession($("importBox").value);
     const seq = {n:0};
     S.name = o.name || S.name;
-    S.items = normalise(o.items, seq).map(i => Object.assign({relations:[], tags:[]}, i));
+    S.items = normalise(o.items, seq);
+    const stray = placeItems(S.items);
     S.notes = normalise(o.notes, seq);
     S.marks = normalise(o.marks, seq);
-    S.resolved = o.resolved || [];
+    S.resolved = Array.isArray(o.resolved) ? o.resolved.filter(r => typeof r === "string") : [];
     if(typeof o.seconds === "number") S.seconds = o.seconds;
     $("sessionName").value = S.name;
     closeImport(); save(); renderAll(); setView("capture");
-    toast("Session replaced, " + S.items.length + " items loaded");
+    toast("Session replaced, " + S.items.length + " items loaded" +
+          (stray ? ". " + stray + " had an unknown area and are in " + SECTIONS[0] : ""));
   }catch(err){ $("importMsg").textContent = err.message; }
-});
+}
 
 $("importMerge").addEventListener("click", () => {
   try{
     const o = parseSession($("importBox").value);
     const seq = {n:Date.now()};
     const map = {};
-    const incoming = normalise(o.items, seq).map(i => Object.assign({relations:[], tags:[]}, i));
+    const incoming = normalise(o.items, seq);
+    const stray = placeItems(incoming);
     incoming.forEach(i => { const old = i.id; i.id = uid(); map[old] = i.id; });
+    /* Filter on the ORIGINAL target, then rewrite it. Rewriting first and then
+       testing the new id against a map keyed by the old ones dropped every
+       relation in the imported set. */
     incoming.forEach(i => {
-      i.relations = (i.relations || []).map(r => ({type:r.type, targetId:map[r.targetId] || r.targetId}))
-                                       .filter(r => map[r.targetId] || S.items.some(x => x.id === r.targetId));
+      i.relations = i.relations
+        .filter(r => map[r.targetId] || S.items.some(x => x.id === r.targetId))
+        .map(r => ({type:r.type, targetId:map[r.targetId] || r.targetId}));
     });
     S.items = S.items.concat(incoming);
     S.notes = S.notes.concat(normalise(o.notes, seq).map(n => Object.assign({}, n, {id:uid()})));
     S.marks = S.marks.concat(normalise(o.marks, seq).map(m => Object.assign({}, m, {id:uid()})));
     (o.resolved || []).forEach(r => { if(!S.resolved.includes(r)) S.resolved.push(r); });
     closeImport(); save(); renderAll(); setView("capture");
-    toast(incoming.length + " items merged in");
+    toast(incoming.length + " items merged in" +
+          (stray ? ", " + stray + " with an unknown area moved to " + SECTIONS[0] : ""));
   }catch(err){ $("importMsg").textContent = err.message; }
 });
 

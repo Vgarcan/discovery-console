@@ -46,6 +46,50 @@ function load(){
   }));
 }
 
+/* ---------- two-step destructive actions ---------- */
+/* Deleting is one keystroke away from the capture flow, so it arms on the first
+   press and only runs on the second. The armed button widens and turns red, and
+   a short dead time after arming swallows a double-click that would otherwise
+   sail straight through both presses. */
+const ARM_DEAD_MS = 400;
+const ARM_LIFE_MS = 4000;
+let armed = null;
+let armTimer = 0;
+
+function disarm(){
+  if(!armed) return;
+  armed.btn.textContent = armed.label;
+  armed.btn.classList.remove("armed");
+  if(armed.host) armed.host.classList.remove("arming");
+  armed = null;
+  clearTimeout(armTimer);
+}
+
+/* First call arms btn and relabels it; the second runs fn. */
+function confirmAction(btn, label, fn){
+  if(armed && armed.btn === btn){
+    if(Date.now() - armed.at < ARM_DEAD_MS) return;
+    disarm();
+    fn();
+    return;
+  }
+  disarm();
+  armed = {
+    btn:btn, label:btn.textContent, at:Date.now(),
+    host:btn.closest(".item-acts, .reply, .linkrow")
+  };
+  btn.textContent = label;
+  btn.classList.add("armed");
+  if(armed.host) armed.host.classList.add("arming");
+  armTimer = setTimeout(disarm, ARM_LIFE_MS);
+}
+
+/* Anything else the analyst does calls the delete off. */
+document.addEventListener("pointerdown", e => {
+  if(armed && !armed.btn.contains(e.target)) disarm();
+}, true);
+document.addEventListener("keydown", e => { if(e.key === "Escape") disarm(); });
+
 /* ---------- toast ---------- */
 let toastTimer;
 function toast(msg){

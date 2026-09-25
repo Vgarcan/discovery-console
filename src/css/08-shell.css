@@ -10,7 +10,10 @@
 .shell{
   flex:1 1 auto;min-height:0;
   display:grid;grid-template-columns:66px minmax(0,1fr);
-  --navw:238px;--inspw:318px;
+  /* -*-open is the width the analyst has set; -*-w is what the grid uses, so a
+     collapse can zero the track without losing the chosen width. */
+  --navw-open:238px;--inspw-open:318px;
+  --navw:var(--navw-open);--inspw:var(--inspw-open);
 }
 .shell[data-nav="off"]{--navw:0px}
 .shell[data-insp="off"]{--inspw:0px}
@@ -36,7 +39,7 @@
 
 .col2{min-width:0;display:flex;flex-direction:column}
 .work{
-  flex:1 1 auto;min-height:0;
+  flex:1 1 auto;min-height:0;position:relative;
   display:grid;
   grid-template-columns:var(--navw) minmax(0,1fr) var(--inspw);
   transition:grid-template-columns .22s cubic-bezier(.2,.8,.2,1);
@@ -45,7 +48,7 @@
 
 .navpanel{background:var(--rail);border-right:1px solid var(--line);overflow:hidden;min-width:0}
 .shell[data-nav="off"] .navpanel{border-right:0}
-.np-inner{width:238px;height:100%;overflow-y:auto;padding:1rem 0 1.5rem;display:flex;flex-direction:column}
+.np-inner{width:var(--navw-open);height:100%;overflow-y:auto;padding:1rem 0 1.5rem;display:flex;flex-direction:column}
 .np-head{padding:0 1.1rem .7rem}
 .np-foot{margin-top:auto;padding:1.1rem 1.1rem 0;border-top:1px solid var(--line-soft)}
 .np-keys{margin:.9rem 0 0;font-size:.72rem;color:var(--ink-3);line-height:1.7}
@@ -55,7 +58,7 @@
 
 .inspector{background:var(--rail);border-left:1px solid var(--line);overflow:hidden;min-width:0}
 .shell[data-insp="off"] .inspector{border-left:0}
-.insp-inner{width:318px;height:100%;display:flex;flex-direction:column}
+.insp-inner{width:var(--inspw-open);height:100%;display:flex;flex-direction:column}
 .tabs{display:flex;border-bottom:1px solid var(--line);flex:0 0 auto}
 .tab{
   flex:1;background:none;border:0;border-bottom:2px solid transparent;
@@ -73,9 +76,30 @@
 .pane .tape-block{padding:0 0 1.1rem;margin-bottom:1.1rem}
 .pane .tape-block:last-child{border-bottom:0}
 
+
+/* ---------- drag-to-resize handles ---------- */
+.pane-resize{
+  position:absolute;top:0;bottom:0;width:11px;z-index:6;
+  background:none;border:0;padding:0;cursor:col-resize;touch-action:none;
+  transition:left .22s cubic-bezier(.2,.8,.2,1),right .22s cubic-bezier(.2,.8,.2,1);
+}
+.pane-resize::after{
+  content:"";position:absolute;top:0;bottom:0;left:50%;width:2px;
+  transform:translateX(-50%);background:transparent;border-radius:2px;
+  transition:background .12s;
+}
+.pane-resize:hover::after,.pane-resize.dragging::after{background:var(--accent)}
+.pane-resize:focus{outline:0}
+.pane-resize:focus-visible::after{background:var(--accent)}
+#navResize{left:calc(var(--navw) - 5px)}
+#inspResize{right:calc(var(--inspw) - 5px)}
+.shell[data-nav="off"] #navResize,.shell[data-insp="off"] #inspResize{display:none}
+
+body.resizing{cursor:col-resize;user-select:none}
+body.resizing .work,body.resizing .pane-resize{transition:none}
+
 @media (max-width:1180px){
-  .shell{--inspw:288px}
-  .insp-inner{width:288px}
+  .shell{--inspw-open:288px}
   .stage-inner{padding:1.6rem 1.6rem 3rem}
 }
 @media (max-width:900px){
@@ -102,4 +126,5 @@
   .stage-inner{padding:1.2rem 1rem 2.5rem;max-width:none}
   .pane{max-height:46vh}
   .pane-toggle{display:none}
+  .pane-resize{display:none}
 }

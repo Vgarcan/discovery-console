@@ -5,6 +5,7 @@
 load();
 S.ui = Object.assign({nav:true, insp:true, tab:"tape"}, S.ui || {});
 document.documentElement.setAttribute("data-theme", S.theme || "dark");
+applyPaneWidths();
 setPanel("nav", S.ui.nav !== false);
 setPanel("insp", S.ui.insp !== false);
 setTab(S.ui.tab || "tape");
