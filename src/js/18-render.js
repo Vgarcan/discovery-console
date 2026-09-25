@@ -16,4 +16,5 @@ function renderAll(){
   $("cNotes").textContent = S.notes.length;
   $("cMarks").textContent = S.marks.length;
   $("undoBtn").disabled = !S.items.length;
+  $("newBtn").disabled = sessionIsEmpty();
 }

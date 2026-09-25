@@ -465,6 +465,62 @@ async function run(){
      ctxR.d.getElementById("navResize").getAttribute("aria-valuenow"));
   ok("no page errors resizing", ctxR.errs.length === 0, ctxR.errs.join(" | "));
 
+  group("New session");
+  const ctxN = boot(); const aN = api(ctxN); await wait(120);
+  const dN = ctxN.d, wN = ctxN.w;
+  ok("New session is disabled with nothing to lose", dN.getElementById("newBtn").disabled);
+  aN.capture(1, "Web UI", "Certitude 70");
+  aN.tab("note");
+  dN.getElementById("noteBox").value = "Park this";
+  dN.getElementById("saveNoteBtn").click();
+  dN.getElementById("markBtn").click();
+  aN.tab("tape");
+  ok("and enabled once there is", !dN.getElementById("newBtn").disabled);
+  dN.getElementById("themeBtn").click();
+
+  dN.getElementById("newBtn").click();
+  ok("the confirm dialog opens", dN.getElementById("newScrim").classList.contains("on"));
+  const lost = aN.text("newSummary");
+  ok("it names what will be lost", /1 item,.*1 note,.*1 mark,/.test(lost), lost);
+  ok("it counts singulars as singulars", !lost.includes("1 items"), lost);
+
+  dN.getElementById("newCancel").click();
+  ok("cancel closes it", !dN.getElementById("newScrim").classList.contains("on"));
+  eq("cancel keeps the session", aN.text("cItems"), "1");
+
+  dN.getElementById("newBtn").click();
+  dN.dispatchEvent(new wN.KeyboardEvent("keydown", { key:"Escape", bubbles:true }));
+  ok("Escape closes it too", !dN.getElementById("newScrim").classList.contains("on"));
+  eq("and keeps the session", aN.text("cItems"), "1");
+
+  dN.getElementById("newBtn").click();
+  dN.getElementById("newExport").click();
+  await wait(80);
+  const backup = JSON.parse(wN.__saved[wN.__saved.length - 1].data);
+  eq("the export offered in the dialog is the live session", backup.items.length, 1);
+  ok("exporting does not close the dialog", dN.getElementById("newScrim").classList.contains("on"));
+
+  dN.getElementById("newConfirm").click();
+  await wait(80);
+  eq("items cleared", aN.text("cItems"), "0");
+  eq("notes cleared", aN.text("cNotes"), "0");
+  eq("marks cleared", aN.text("cMarks"), "0");
+  eq("name reset", dN.getElementById("sessionName").value, "Untitled walkthrough");
+  eq("back on the capture view", dN.querySelector(".ico.on span").textContent, "Capture");
+  eq("area reset to the first", aN.text("stageLabel"), "systems");
+  ok("the tape is empty", dN.querySelectorAll("#tape .tape-row").length === 0);
+  ok("New session is disabled again", dN.getElementById("newBtn").disabled);
+  eq("theme preference survives the reset",
+     dN.documentElement.getAttribute("data-theme"), "light");
+  const after = JSON.parse(wN.localStorage.getItem("tqa.discovery.console.v1"));
+  ok("the cleared session is what got persisted",
+     after.items.length === 0 && after.notes.length === 0 &&
+     after.marks.length === 0 && after.resolved.length === 0 &&
+     after.name === "Untitled walkthrough",
+     JSON.stringify({i:after.items.length, n:after.notes.length, m:after.marks.length,
+                     r:after.resolved.length, name:after.name}));
+  ok("no page errors starting over", ctxN.errs.length === 0, ctxN.errs.join(" | "));
+
   group("Stress fixture");
   /* assets/data/stress-session-wire-callbacks.json is built to fail loudly if any
      of the PDD audit fixes regresses. Every assertion here names the finding it

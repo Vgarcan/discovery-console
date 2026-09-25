@@ -115,6 +115,14 @@ edge to go back to the default width, or focus it with `Tab` and use `←` `→`
 larger steps, `Home` to reset). Widths are saved with the session, and are re-clamped if the
 window gets too narrow to hold them, so the capture surface never disappears.
 
+### Starting over
+
+**New session** in the top bar clears everything and hands you a blank console. It is greyed
+out when there is nothing to clear, and it asks first: a dialog that names what is about to go
+(items, notes, marks, answered questions) and puts **Download JSON first** next to the discard
+button, because localStorage is the only copy. `Esc` or a click outside cancels it. The theme
+and your panel widths survive; the session does not.
+
 ### The inspector
 
 Three tabs on the right, one at a time.
@@ -234,6 +242,10 @@ does not have is parked in Systems rather than silently vanishing, and the toast
 Deleting an item, a reply or a relation takes two presses. The first turns the button red and
 relabels it; the second does the work. A double-click cannot get through both, and anything
 else you click, or `Esc`, calls it off. Nothing here has an undo, which is why.
+
+**Replace** on import uses the same two presses. **New session** is the one exception: it
+clears the whole session, so it goes behind a dialog instead, where the confirm sits somewhere
+a stray second click cannot reach and the export is one click away.
 
 ### Light theme and focus mode
 
@@ -365,7 +377,7 @@ Three rules keep the boundaries honest, and `tools/audit.py` fails if any of the
 | `14-map.js` | Map filtering, force layout, rendering, interaction, linking |
 | `15-shell.js` | View switching, collapsible and resizable panels, inspector tabs |
 | `16-pdd.js` | Maps captured evidence onto the approved PDD template and exports it |
-| `17-transfer.js` | JSON import by file or paste, file saving via the downloads capability |
+| `17-transfer.js` | JSON import, file saving via the downloads capability, starting a new session |
 | `18-render.js` | The single repaint orchestrator |
 | `19-boot.js` | Start-up only: restore, apply saved shell state, draw the first frame |
 

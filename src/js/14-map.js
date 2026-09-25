@@ -14,6 +14,15 @@ function openMap(){
   rebuildMap(true);
   setTimeout(() => $("mapSearch").focus(), 40);
 }
+/* Everything the map remembers about the open session: filters, selection and
+   the layout it settled into. A new session must inherit none of it. */
+function resetMap(){
+  M.sel = null; M.tags = []; M.q = ""; M.hidden = [];
+  M.nodes = []; M.links = []; M.pos = {};
+  M.k = 1; M.tx = 0; M.ty = 0;
+  $("mapSearch").value = "";
+}
+
 function closeMap(){
   $("mapScrim").classList.remove("on");
   cancelAnimationFrame(M.raf); M.raf = 0; M.alpha = 0;

@@ -138,7 +138,10 @@ button,input,textarea,select{font:inherit;color:inherit}
 .btn-solid:hover{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);filter:brightness(1.08)}
 .btn-ghost{border-color:transparent;color:var(--ink-3);padding:.4rem .5rem}
 .btn-ghost:hover{border-color:transparent;color:var(--ink);background:var(--raise)}
+.btn-danger{background:var(--alert);border-color:var(--alert);color:#ffffff;font-weight:600}
+.btn-danger:hover{background:var(--alert);border-color:var(--alert);color:#ffffff;filter:brightness(1.08)}
 .btn:disabled{opacity:.35;cursor:not-allowed}
+.btn:disabled:hover{border-color:var(--line);color:var(--ink-2)}
 
 /* 03-capture.css
    Capture stage: areas rail, capture bar, type grid, item list. */
@@ -900,6 +903,7 @@ body.resizing .work,body.resizing .pane-resize{transition:none}
         <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="11" rx="1"/><line x1="10" y1="2.5" x2="10" y2="13.5"/></svg>
       </button>
       <span class="divider-v"></span>
+      <button class="btn" id="newBtn" title="Clear this session and start a new one" disabled>New session</button>
       <button class="btn" id="undoBtn" disabled>Undo</button>
       <button class="btn btn-solid" id="finishBtn">End walkthrough</button>
     </div>
@@ -1203,6 +1207,25 @@ body.resizing .work,body.resizing .pane-resize{transition:none}
   </div>
 </div>
 
+<div class="scrim" id="newScrim">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="newTitle">
+    <header>
+      <span class="label">session</span>
+      <h2 id="newTitle">Start a new session</h2>
+    </header>
+    <div class="sheet-body">
+      <p class="pane-hint">This clears the open session from this browser. There is no undo, and
+      the JSON export is the only copy you will have.</p>
+      <div class="import-summary on" id="newSummary"></div>
+    </div>
+    <footer>
+      <button class="btn" id="newCancel">Cancel</button>
+      <button class="btn" id="newExport">Download JSON first</button>
+      <button class="btn btn-danger" id="newConfirm">Discard and start new</button>
+    </footer>
+  </div>
+</div>
+
 <div class="scrim" id="importScrim">
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="importTitle">
     <header>
@@ -1340,8 +1363,10 @@ const PDD = [
 const SECTIONS = Object.keys(DEF);
 const KEY = "tqa.discovery.console.v1";
 
+const DEFAULT_NAME = "Untitled walkthrough";
+
 let S = {
-  name:"Untitled walkthrough",
+  name:DEFAULT_NAME,
   active:"Systems",
   items:[],
   notes:[],
@@ -1426,6 +1451,31 @@ document.addEventListener("pointerdown", e => {
   if(armed && !armed.btn.contains(e.target)) disarm();
 }, true);
 document.addEventListener("keydown", e => { if(e.key === "Escape") disarm(); });
+
+/* ---------- starting over ---------- */
+/* This clears the session, not the view state each module keeps for itself.
+   selectSection() drops the stage tag filter and the seed, renderTapeFilter()
+   drops kinds that no longer exist, and the map owns its own resetMap(). The
+   single repaint is what makes that division safe. Preferences -- theme, panel
+   widths, the open inspector tab -- are deliberately kept. */
+function sessionIsEmpty(){
+  return !S.items.length && !S.notes.length && !S.marks.length &&
+         !S.resolved.length && (S.name || "") === DEFAULT_NAME;
+}
+
+function resetSession(){
+  S.name = DEFAULT_NAME;
+  S.items = [];
+  S.notes = [];
+  S.marks = [];
+  S.resolved = [];
+  S.seconds = 0;
+  S.active = SECTIONS[0];
+  editingId = null;
+  draftTags = [];
+  draftRels = [];
+  disarm();
+}
 
 /* ---------- toast ---------- */
 let toastTimer;
@@ -2320,6 +2370,15 @@ function openMap(){
   rebuildMap(true);
   setTimeout(() => $("mapSearch").focus(), 40);
 }
+/* Everything the map remembers about the open session: filters, selection and
+   the layout it settled into. A new session must inherit none of it. */
+function resetMap(){
+  M.sel = null; M.tags = []; M.q = ""; M.hidden = [];
+  M.nodes = []; M.links = []; M.pos = {};
+  M.k = 1; M.tx = 0; M.ty = 0;
+  $("mapSearch").value = "";
+}
+
 function closeMap(){
   $("mapScrim").classList.remove("on");
   cancelAnimationFrame(M.raf); M.raf = 0; M.alpha = 0;
@@ -3248,7 +3307,8 @@ $("copyPddBtn").addEventListener("click", () => copyText(pddMarkdown(), "PDD dra
 $("printPddBtn").addEventListener("click", () => window.print());
 
 /* 17-transfer.js
-   Session transfer: JSON import by file or paste, and saving files through the artifact downloads capability. */
+   Session lifecycle: JSON import by file or paste, saving files through the artifact
+   downloads capability, and clearing the session to start a new one. */
 /* =================== JSON IMPORT =================== */
 function openImport(){
   $("importScrim").classList.add("on");
@@ -3438,6 +3498,51 @@ drop.addEventListener("drop", e => {
 
 $("importBtn2").addEventListener("click", openImport);
 
+/* =================== NEW SESSION =================== */
+/* The most destructive thing in the app, so it is the only one behind a dialog
+   rather than the two-press arm used everywhere else: the confirm sits in a
+   different place from the button that opened it, and the export is one click
+   away at the moment it is worth taking. */
+function openNew(){
+  if(sessionIsEmpty()) return;
+  const answered = buildGaps().filter(g => g.done).length;
+  const n = (v, word) => "<b>" + v + "</b> " + word + (v === 1 ? "" : "s");
+  $("newSummary").innerHTML =
+    '<span class="label">' + esc(S.name || DEFAULT_NAME) + "</span>" +
+    [n(S.items.length, "item"), n(S.notes.length, "note"), n(S.marks.length, "mark"),
+     n(answered, "question") + " answered"].join(", ");
+  $("newScrim").classList.add("on");
+  setTimeout(() => $("newCancel").focus(), 30);
+}
+function closeNew(){ $("newScrim").classList.remove("on"); }
+
+$("newBtn").addEventListener("click", openNew);
+$("newCancel").addEventListener("click", closeNew);
+$("newScrim").addEventListener("mousedown", e => { if(e.target === $("newScrim")) closeNew(); });
+$("newExport").addEventListener("click", () =>
+  saveFile(slug(S.name) + "-" + today() + ".json", JSON.stringify(S,null,2), "Session saved as JSON"));
+
+$("newConfirm").addEventListener("click", () => {
+  resetSession();
+  $("sessionName").value = S.name;
+  $("captureInput").value = "";
+  $("noteBox").value = "";
+  resetMap();
+  closeNew();
+  paintClock();
+  save();
+  setView("capture");
+  selectSection(S.active, true);
+  renderAll();
+  toast("New session started");
+});
+
+document.addEventListener("keydown", e => {
+  if(e.key !== "Escape") return;
+  if($("newScrim").classList.contains("on")){ closeNew(); return; }
+  if($("importScrim").classList.contains("on")) closeImport();
+});
+
 /* 18-render.js
    The single repaint orchestrator. Any module that changes the session calls
    renderAll(); nothing repaints the whole app on its own. */
@@ -3456,6 +3561,7 @@ function renderAll(){
   $("cNotes").textContent = S.notes.length;
   $("cMarks").textContent = S.marks.length;
   $("undoBtn").disabled = !S.items.length;
+  $("newBtn").disabled = sessionIsEmpty();
 }
 
 /* 19-boot.js

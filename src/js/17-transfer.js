@@ -1,5 +1,6 @@
 /* 17-transfer.js
-   Session transfer: JSON import by file or paste, and saving files through the artifact downloads capability. */
+   Session lifecycle: JSON import by file or paste, saving files through the artifact
+   downloads capability, and clearing the session to start a new one. */
 /* =================== JSON IMPORT =================== */
 function openImport(){
   $("importScrim").classList.add("on");
@@ -188,3 +189,48 @@ drop.addEventListener("drop", e => {
 });
 
 $("importBtn2").addEventListener("click", openImport);
+
+/* =================== NEW SESSION =================== */
+/* The most destructive thing in the app, so it is the only one behind a dialog
+   rather than the two-press arm used everywhere else: the confirm sits in a
+   different place from the button that opened it, and the export is one click
+   away at the moment it is worth taking. */
+function openNew(){
+  if(sessionIsEmpty()) return;
+  const answered = buildGaps().filter(g => g.done).length;
+  const n = (v, word) => "<b>" + v + "</b> " + word + (v === 1 ? "" : "s");
+  $("newSummary").innerHTML =
+    '<span class="label">' + esc(S.name || DEFAULT_NAME) + "</span>" +
+    [n(S.items.length, "item"), n(S.notes.length, "note"), n(S.marks.length, "mark"),
+     n(answered, "question") + " answered"].join(", ");
+  $("newScrim").classList.add("on");
+  setTimeout(() => $("newCancel").focus(), 30);
+}
+function closeNew(){ $("newScrim").classList.remove("on"); }
+
+$("newBtn").addEventListener("click", openNew);
+$("newCancel").addEventListener("click", closeNew);
+$("newScrim").addEventListener("mousedown", e => { if(e.target === $("newScrim")) closeNew(); });
+$("newExport").addEventListener("click", () =>
+  saveFile(slug(S.name) + "-" + today() + ".json", JSON.stringify(S,null,2), "Session saved as JSON"));
+
+$("newConfirm").addEventListener("click", () => {
+  resetSession();
+  $("sessionName").value = S.name;
+  $("captureInput").value = "";
+  $("noteBox").value = "";
+  resetMap();
+  closeNew();
+  paintClock();
+  save();
+  setView("capture");
+  selectSection(S.active, true);
+  renderAll();
+  toast("New session started");
+});
+
+document.addEventListener("keydown", e => {
+  if(e.key !== "Escape") return;
+  if($("newScrim").classList.contains("on")){ closeNew(); return; }
+  if($("importScrim").classList.contains("on")) closeImport();
+});

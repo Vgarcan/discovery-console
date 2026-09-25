@@ -3,8 +3,10 @@
 const SECTIONS = Object.keys(DEF);
 const KEY = "tqa.discovery.console.v1";
 
+const DEFAULT_NAME = "Untitled walkthrough";
+
 let S = {
-  name:"Untitled walkthrough",
+  name:DEFAULT_NAME,
   active:"Systems",
   items:[],
   notes:[],
@@ -89,6 +91,31 @@ document.addEventListener("pointerdown", e => {
   if(armed && !armed.btn.contains(e.target)) disarm();
 }, true);
 document.addEventListener("keydown", e => { if(e.key === "Escape") disarm(); });
+
+/* ---------- starting over ---------- */
+/* This clears the session, not the view state each module keeps for itself.
+   selectSection() drops the stage tag filter and the seed, renderTapeFilter()
+   drops kinds that no longer exist, and the map owns its own resetMap(). The
+   single repaint is what makes that division safe. Preferences -- theme, panel
+   widths, the open inspector tab -- are deliberately kept. */
+function sessionIsEmpty(){
+  return !S.items.length && !S.notes.length && !S.marks.length &&
+         !S.resolved.length && (S.name || "") === DEFAULT_NAME;
+}
+
+function resetSession(){
+  S.name = DEFAULT_NAME;
+  S.items = [];
+  S.notes = [];
+  S.marks = [];
+  S.resolved = [];
+  S.seconds = 0;
+  S.active = SECTIONS[0];
+  editingId = null;
+  draftTags = [];
+  draftRels = [];
+  disarm();
+}
 
 /* ---------- toast ---------- */
 let toastTimer;

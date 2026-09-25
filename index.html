@@ -42,6 +42,7 @@
         <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="11" rx="1"/><line x1="10" y1="2.5" x2="10" y2="13.5"/></svg>
       </button>
       <span class="divider-v"></span>
+      <button class="btn" id="newBtn" title="Clear this session and start a new one" disabled>New session</button>
       <button class="btn" id="undoBtn" disabled>Undo</button>
       <button class="btn btn-solid" id="finishBtn">End walkthrough</button>
     </div>
@@ -342,6 +343,25 @@
            aria-valuemin="220" aria-valuemax="620" aria-valuenow="300"
            title="Drag to resize. Double-click to reset."></div>
     </div>
+  </div>
+</div>
+
+<div class="scrim" id="newScrim">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="newTitle">
+    <header>
+      <span class="label">session</span>
+      <h2 id="newTitle">Start a new session</h2>
+    </header>
+    <div class="sheet-body">
+      <p class="pane-hint">This clears the open session from this browser. There is no undo, and
+      the JSON export is the only copy you will have.</p>
+      <div class="import-summary on" id="newSummary"></div>
+    </div>
+    <footer>
+      <button class="btn" id="newCancel">Cancel</button>
+      <button class="btn" id="newExport">Download JSON first</button>
+      <button class="btn btn-danger" id="newConfirm">Discard and start new</button>
+    </footer>
   </div>
 </div>
 
