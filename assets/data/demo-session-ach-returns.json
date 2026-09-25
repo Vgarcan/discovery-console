@@ -1,0 +1,1007 @@
+{
+  "name": "Meridian CU — ACH return exception handling",
+  "active": "Exceptions",
+  "items": [
+    {
+      "id": "d00",
+      "section": "Systems",
+      "name": "Symitar Episys core",
+      "tags": [
+        "Terminal UI",
+        "Internal",
+        "On-prem"
+      ],
+      "relations": [
+        {
+          "type": "reads from",
+          "targetId": "d05"
+        },
+        {
+          "type": "writes to",
+          "targetId": "d07"
+        }
+      ],
+      "replies": [
+        {
+          "text": "Green-screen session opened through the host emulator. Posting happens here.",
+          "at": "07:18",
+          "ts": 1758790847000
+        }
+      ],
+      "at": "07:12",
+      "ts": 1758790894000
+    },
+    {
+      "id": "d01",
+      "section": "Systems",
+      "name": "FedLine Web",
+      "tags": [
+        "Web UI",
+        "Third party",
+        "Cloud"
+      ],
+      "relations": [
+        {
+          "type": "connects to",
+          "targetId": "d44"
+        }
+      ],
+      "replies": [
+        {
+          "text": "Accessed with a personal hardware token. No shared credentials.",
+          "at": "07:20",
+          "ts": 1758790941000
+        }
+      ],
+      "at": "07:13",
+      "ts": 1758790988000
+    },
+    {
+      "id": "d02",
+      "section": "Systems",
+      "name": "Returns SFTP drop",
+      "tags": [
+        "File transfer",
+        "Internal",
+        "On-prem"
+      ],
+      "relations": [
+        {
+          "type": "receives from",
+          "targetId": "d44"
+        }
+      ],
+      "replies": [
+        {
+          "text": "The nightly return file lands here at 06:15 ET.",
+          "at": "07:21",
+          "ts": 1758791035000
+        }
+      ],
+      "at": "07:15",
+      "ts": 1758791082000
+    },
+    {
+      "id": "d03",
+      "section": "Systems",
+      "name": "Meridian Service Desk",
+      "tags": [
+        "Web UI",
+        "Internal",
+        "Cloud"
+      ],
+      "relations": [],
+      "replies": [
+        {
+          "text": "A ticket is raised here for every item that cannot be posted.",
+          "at": "07:23",
+          "ts": 1758791129000
+        }
+      ],
+      "at": "07:16",
+      "ts": 1758791176000
+    },
+    {
+      "id": "d04",
+      "section": "Data",
+      "name": "Daily ACH return file",
+      "tags": [
+        "Input",
+        "CSV",
+        "External",
+        "Structured"
+      ],
+      "relations": [
+        {
+          "type": "receives from",
+          "targetId": "d02"
+        }
+      ],
+      "replies": [
+        {
+          "text": "Fed return file listing every rejected entry from the previous cycle.",
+          "at": "07:24",
+          "ts": 1758791223000
+        }
+      ],
+      "at": "07:18",
+      "ts": 1758791270000
+    },
+    {
+      "id": "d05",
+      "section": "Data",
+      "name": "Member account extract",
+      "tags": [
+        "Input",
+        "Database record",
+        "Internal"
+      ],
+      "relations": [],
+      "replies": [
+        {
+          "text": "Pulled from the core to match routing and account number.",
+          "at": "07:26",
+          "ts": 1758791317000
+        }
+      ],
+      "at": "07:20",
+      "ts": 1758791364000
+    },
+    {
+      "id": "d06",
+      "section": "Data",
+      "name": "Exception tracking workbook",
+      "tags": [
+        "Input",
+        "Output",
+        "Excel",
+        "Internal"
+      ],
+      "relations": [
+        {
+          "type": "owned by",
+          "targetId": "d34"
+        }
+      ],
+      "replies": [
+        {
+          "text": "Analysts log each return and its resolution in the shared workbook.",
+          "at": "07:28",
+          "ts": 1758791411000
+        }
+      ],
+      "at": "07:21",
+      "ts": 1758791458000
+    },
+    {
+      "id": "d07",
+      "section": "Data",
+      "name": "Member notification letter",
+      "tags": [
+        "Output",
+        "PDF"
+      ],
+      "relations": [
+        {
+          "type": "sends to",
+          "targetId": "d37"
+        }
+      ],
+      "replies": [
+        {
+          "text": "Generated per returned item and issued to the member.",
+          "at": "07:29",
+          "ts": 1758791505000
+        }
+      ],
+      "at": "07:23",
+      "ts": 1758791552000
+    },
+    {
+      "id": "d08",
+      "section": "Data",
+      "name": "Daily returns summary",
+      "tags": [
+        "Output",
+        "Email",
+        "Internal"
+      ],
+      "relations": [
+        {
+          "type": "sends to",
+          "targetId": "d36"
+        }
+      ],
+      "replies": [
+        {
+          "text": "Sent to the payments manager at the end of each run.",
+          "at": "07:31",
+          "ts": 1758791599000
+        }
+      ],
+      "at": "07:24",
+      "ts": 1758791646000
+    },
+    {
+      "id": "d09",
+      "section": "Process",
+      "name": "Return file lands on the SFTP drop",
+      "tags": [
+        "Trigger"
+      ],
+      "relations": [],
+      "replies": [],
+      "at": "07:26",
+      "ts": 1758791693000
+    },
+    {
+      "id": "d10",
+      "section": "Process",
+      "name": "All returns posted and members notified",
+      "tags": [
+        "End"
+      ],
+      "relations": [],
+      "replies": [],
+      "at": "07:28",
+      "ts": 1758791740000
+    },
+    {
+      "id": "d11",
+      "section": "Process",
+      "name": "Retrieve and validate the return file",
+      "tags": [
+        "Flow cue"
+      ],
+      "relations": [],
+      "replies": [],
+      "at": "07:29",
+      "ts": 1758791787000
+    },
+    {
+      "id": "d12",
+      "section": "Process",
+      "name": "Match each return to the member account",
+      "tags": [
+        "Flow cue"
+      ],
+      "relations": [
+        {
+          "type": "depends on",
+          "targetId": "d05"
+        }
+      ],
+      "replies": [],
+      "at": "07:31",
+      "ts": 1758791834000
+    },
+    {
+      "id": "d13",
+      "section": "Process",
+      "name": "Post the return and adjust the member balance",
+      "tags": [
+        "Flow cue"
+      ],
+      "relations": [
+        {
+          "type": "used by",
+          "targetId": "d00"
+        }
+      ],
+      "replies": [],
+      "at": "07:32",
+      "ts": 1758791881000
+    },
+    {
+      "id": "d14",
+      "section": "Process",
+      "name": "Generate and issue the member notification",
+      "tags": [
+        "Flow cue"
+      ],
+      "relations": [],
+      "replies": [],
+      "at": "07:34",
+      "ts": 1758791928000
+    },
+    {
+      "id": "d15",
+      "section": "Process",
+      "name": "Log the outcome in the tracking workbook",
+      "tags": [
+        "Flow cue"
+      ],
+      "relations": [
+        {
+          "type": "writes to",
+          "targetId": "d06"
+        }
+      ],
+      "replies": [],
+      "at": "07:36",
+      "ts": 1758791975000
+    },
+    {
+      "id": "d16",
+      "section": "Process",
+      "name": "Post ACH returns same day so members are not charged twice",
+      "tags": [
+        "Purpose"
+      ],
+      "relations": [],
+      "replies": [],
+      "at": "07:37",
+      "ts": 1758792022000
+    },
+    {
+      "id": "d17",
+      "section": "Process",
+      "name": "Standard ACH returns, codes R01 to R10",
+      "tags": [
+        "In scope"
+      ],
+      "relations": [],
+      "replies": [],
+      "at": "07:39",
+      "ts": 1758792069000
+    },
+    {
+      "id": "d18",
+      "section": "Process",
+      "name": "Same-day ACH returns",
+      "tags": [
+        "Out of scope"
+      ],
+      "relations": [],
+      "replies": [
+        {
+          "text": "Handled by the wire team under a separate procedure.",
+          "at": "07:47",
+          "ts": 1758792116000
+        }
+      ],
+      "at": "07:40",
+      "ts": 1758792163000
+    },
+    {
+      "id": "d19",
+      "section": "Process",
+      "name": "International ACH transactions",
+      "tags": [
+        "Out of scope"
+      ],
+      "relations": [],
+      "replies": [],
+      "at": "07:42",
+      "ts": 1758792210000
+    },
+    {
+      "id": "d20",
+      "section": "Process",
+      "name": "Federal Reserve return feed",
+      "tags": [
+        "External source",
+        "External"
+      ],
+      "relations": [],
+      "replies": [],
+      "at": "07:44",
+      "ts": 1758792257000
+    },
+    {
+      "id": "d21",
+      "section": "Operations",
+      "name": "Every business day, once the file lands",
+      "tags": [
+        "Frequency"
+      ],
+      "relations": [],
+      "replies": [],
+      "at": "07:45",
+      "ts": 1758792304000
+    },
+    {
+      "id": "d22",
+      "section": "Operations",
+      "name": "About 120 returns a day",
+      "tags": [
+        "Volume"
+      ],
+      "relations": [],
+      "replies": [],
+      "at": "07:47",
+      "ts": 1758792351000
+    },
+    {
+      "id": "d23",
+      "section": "Operations",
+      "name": "Up to 400 returns at month end",
+      "tags": [
+        "Peak"
+      ],
+      "relations": [],
+      "replies": [
+        {
+          "text": "Last two business days of the month are the worst.",
+          "at": "07:55",
+          "ts": 1758792398000
+        }
+      ],
+      "at": "07:48",
+      "ts": 1758792445000
+    },
+    {
+      "id": "d24",
+      "section": "Operations",
+      "name": "Around 4 minutes per return",
+      "tags": [
+        "Manual effort"
+      ],
+      "relations": [],
+      "replies": [],
+      "at": "07:50",
+      "ts": 1758792492000
+    },
+    {
+      "id": "d25",
+      "section": "Operations",
+      "name": "Run window is 07:00 to 11:00 ET",
+      "tags": [
+        "Schedule"
+      ],
+      "relations": [],
+      "replies": [],
+      "at": "07:52",
+      "ts": 1758792539000
+    },
+    {
+      "id": "d26",
+      "section": "Operations",
+      "name": "Returns must be posted within one business day",
+      "tags": [
+        "SLA"
+      ],
+      "relations": [],
+      "replies": [],
+      "at": "07:53",
+      "ts": 1758792586000
+    },
+    {
+      "id": "d27",
+      "section": "Operations",
+      "name": "11:00 ET cutoff for same-day posting",
+      "tags": [
+        "Cutoff"
+      ],
+      "relations": [],
+      "replies": [],
+      "at": "07:55",
+      "ts": 1758792633000
+    },
+    {
+      "id": "d28",
+      "section": "Operations",
+      "name": "Roughly 8 percent need manual research",
+      "tags": [
+        "Exception rate"
+      ],
+      "relations": [],
+      "replies": [],
+      "at": "07:56",
+      "ts": 1758792680000
+    },
+    {
+      "id": "d29",
+      "section": "Rules",
+      "name": "R01 insufficient funds returns post without review",
+      "tags": [
+        "Business rule"
+      ],
+      "relations": [],
+      "replies": [],
+      "at": "07:58",
+      "ts": 1758792727000
+    },
+    {
+      "id": "d30",
+      "section": "Rules",
+      "name": "Returns over 5,000 USD need supervisor approval",
+      "tags": [
+        "Approval",
+        "Decision"
+      ],
+      "relations": [
+        {
+          "type": "owned by",
+          "targetId": "d36"
+        }
+      ],
+      "replies": [
+        {
+          "text": "Approval is recorded in the workbook before the return is posted.",
+          "at": "08:06",
+          "ts": 1758792774000
+        }
+      ],
+      "at": "08:00",
+      "ts": 1758792821000
+    },
+    {
+      "id": "d31",
+      "section": "Rules",
+      "name": "Match on routing number, account number and amount",
+      "tags": [
+        "Matching",
+        "Validation"
+      ],
+      "relations": [],
+      "replies": [],
+      "at": "08:01",
+      "ts": 1758792868000
+    },
+    {
+      "id": "d32",
+      "section": "Rules",
+      "name": "Reject the entry if the member account is closed",
+      "tags": [
+        "Validation"
+      ],
+      "relations": [],
+      "replies": [],
+      "at": "08:03",
+      "ts": 1758792915000
+    },
+    {
+      "id": "d33",
+      "section": "Rules",
+      "name": "Fee waiver decided case by case for a first return",
+      "tags": [
+        "Judgement"
+      ],
+      "relations": [
+        {
+          "type": "owned by",
+          "targetId": "d35"
+        }
+      ],
+      "replies": [
+        {
+          "text": "No written rule exists. The analyst asks the SME.",
+          "at": "08:11",
+          "ts": 1758792962000
+        }
+      ],
+      "at": "08:04",
+      "ts": 1758793009000
+    },
+    {
+      "id": "d34",
+      "section": "People",
+      "name": "Payments operations team",
+      "tags": [
+        "Team",
+        "Internal"
+      ],
+      "relations": [],
+      "replies": [
+        {
+          "text": "Three analysts share the daily run on rotation.",
+          "at": "08:12",
+          "ts": 1758793056000
+        }
+      ],
+      "at": "08:06",
+      "ts": 1758793103000
+    },
+    {
+      "id": "d35",
+      "section": "People",
+      "name": "ACH subject matter expert",
+      "tags": [
+        "SME",
+        "Internal"
+      ],
+      "relations": [],
+      "replies": [],
+      "at": "08:08",
+      "ts": 1758793150000
+    },
+    {
+      "id": "d36",
+      "section": "People",
+      "name": "Payments manager",
+      "tags": [
+        "Process owner",
+        "Approval",
+        "Internal"
+      ],
+      "relations": [],
+      "replies": [],
+      "at": "08:09",
+      "ts": 1758793197000
+    },
+    {
+      "id": "d37",
+      "section": "People",
+      "name": "Member services",
+      "tags": [
+        "Handoff",
+        "Internal"
+      ],
+      "relations": [],
+      "replies": [
+        {
+          "text": "Takes member queries once the notification goes out.",
+          "at": "08:17",
+          "ts": 1758793244000
+        }
+      ],
+      "at": "08:11",
+      "ts": 1758793291000
+    },
+    {
+      "id": "d38",
+      "section": "Exceptions",
+      "name": "Member account not found in the core",
+      "tags": [
+        "Business exception"
+      ],
+      "relations": [
+        {
+          "type": "relates to",
+          "targetId": "d00"
+        }
+      ],
+      "replies": [
+        {
+          "text": "Report to the ACH SME and continue with the next return.",
+          "at": "08:19",
+          "ts": 1758793338000
+        }
+      ],
+      "at": "08:12",
+      "ts": 1758793385000
+    },
+    {
+      "id": "d39",
+      "section": "Exceptions",
+      "name": "Return file missing at 07:00",
+      "tags": [
+        "System exception"
+      ],
+      "relations": [
+        {
+          "type": "relates to",
+          "targetId": "d02"
+        },
+        {
+          "type": "triggered by",
+          "targetId": "d44"
+        }
+      ],
+      "replies": [
+        {
+          "text": "Wait 30 minutes, then raise a ticket with the service desk.",
+          "at": "08:20",
+          "ts": 1758793432000
+        }
+      ],
+      "at": "08:14",
+      "ts": 1758793479000
+    },
+    {
+      "id": "d40",
+      "section": "Exceptions",
+      "name": "Amount mismatch against the original entry",
+      "tags": [
+        "Data exception"
+      ],
+      "relations": [],
+      "replies": [
+        {
+          "text": "Refer to the SME for manual research. Do not post.",
+          "at": "08:22",
+          "ts": 1758793526000
+        }
+      ],
+      "at": "08:16",
+      "ts": 1758793573000
+    },
+    {
+      "id": "d41",
+      "section": "Exceptions",
+      "name": "FedLine token expired",
+      "tags": [
+        "Access exception"
+      ],
+      "relations": [
+        {
+          "type": "relates to",
+          "targetId": "d01"
+        },
+        {
+          "type": "depends on",
+          "targetId": "d47"
+        }
+      ],
+      "replies": [
+        {
+          "text": "End process and report exception.",
+          "at": "08:24",
+          "ts": 1758793620000
+        }
+      ],
+      "at": "08:17",
+      "ts": 1758793667000
+    },
+    {
+      "id": "d42",
+      "section": "Exceptions",
+      "name": "Duplicate return for the same entry",
+      "tags": [
+        "Business exception"
+      ],
+      "relations": [],
+      "replies": [
+        {
+          "text": "Skip the duplicate and note the entry in the workbook.",
+          "at": "08:25",
+          "ts": 1758793714000
+        }
+      ],
+      "at": "08:19",
+      "ts": 1758793761000
+    },
+    {
+      "id": "d43",
+      "section": "Exceptions",
+      "name": "Host session times out mid posting",
+      "tags": [
+        "Timeout"
+      ],
+      "relations": [
+        {
+          "type": "relates to",
+          "targetId": "d00"
+        }
+      ],
+      "replies": [
+        {
+          "text": "Reconnect and retry the current return once, then escalate.",
+          "at": "08:27",
+          "ts": 1758793808000
+        }
+      ],
+      "at": "08:20",
+      "ts": 1758793855000
+    },
+    {
+      "id": "d44",
+      "section": "Dependencies",
+      "name": "Federal Reserve return feed",
+      "tags": [
+        "Third party",
+        "File",
+        "External"
+      ],
+      "relations": [],
+      "replies": [
+        {
+          "text": "If the file is late the whole run slips.",
+          "at": "08:28",
+          "ts": 1758793902000
+        }
+      ],
+      "at": "08:22",
+      "ts": 1758793949000
+    },
+    {
+      "id": "d45",
+      "section": "Dependencies",
+      "name": "Core banking availability",
+      "tags": [
+        "System",
+        "Internal"
+      ],
+      "relations": [
+        {
+          "type": "relates to",
+          "targetId": "d00"
+        }
+      ],
+      "replies": [],
+      "at": "08:24",
+      "ts": 1758793996000
+    },
+    {
+      "id": "d46",
+      "section": "Dependencies",
+      "name": "Address changes confirmed by member services",
+      "tags": [
+        "Team",
+        "Upstream"
+      ],
+      "relations": [],
+      "replies": [],
+      "at": "08:25",
+      "ts": 1758794043000
+    },
+    {
+      "id": "d47",
+      "section": "Dependencies",
+      "name": "Hardware token for FedLine",
+      "tags": [
+        "Environment",
+        "Approval"
+      ],
+      "relations": [],
+      "replies": [
+        {
+          "text": "Each analyst needs their own token. Provisioning takes about a week.",
+          "at": "08:33",
+          "ts": 1758794090000
+        }
+      ],
+      "at": "08:27",
+      "ts": 1758794137000
+    },
+    {
+      "id": "d48",
+      "section": "Evidence",
+      "name": "Walkthrough recording, session 1",
+      "tags": [
+        "Recording"
+      ],
+      "relations": [],
+      "replies": [],
+      "at": "08:28",
+      "ts": 1758794184000
+    },
+    {
+      "id": "d49",
+      "section": "Evidence",
+      "name": "Sample return file, 12 rows",
+      "tags": [
+        "Sample file"
+      ],
+      "relations": [],
+      "replies": [],
+      "at": "08:30",
+      "ts": 1758794231000
+    },
+    {
+      "id": "d50",
+      "section": "Evidence",
+      "name": "Existing ACH returns SOP",
+      "tags": [
+        "SOP"
+      ],
+      "relations": [
+        {
+          "type": "owned by",
+          "targetId": "d35"
+        }
+      ],
+      "replies": [
+        {
+          "text": "Last updated two years ago and partly out of date.",
+          "at": "08:38",
+          "ts": 1758794278000
+        }
+      ],
+      "at": "08:32",
+      "ts": 1758794325000
+    },
+    {
+      "id": "d51",
+      "section": "Evidence",
+      "name": "Screenshot of the posting screen",
+      "tags": [
+        "Screenshot"
+      ],
+      "relations": [],
+      "replies": [],
+      "at": "08:33",
+      "ts": 1758794372000
+    },
+    {
+      "id": "d52",
+      "section": "Evidence",
+      "name": "Monthly returns report",
+      "tags": [
+        "Report"
+      ],
+      "relations": [],
+      "replies": [
+        {
+          "text": "Goes into the board pack.",
+          "at": "08:41",
+          "ts": 1758794419000
+        }
+      ],
+      "at": "08:35",
+      "ts": 1758794466000
+    }
+  ],
+  "notes": [
+    {
+      "id": "n1",
+      "text": "The SOP they showed does not match what the analyst actually did on screen. Trust the recording, not the document.",
+      "replies": [
+        {
+          "text": "SME agreed to review the SOP before the next session.",
+          "at": "09:41",
+          "ts": 1758794513000
+        }
+      ],
+      "at": "08:22",
+      "ts": 1758794560000
+    },
+    {
+      "id": "n2",
+      "text": "Month end is the real pain point. Two analysts stay late to clear the backlog.",
+      "replies": [],
+      "at": "09:03",
+      "ts": 1758794607000
+    },
+    {
+      "id": "n3",
+      "text": "Nobody could say who owns the fee waiver decision. Park it for the process owner.",
+      "replies": [
+        {
+          "text": "Payments manager says it is hers, but it is not written down anywhere.",
+          "at": "10:12",
+          "ts": 1758794654000
+        }
+      ],
+      "at": "09:58",
+      "ts": 1758794701000
+    }
+  ],
+  "marks": [
+    {
+      "id": "m1",
+      "at": "08:47",
+      "seconds": 1860,
+      "replies": [
+        {
+          "text": "Screen share of the posting screen starts here.",
+          "at": "08:48",
+          "ts": 1758794748000
+        }
+      ],
+      "ts": 1758794795000
+    },
+    {
+      "id": "m2",
+      "at": "10:05",
+      "seconds": 4320,
+      "replies": [],
+      "ts": 1758794842000
+    }
+  ],
+  "resolved": [
+    "Systems::Confirm the purpose of each system",
+    "Systems::Confirm environment for each system",
+    "Systems::Confirm access and authentication",
+    "Data::Confirm a description for each input",
+    "Data::Confirm the format of each input",
+    "Process::Confirm what triggers the process",
+    "Process::Confirm the end condition",
+    "Process::Confirm in-scope scenarios",
+    "Process::Confirm out-of-scope scenarios",
+    "Operations::Confirm process frequency",
+    "Operations::Confirm average volume",
+    "Operations::Confirm peak or seasonal volume",
+    "Operations::Confirm manual effort per case",
+    "Operations::Confirm schedule and time constraints",
+    "Operations::Confirm SLAs and deadlines",
+    "Operations::Confirm the exception rate",
+    "Exceptions::Confirm the type of each exception",
+    "Exceptions::Confirm the business action for each exception",
+    "People::Confirm the SME and process owner",
+    "Dependencies::Confirm third-party dependencies"
+  ],
+  "seconds": 4680,
+  "theme": "dark"
+}

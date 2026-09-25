@@ -1,0 +1,77 @@
+/* 01-tokens.css
+   Design tokens, themes, resets and shared typography. */
+:root{
+  --tqa-green:#62FFCF;
+  --tqa-red:#EF6461;
+  --tqa-sky:#4BD3F2;
+  --tqa-mindaro:#CCFD7F;
+  --tqa-sun:#FFCF56;
+  --tqa-indigo:#6523EA;
+
+  --canvas:#1b1b1b;
+  --surface:#222222;
+  --rail:#181818;
+  --raise:#2a2a2a;
+  --raise-2:#323232;
+  --line:#353535;
+  --line-soft:#2b2b2b;
+  --ink:#ffffff;
+  --ink-2:#c6c6bf;
+  --ink-3:#8b8b85;
+  --accent:#62FFCF;
+  --accent-ink:#1b1b1b;
+  --accent-dim:rgba(98,255,207,.14);
+  --alert:#EF6461;
+  --alert-dim:rgba(239,100,97,.14);
+
+  --sans:"Instrument Sans","Helvetica Neue",Arial,sans-serif;
+  --mono:"Martian Mono",ui-monospace,"SF Mono",Menlo,monospace;
+
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:dark;
+}
+
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --canvas:#F6F6F6; --surface:#ffffff; --rail:#EFEFEB; --raise:#ffffff; --raise-2:#F1F1EC;
+    --line:#DBDBD2; --line-soft:#E7E7E0;
+    --ink:#222222; --ink-2:#4a4a45; --ink-3:#7d7d76;
+    --accent:#EF6461; --accent-ink:#ffffff; --accent-dim:rgba(239,100,97,.12);
+    --alert:#C9403D; --alert-dim:rgba(201,64,61,.12);
+    color-scheme:light;
+  }
+}
+:root[data-theme="light"]{
+  --canvas:#F6F6F6; --surface:#ffffff; --rail:#EFEFEB; --raise:#ffffff; --raise-2:#F1F1EC;
+  --line:#DBDBD2; --line-soft:#E7E7E0;
+  --ink:#222222; --ink-2:#4a4a45; --ink-3:#7d7d76;
+  --accent:#EF6461; --accent-ink:#ffffff; --accent-dim:rgba(239,100,97,.12);
+  --alert:#C9403D; --alert-dim:rgba(201,64,61,.12);
+  color-scheme:light;
+}
+
+*,*::before,*::after{box-sizing:inherit}
+html,body{height:100%}
+body{
+  margin:0;
+  background:var(--canvas);
+  color:var(--ink);
+  font-family:var(--sans);
+  font-size:14.5px;
+  line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+}
+button,input,textarea,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+::selection{background:var(--accent);color:var(--accent-ink)}
+
+.mono{font-family:var(--mono);font-weight:400;letter-spacing:-.02em}
+.label{
+  font-family:var(--mono);
+  font-size:10px;
+  font-weight:400;
+  letter-spacing:.02em;
+  color:var(--ink-3);
+}

@@ -1,0 +1,39 @@
+/* 09-tape.css
+   Tape colour coding, kind filter and reply threads. */
+/* ---------- tape colours and threads ---------- */
+.tapefilter{padding:0 0 .6rem;border-bottom:1px solid var(--line-soft);margin-bottom:.55rem}
+.kdot{
+  width:7px;height:7px;border-radius:50%;display:inline-block;
+  flex:0 0 auto;margin-right:.35rem;vertical-align:middle;
+}
+.kdot.ring{background:transparent!important;border:1.5px solid;width:8px;height:8px}
+.tagf.kindf{align-items:center}
+
+.tape-row{position:relative;padding-left:.65rem;align-items:flex-start}
+.tape-row::before{
+  content:"";position:absolute;left:0;top:.55rem;bottom:.55rem;width:2px;
+  background:var(--kind,transparent);opacity:.85;
+}
+.tbody{flex:1 1 auto;min-width:0}
+.tape-row .k{display:flex;align-items:center;font-size:.7rem;color:var(--ink-3)}
+.ttext{display:block;color:var(--ink);overflow-wrap:anywhere}
+
+.thread{margin:.45rem 0 0;padding-left:.6rem;border-left:1px solid var(--line)}
+.reply{display:flex;gap:.45rem;align-items:flex-start;padding:.24rem 0;font-size:.79rem;color:var(--ink-2)}
+.reply time{font-family:var(--mono);font-size:9px;color:var(--ink-3);flex:0 0 auto;padding-top:.2rem}
+.reply span{flex:1 1 auto;overflow-wrap:anywhere}
+.reply .icon-btn{opacity:0;padding:0 .2rem}
+.reply:hover .icon-btn{opacity:1}
+
+.reply-btn{margin-top:.35rem;padding:.12rem .32rem;font-size:.72rem;opacity:.5}
+.reply-btn u{font-family:var(--mono);font-size:9px;text-decoration:none;color:var(--accent)}
+.tape-row:hover .reply-btn,.item:hover .reply-btn,.reply-btn:focus{opacity:1}
+
+.composer{margin-top:.45rem}
+.reply-input{
+  width:100%;background:var(--raise);border:1px solid var(--line);border-radius:3px;
+  padding:.42rem .5rem;font-size:.8rem;resize:vertical;font-family:var(--sans);
+}
+.reply-input:focus{outline:0;border-color:var(--accent)}
+.composer-bar{display:flex;gap:.3rem;margin-top:.3rem}
+.composer-bar .btn{padding:.24rem .6rem;font-size:.74rem}

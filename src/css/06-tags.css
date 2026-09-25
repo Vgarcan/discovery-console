@@ -1,0 +1,16 @@
+/* 06-tags.css
+   Tag filter chips shared by the stage and the map. */
+/* ---------- tag filter strip ---------- */
+.tagbar{
+  display:flex;flex-wrap:wrap;align-items:center;gap:.3rem;
+  padding:.55rem 0 .1rem;
+}
+.tagbar .label{margin-right:.2rem}
+.tagf{
+  background:transparent;border:1px solid var(--line);color:var(--ink-2);
+  border-radius:2px;padding:.16rem .42rem;font-size:.72rem;cursor:pointer;
+  display:inline-flex;align-items:center;gap:.28rem;
+}
+.tagf:hover{border-color:var(--ink-3);color:var(--ink)}
+.tagf.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.tagf u{font-family:var(--mono);font-size:9px;text-decoration:none;opacity:.6}

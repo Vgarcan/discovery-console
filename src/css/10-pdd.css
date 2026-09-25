@@ -1,0 +1,59 @@
+/* 10-pdd.css
+   PDD draft document styling and the print stylesheet. */
+/* ---------- PDD draft ---------- */
+.pddview .rv-wrap{max-width:1000px}
+.pdd-meta{
+  display:flex;align-items:baseline;gap:.5rem;
+  border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+  padding:.9rem 0;margin-bottom:2rem;
+}
+.pdd-meta b{font-family:var(--mono);font-size:1.4rem;font-weight:400;letter-spacing:-.06em}
+.pdd-meta span{font-size:.8rem;color:var(--ink-3)}
+
+.pdd-h1{
+  font-size:1.25rem;font-weight:600;letter-spacing:-.025em;
+  margin:2.4rem 0 1.1rem;padding-bottom:.5rem;border-bottom:2px solid var(--ink);
+}
+.pdd-h1:first-child{margin-top:0}
+.pdd-sec{margin-bottom:1.9rem}
+.pdd-sec h3{
+  font-size:.92rem;font-weight:600;margin:0 0 .6rem;
+  padding-bottom:.35rem;border-bottom:1px solid var(--line);
+}
+.pdd-field{display:grid;grid-template-columns:210px minmax(0,1fr);gap:1rem;padding:.42rem 0;border-bottom:1px solid var(--line-soft)}
+.pdd-key{font-size:.82rem;font-weight:500;color:var(--ink-2)}
+.pdd-sublabel{margin:.9rem 0 .35rem}
+.pdd-val{font-size:.85rem;overflow-wrap:anywhere}
+.pdd-note{margin:.45rem 0 0;font-size:.74rem;color:var(--ink-3);font-style:normal}
+.pdd-hint{
+  margin:.6rem 0 0;font-size:.76rem;color:var(--ink-3);
+  padding-left:.7rem;border-left:2px solid var(--line);
+}
+.pdd-list{margin:.2rem 0 0;padding-left:1.15rem;font-size:.85rem}
+.pdd-list li{padding:.16rem 0}
+.pdd-tablewrap{overflow-x:auto;margin-top:.3rem}
+.pdd-table{border-collapse:collapse;width:100%;font-size:.79rem;min-width:520px}
+.pdd-table th{
+  text-align:left;font-weight:600;font-size:.72rem;color:var(--ink-2);
+  border-bottom:1px solid var(--line);padding:.42rem .55rem .42rem 0;white-space:nowrap;
+}
+.pdd-table td{border-bottom:1px solid var(--line-soft);padding:.42rem .55rem .42rem 0;vertical-align:top}
+.pdd-table tr td:first-child,.pdd-table tr th:first-child{padding-left:0}
+.tbc{
+  background:#E2F0D9;color:#222222;font-family:var(--mono);font-size:9.5px;
+  padding:.08rem .3rem;border-radius:2px;white-space:nowrap;
+}
+#importBox{font-family:var(--mono);font-size:.74rem;line-height:1.5;resize:vertical}
+
+@media print{
+  .topbar,.iconbar,.navpanel,.inspector,.no-print,.mapscrim,.scrim,.toast{display:none!important}
+  html,body,.app,.shell,.col2{height:auto;background:#fff;color:#000;display:block}
+  .review,.pddview{display:none}
+  .pddview.on{display:block!important;background:#fff;color:#000}
+  .rv-wrap{max-width:none;padding:0}
+  .pdd-h1,.pdd-sec h3{border-color:#000}
+  .pdd-sec{break-inside:avoid;page-break-inside:avoid}
+  .pdd-table{min-width:0}
+  .pdd-key,.pdd-val,.pdd-note,.pdd-hint,.pdd-table th,.pdd-table td{color:#000}
+  .pdd-meta{display:none}
+}

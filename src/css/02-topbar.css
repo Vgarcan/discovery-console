@@ -1,0 +1,53 @@
+/* 02-topbar.css
+   Top bar: brand, session name, clock, panel toggles. */
+/* ---------- shell ---------- */
+.app{height:100%;display:flex;flex-direction:column;background:var(--canvas)}
+
+.topbar{
+  display:flex;align-items:center;gap:1.25rem;
+  padding:.7rem 1.25rem;
+  border-bottom:1px solid var(--line);
+  background:var(--rail);
+  flex:0 0 auto;
+}
+.brand{display:flex;align-items:baseline;gap:.5rem;flex:0 0 auto}
+.brand b{font-size:1.05rem;font-weight:700;letter-spacing:-.04em}
+.brand .slash{color:var(--accent);font-weight:700;transform:skewX(-14deg);display:inline-block}
+.brand span{font-size:.78rem;color:var(--ink-3)}
+
+.session-name{
+  flex:1 1 auto;min-width:0;
+  background:transparent;border:0;
+  border-bottom:1px dashed transparent;
+  font-size:.95rem;font-weight:500;
+  padding:.2rem 0;
+}
+.session-name:hover{border-bottom-color:var(--line)}
+.session-name:focus{outline:0;border-bottom-color:var(--accent)}
+
+.topbar-right{display:flex;align-items:center;gap:.6rem;flex:0 0 auto}
+
+.live{
+  display:inline-flex;align-items:center;gap:.4rem;
+  font-family:var(--mono);font-size:10px;color:var(--accent);
+}
+.live i{
+  width:7px;height:7px;border-radius:50%;background:var(--accent);
+  animation:pulse 2.4s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+.clock{font-family:var(--mono);font-size:.82rem;font-weight:500;letter-spacing:-.04em}
+
+.btn{
+  background:transparent;border:1px solid var(--line);
+  color:var(--ink-2);
+  padding:.42rem .7rem;border-radius:3px;
+  font-size:.8rem;font-weight:500;cursor:pointer;
+  transition:border-color .12s,color .12s,background .12s;
+}
+.btn:hover{border-color:var(--ink-3);color:var(--ink)}
+.btn-solid{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn-solid:hover{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);filter:brightness(1.08)}
+.btn-ghost{border-color:transparent;color:var(--ink-3);padding:.4rem .5rem}
+.btn-ghost:hover{border-color:transparent;color:var(--ink);background:var(--raise)}
+.btn:disabled{opacity:.35;cursor:not-allowed}

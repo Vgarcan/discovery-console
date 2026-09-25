@@ -1,0 +1,44 @@
+/* 04-review.css
+   Review view: stats, coverage bars, inventory. */
+/* ---------- review ---------- */
+.review{flex:1 1 auto;overflow-y:auto;background:var(--surface);display:none}
+.review.on{display:block}
+.live-grid.off{display:none}
+.rv-wrap{max-width:1180px;margin:0 auto;padding:2.4rem 2rem 5rem}
+.rv-head{display:flex;flex-wrap:wrap;gap:1rem;justify-content:space-between;align-items:flex-end;margin-bottom:2rem}
+.rv-head h1{margin:.35rem 0 .3rem;font-size:2.1rem;font-weight:600;letter-spacing:-.035em}
+.rv-head p{margin:0;color:var(--ink-3);max-width:52ch;font-size:.88rem}
+.rv-stats{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+  margin-bottom:2.4rem;
+}
+.rv-stat{padding:1.1rem 1.2rem 1.1rem 0;border-right:1px solid var(--line-soft)}
+.rv-stat:last-child{border-right:0}
+.rv-stat b{display:block;font-family:var(--mono);font-size:2rem;font-weight:400;letter-spacing:-.06em;line-height:1}
+.rv-stat span{font-size:.78rem;color:var(--ink-3)}
+.rv-cols{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:3rem}
+.rv-sec{margin-bottom:2.6rem}
+.rv-sec h2{font-size:1.05rem;font-weight:600;margin:.3rem 0 .2rem;letter-spacing:-.02em}
+.rv-sec > p{margin:0 0 1rem;color:var(--ink-3);font-size:.82rem;max-width:50ch}
+
+.cov{display:grid;grid-template-columns:minmax(120px,1.4fr) 1fr auto;gap:.9rem;align-items:center;padding:.6rem 0;border-bottom:1px solid var(--line-soft);font-size:.82rem}
+.cov:last-child{border-bottom:0}
+.bar{height:3px;background:var(--line-soft)}
+.bar i{display:block;height:100%;background:var(--accent);transition:width .4s}
+.cov .st{font-family:var(--mono);font-size:9.5px;color:var(--ink-3)}
+.cov.good .st{color:var(--accent)}
+.cov.good .bar i{background:var(--accent)}
+.cov.part .bar i{background:var(--tqa-sun)}
+.cov.part .st{color:var(--tqa-sun)}
+.cov.none .bar i{background:var(--alert)}
+
+.ioe{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line-soft);border:1px solid var(--line-soft)}
+.ioe div{background:var(--surface);padding:.9rem}
+.ioe b{display:block;font-family:var(--mono);font-size:1.5rem;font-weight:400;letter-spacing:-.06em;line-height:1}
+.ioe span{font-size:.75rem;color:var(--ink-3)}
+
+.inv-group{margin-bottom:1.4rem}
+.inv-group h3{font-size:.82rem;font-weight:600;margin:0 0 .3rem;padding-bottom:.3rem;border-bottom:1px solid var(--line)}
+.inv{display:flex;justify-content:space-between;gap:1rem;padding:.4rem 0;font-size:.83rem;border-bottom:1px solid var(--line-soft)}
+.inv em{color:var(--ink-3);font-style:normal;font-size:.76rem}
