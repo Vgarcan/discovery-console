@@ -16,6 +16,7 @@ let S = {
   resolved:[],
   shots:{},
   seconds:0,
+  paused:false,
   theme:"dark"
 };
 
@@ -205,6 +206,7 @@ function resetSession(){
   S.marks = [];
   S.resolved = [];
   S.seconds = 0;
+  S.paused = false;
   S.active = SECTIONS[0];
   editingId = null;
   draftTags = [];

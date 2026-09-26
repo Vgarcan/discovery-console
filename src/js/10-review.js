@@ -18,7 +18,7 @@ function renderReview(){
     [S.items.length, "items captured"],
     [open.length, "questions still open"],
     [touched.length + " of 9", "areas touched"],
-    [$("clock").textContent, "time on the call"]
+    [clockText(elapsed()), "time on the call"]
   ].map(([b,s]) => '<div class="rv-stat"><b>' + esc(b) + "</b><span>" + esc(s) + "</span></div>").join("");
 
   const gw = $("rvGaps");

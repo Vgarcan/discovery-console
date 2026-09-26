@@ -42,7 +42,34 @@
   background:var(--alert);color:#ffffff;padding:.2rem .45rem;border-radius:2px;
   animation:pulse 1.6s ease-in-out infinite;cursor:help;
 }
-.clock{font-family:var(--mono);font-size:.82rem;font-weight:500;letter-spacing:-.04em}
+.clock-wrap{position:relative;display:inline-flex}
+.clock{
+  font-family:var(--mono);font-size:.82rem;font-weight:500;letter-spacing:-.04em;
+  font-variant-numeric:tabular-nums;
+  background:none;border:0;color:var(--ink);cursor:default;
+  padding:.18rem .34rem;border-radius:3px;
+}
+.clock-wrap:hover .clock,.clock-wrap:focus-within .clock{background:var(--raise)}
+/* Stopped and hidden both read as "not counting", and say so in the colour. */
+.clock[data-state="paused"],.clock[data-state="hidden"]{color:var(--ink-3)}
+
+.clock-menu{
+  position:absolute;top:calc(100% + 5px);right:0;z-index:90;
+  display:none;flex-direction:column;min-width:112px;
+  background:var(--raise);border:1px solid var(--line);border-radius:4px;
+  box-shadow:0 10px 26px rgba(0,0,0,.35);overflow:hidden;
+}
+/* A transparent bridge over the gap, or the menu closes on the way to it. */
+.clock-menu::before{content:"";position:absolute;left:0;right:0;top:-7px;height:7px}
+.clock-wrap:hover .clock-menu,.clock-wrap:focus-within .clock-menu{display:flex}
+.clock-act{
+  background:none;border:0;text-align:left;cursor:pointer;
+  padding:.42rem .62rem;font-size:.78rem;color:var(--ink-2);
+}
+.clock-act:hover{background:var(--raise-2);color:var(--ink)}
+
+.live.paused{color:var(--ink-3)}
+.live.paused i{background:var(--ink-3);animation:none}
 
 .btn{
   background:transparent;border:1px solid var(--line);

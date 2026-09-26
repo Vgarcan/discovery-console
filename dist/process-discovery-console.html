@@ -142,7 +142,34 @@ button,input,textarea,select{font:inherit;color:inherit}
   background:var(--alert);color:#ffffff;padding:.2rem .45rem;border-radius:2px;
   animation:pulse 1.6s ease-in-out infinite;cursor:help;
 }
-.clock{font-family:var(--mono);font-size:.82rem;font-weight:500;letter-spacing:-.04em}
+.clock-wrap{position:relative;display:inline-flex}
+.clock{
+  font-family:var(--mono);font-size:.82rem;font-weight:500;letter-spacing:-.04em;
+  font-variant-numeric:tabular-nums;
+  background:none;border:0;color:var(--ink);cursor:default;
+  padding:.18rem .34rem;border-radius:3px;
+}
+.clock-wrap:hover .clock,.clock-wrap:focus-within .clock{background:var(--raise)}
+/* Stopped and hidden both read as "not counting", and say so in the colour. */
+.clock[data-state="paused"],.clock[data-state="hidden"]{color:var(--ink-3)}
+
+.clock-menu{
+  position:absolute;top:calc(100% + 5px);right:0;z-index:90;
+  display:none;flex-direction:column;min-width:112px;
+  background:var(--raise);border:1px solid var(--line);border-radius:4px;
+  box-shadow:0 10px 26px rgba(0,0,0,.35);overflow:hidden;
+}
+/* A transparent bridge over the gap, or the menu closes on the way to it. */
+.clock-menu::before{content:"";position:absolute;left:0;right:0;top:-7px;height:7px}
+.clock-wrap:hover .clock-menu,.clock-wrap:focus-within .clock-menu{display:flex}
+.clock-act{
+  background:none;border:0;text-align:left;cursor:pointer;
+  padding:.42rem .62rem;font-size:.78rem;color:var(--ink-2);
+}
+.clock-act:hover{background:var(--raise-2);color:var(--ink)}
+
+.live.paused{color:var(--ink-3)}
+.live.paused i{background:var(--ink-3);animation:none}
 
 .btn{
   background:transparent;border:1px solid var(--line);
@@ -323,11 +350,11 @@ kbd{
 /* Armed state for a two-step delete. Wider and red, so the second press is a
    deliberate one, and forced visible because the rows that hold these buttons
    only reveal them on hover. Also covers .btn, defined earlier in 02-topbar. */
-.icon-btn.armed,.btn.armed{
+.icon-btn.armed,.btn.armed,.clock-act.armed{
   background:var(--alert);border-color:var(--alert);color:#ffffff;
   font-weight:600;opacity:1;padding-left:.5rem;padding-right:.5rem;
 }
-.icon-btn.armed:hover,.btn.armed:hover{
+.icon-btn.armed:hover,.btn.armed:hover,.clock-act.armed:hover{
   background:var(--alert);border-color:var(--alert);color:#ffffff;filter:brightness(1.08);
 }
 .item-acts.arming,.reply.arming .icon-btn,.linkrow.arming .icon-btn{opacity:1}
@@ -973,8 +1000,16 @@ body.resizing .work,body.resizing .pane-resize{transition:none}
     <div class="topbar-right">
       <span class="storage-warn" id="storageWarn" hidden
             title="The browser will not accept any more data. Download the session as JSON before you lose it.">not saving</span>
-      <span class="live" id="liveBadge"><i></i>recording</span>
-      <span class="clock" id="clock">00:00:00</span>
+      <span class="live" id="liveBadge"><i></i><span id="liveWord">recording</span></span>
+      <span class="clock-wrap">
+        <button class="clock" id="clock" type="button" data-state="running"
+                aria-haspopup="menu" title="Session clock">00:00:00</button>
+        <span class="clock-menu" id="clockMenu" role="menu">
+          <button class="clock-act" id="clockToggle" type="button" role="menuitem">Pause</button>
+          <button class="clock-act" id="clockReset" type="button" role="menuitem">Reset</button>
+          <button class="clock-act" id="clockHide" type="button" role="menuitem">Hide</button>
+        </span>
+      </span>
       <span class="divider-v"></span>
       <button class="btn btn-ghost pane-toggle" id="navToggle" title="Hide or show the areas panel" aria-pressed="true">
         <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="11" rx="1"/><line x1="6" y1="2.5" x2="6" y2="13.5"/></svg>
@@ -1476,6 +1511,7 @@ let S = {
   resolved:[],
   shots:{},
   seconds:0,
+  paused:false,
   theme:"dark"
 };
 
@@ -1665,6 +1701,7 @@ function resetSession(){
   S.marks = [];
   S.resolved = [];
   S.seconds = 0;
+  S.paused = false;
   S.active = SECTIONS[0];
   editingId = null;
   draftTags = [];
@@ -2174,8 +2211,11 @@ $("noteBox").addEventListener("keydown", e => {
 });
 $("markBtn").addEventListener("click", markMoment);
 function markMoment(){
-  S.marks.push({id:uid(), at:now(), seconds:S.seconds, replies:[], shots:[], ts:Date.now()});
-  renderAll(); save(); toast("Moment marked at " + $("clock").textContent);
+  /* The live figure, not the banked one, and not whatever the clock happens to
+     be showing -- hiding it must not stamp a mark with dashes. */
+  const at = elapsed();
+  S.marks.push({id:uid(), at:now(), seconds:at, replies:[], shots:[], ts:Date.now()});
+  renderAll(); save(); toast("Moment marked at " + clockText(at));
 }
 
 $("undoBtn").addEventListener("click", () => {
@@ -2325,7 +2365,7 @@ function renderReview(){
     [S.items.length, "items captured"],
     [open.length, "questions still open"],
     [touched.length + " of 9", "areas touched"],
-    [$("clock").textContent, "time on the call"]
+    [clockText(elapsed()), "time on the call"]
   ].map(([b,s]) => '<div class="rv-stat"><b>' + esc(b) + "</b><span>" + esc(s) + "</span></div>").join("");
 
   const gw = $("rvGaps");
@@ -2508,18 +2548,73 @@ document.addEventListener("keydown", e => {
   }
 });
 
-/* ---------- clock ---------- */
-function paintClock(){
-  const h = String(Math.floor(S.seconds/3600)).padStart(2,"0");
-  const m = String(Math.floor((S.seconds%3600)/60)).padStart(2,"0");
-  const s = String(S.seconds%60).padStart(2,"0");
-  $("clock").textContent = h + ":" + m + ":" + s;
+/* ---------- clock ----------
+   Wall-clock, not a tick count. setInterval drifts, and a browser throttles a
+   hidden tab's timers to about once a minute after a few minutes -- so a clock
+   that counted its own ticks lost most of an hour whenever the analyst switched
+   away to the call itself. S.seconds is the time banked so far; runningSince is
+   when the current run started, and is runtime state rather than session data,
+   so it never reaches the exported JSON. */
+let runningSince = 0;
+
+function elapsed(){
+  return Math.floor(S.seconds + (runningSince ? (Date.now() - runningSince) / 1000 : 0));
 }
 
-setInterval(() => {
-  S.seconds++;
+function clockText(t){
+  const two = n => String(n).padStart(2, "0");
+  return two(Math.floor(t/3600)) + ":" + two(Math.floor((t%3600)/60)) + ":" + two(t%60);
+}
+
+/* Fold the running stretch into S.seconds and write it down, so a crash costs
+   at most the last twenty seconds rather than everything since the last pause. */
+function bankClock(){
+  if(!runningSince) return;
+  S.seconds = elapsed();
+  runningSince = Date.now();
+  save();
+}
+
+function paintClock(){
+  const hidden = !!(S.ui && S.ui.clockOff);
+  $("clock").textContent = hidden ? "--:--:--" : clockText(elapsed());
+  $("clock").dataset.state = hidden ? "hidden" : (runningSince ? "running" : "paused");
+  $("clockToggle").textContent = runningSince ? "Pause" : "Resume";
+  $("clockHide").textContent = hidden ? "Show" : "Hide";
+  $("liveWord").textContent = runningSince ? "recording" : "paused";
+  $("liveBadge").classList.toggle("paused", !runningSince);
+}
+
+/* Boot only. Time while the console was closed is not time on the call, so a
+   run that was open at the last save picks up from now rather than backdating. */
+function startClock(){
+  runningSince = S.paused ? 0 : Date.now();
   paintClock();
-  if(S.seconds % 20 === 0) save();
+}
+
+$("clockToggle").addEventListener("click", () => {
+  if(runningSince){ S.seconds = elapsed(); runningSince = 0; S.paused = true; }
+  else { runningSince = Date.now(); S.paused = false; }
+  paintClock(); save();
+});
+
+$("clockReset").addEventListener("click", () =>
+  confirmAction($("clockReset"), "Confirm", () => {
+    S.seconds = 0;
+    if(runningSince) runningSince = Date.now();
+    paintClock(); save(); toast("Clock reset");
+  }));
+
+$("clockHide").addEventListener("click", () => {
+  S.ui = S.ui || {};
+  S.ui.clockOff = !S.ui.clockOff;
+  paintClock(); save();
+});
+
+setInterval(() => {
+  if(!runningSince) return;
+  paintClock();
+  if(Date.now() - runningSince >= 20000) bankClock();
 }, 1000);
 
 /* 13-tags.js
@@ -3977,7 +4072,11 @@ function doReplace(){
     const loose = [S.items, S.notes, S.marks]
       .reduce((n, list) => n + attachShots(list, S.shots, S.id), 0);
     if(typeof o.seconds === "number") S.seconds = o.seconds;
+    /* Opening someone's session is not being on their call, so the clock takes
+       the elapsed time and stops rather than carrying on counting. */
+    S.paused = true;
     $("sessionName").value = S.name;
+    startClock();
     closeImport(); save(); renderAll(); setView("capture");
     toast("Session replaced, " + S.items.length + " items loaded" +
           (stray ? ". " + stray + " moved to " + SECTIONS[0] + " from an unknown area" : "") +
@@ -4144,7 +4243,7 @@ $("newConfirm").addEventListener("click", () => {
   $("noteBox").value = "";
   resetMap();
   closeNew();
-  paintClock();
+  startClock();
   save();
   setView("capture");
   selectSection(S.active, true);
@@ -4194,7 +4293,7 @@ applyPaneWidths();
 setPanel("nav", S.ui.nav !== false);
 setPanel("insp", S.ui.insp !== false);
 setTab(S.ui.tab || "tape");
-paintClock();
+startClock();
 $("sessionName").value = S.name || "Untitled walkthrough";
 selectSection(S.active && DEF[S.active] ? S.active : "Systems", true);
 renderAll();

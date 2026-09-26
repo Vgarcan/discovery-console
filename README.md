@@ -129,6 +129,19 @@ out when there is nothing to clear, and it asks first: a dialog that names what 
 button, because localStorage is the only copy. `Esc` or a click outside cancels it. The theme
 and your panel widths survive; the session does not.
 
+### The clock
+
+Hover the session clock and it offers **Pause**, **Reset** and **Hide**. Pausing also stops the
+`recording` badge from claiming otherwise. Reset takes two presses, like everything else here
+that cannot be undone. Hide leaves `--:--:--` in its place — still there to hover, so you can
+bring it back, and still counting underneath: a marked moment and the Review figure both
+report the real elapsed time.
+
+It reads the wall clock rather than counting its own ticks. A browser throttles a hidden tab's
+timers to roughly once a minute, so a tick count quietly lost most of an hour every time the
+analyst switched away to the call itself. Time while the console is closed is not counted:
+that is not time on the call. Opening someone else's session pauses it, for the same reason.
+
 ### The inspector
 
 Three tabs on the right, one at a time.

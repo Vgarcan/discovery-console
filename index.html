@@ -34,8 +34,16 @@
     <div class="topbar-right">
       <span class="storage-warn" id="storageWarn" hidden
             title="The browser will not accept any more data. Download the session as JSON before you lose it.">not saving</span>
-      <span class="live" id="liveBadge"><i></i>recording</span>
-      <span class="clock" id="clock">00:00:00</span>
+      <span class="live" id="liveBadge"><i></i><span id="liveWord">recording</span></span>
+      <span class="clock-wrap">
+        <button class="clock" id="clock" type="button" data-state="running"
+                aria-haspopup="menu" title="Session clock">00:00:00</button>
+        <span class="clock-menu" id="clockMenu" role="menu">
+          <button class="clock-act" id="clockToggle" type="button" role="menuitem">Pause</button>
+          <button class="clock-act" id="clockReset" type="button" role="menuitem">Reset</button>
+          <button class="clock-act" id="clockHide" type="button" role="menuitem">Hide</button>
+        </span>
+      </span>
       <span class="divider-v"></span>
       <button class="btn btn-ghost pane-toggle" id="navToggle" title="Hide or show the areas panel" aria-pressed="true">
         <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="11" rx="1"/><line x1="6" y1="2.5" x2="6" y2="13.5"/></svg>

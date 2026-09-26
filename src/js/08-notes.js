@@ -13,8 +13,11 @@ $("noteBox").addEventListener("keydown", e => {
 });
 $("markBtn").addEventListener("click", markMoment);
 function markMoment(){
-  S.marks.push({id:uid(), at:now(), seconds:S.seconds, replies:[], shots:[], ts:Date.now()});
-  renderAll(); save(); toast("Moment marked at " + $("clock").textContent);
+  /* The live figure, not the banked one, and not whatever the clock happens to
+     be showing -- hiding it must not stamp a mark with dashes. */
+  const at = elapsed();
+  S.marks.push({id:uid(), at:now(), seconds:at, replies:[], shots:[], ts:Date.now()});
+  renderAll(); save(); toast("Moment marked at " + clockText(at));
 }
 
 $("undoBtn").addEventListener("click", () => {

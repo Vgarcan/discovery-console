@@ -72,7 +72,11 @@ function doReplace(){
     const loose = [S.items, S.notes, S.marks]
       .reduce((n, list) => n + attachShots(list, S.shots, S.id), 0);
     if(typeof o.seconds === "number") S.seconds = o.seconds;
+    /* Opening someone's session is not being on their call, so the clock takes
+       the elapsed time and stops rather than carrying on counting. */
+    S.paused = true;
     $("sessionName").value = S.name;
+    startClock();
     closeImport(); save(); renderAll(); setView("capture");
     toast("Session replaced, " + S.items.length + " items loaded" +
           (stray ? ". " + stray + " moved to " + SECTIONS[0] + " from an unknown area" : "") +
@@ -239,7 +243,7 @@ $("newConfirm").addEventListener("click", () => {
   $("noteBox").value = "";
   resetMap();
   closeNew();
-  paintClock();
+  startClock();
   save();
   setView("capture");
   selectSection(S.active, true);

@@ -676,6 +676,8 @@ async function run(){
   eq("marks cleared", aN.text("cMarks"), "0");
   eq("name reset", dN.getElementById("sessionName").value, "Untitled walkthrough");
   eq("back on the capture view", dN.querySelector(".ico.on span").textContent, "Capture");
+  eq("and the clock is running again from nothing",
+     dN.getElementById("clock").dataset.state, "running");
   eq("area reset to the first", aN.text("stageLabel"), "systems");
   ok("the tape is empty", dN.querySelectorAll("#tape .tape-row").length === 0);
   ok("New session is disabled again", dN.getElementById("newBtn").disabled);
@@ -707,6 +709,8 @@ async function run(){
   await wait(90);
 
   eq("all 59 items load", aS.text("cItems"), "59");
+  eq("opening someone's session does not keep counting as if you were on it",
+     dS.getElementById("clock").dataset.state, "paused");
   const stressSaved = () =>
     JSON.parse(wS.localStorage.getItem("process.discovery.console.v1"));
   eq("the file's project id comes across with it", stressSaved().id, "prj-w1r3ca");
@@ -812,6 +816,63 @@ async function run(){
      stillDangling === 1, String(stillDangling));
   eq("PDD-04: no duplicate ids after merge", allIds.size, merged.items.length);
   ok("no page errors on the stress fixture", ctxS.errs.length === 0, ctxS.errs.join(" | "));
+
+  group("Session clock");
+  /* The clock reads the wall clock rather than counting its own ticks. A
+     browser throttles a hidden tab's timers to about once a minute, so a tick
+     count lost most of an hour whenever the analyst switched away to the call. */
+  const ctxC = boot(); const aC = api(ctxC); await wait(150);
+  const dC = ctxC.d, wC = ctxC.w;
+  eq("it starts running", dC.getElementById("clock").dataset.state, "running");
+  eq("and the badge says so", aC.text("liveWord"), "recording");
+
+  wC.S.seconds = 100;
+  const t0 = wC.elapsed();
+  dC.getElementById("clockToggle").click();
+  await wait(1100);
+  eq("pause stops the count", wC.elapsed(), t0);
+  eq("the state says paused", dC.getElementById("clock").dataset.state, "paused");
+  eq("the badge stops claiming to record", aC.text("liveWord"), "paused");
+  eq("and the control offers resume", aC.text("clockToggle"), "Resume");
+  ok("paused is written down",
+     JSON.parse(wC.localStorage.getItem("process.discovery.console.v1")).paused === true);
+
+  dC.getElementById("clockToggle").click();
+  await wait(1100);
+  ok("resume picks up where it stopped", wC.elapsed() > t0, wC.elapsed() + " vs " + t0);
+  ok("nothing was lost over the pause", wC.elapsed() >= t0 + 1);
+
+  dC.getElementById("clockHide").click();
+  eq("hide blanks the digits", aC.text("clock"), "--:--:--");
+  eq("and says so", dC.getElementById("clock").dataset.state, "hidden");
+  eq("the control offers to show it again", aC.text("clockHide"), "Show");
+  ok("but the time is still running underneath", wC.elapsed() > t0);
+  dC.getElementById("markBtn").click();
+  ok("a mark stamps the real time, not the dashes",
+     wC.S.marks[wC.S.marks.length - 1].seconds > t0,
+     String(wC.S.marks[wC.S.marks.length - 1].seconds));
+  aC.view("review");
+  ok("and review reports the real time too",
+     !aC.text("rvStats").includes("--:--:--"), aC.text("rvStats"));
+  aC.view("capture");
+  dC.getElementById("clockHide").click();
+  ok("show brings the digits back", aC.text("clock") !== "--:--:--");
+
+  const before = wC.elapsed();
+  dC.getElementById("clockReset").click();
+  ok("the first press on reset only arms it", wC.elapsed() >= before);
+  eq("and relabels, like every other irreversible thing",
+     aC.text("clockReset"), "Confirm");
+  await wait(450);
+  dC.getElementById("clockReset").click();
+  ok("the second press resets", wC.elapsed() < 3, String(wC.elapsed()));
+
+  dC.getElementById("clockToggle").click();
+  const ctxC2 = boot({ storage: wC.localStorage.getItem("process.discovery.console.v1") });
+  await wait(150);
+  eq("a paused clock is still paused after a reload",
+     ctxC2.d.getElementById("clock").dataset.state, "paused");
+  ok("no page errors driving the clock", ctxC.errs.length === 0, ctxC.errs.join(" | "));
 
   group("Relations announce themselves");
   /* Picking a type and a target files the relation there and then and clears

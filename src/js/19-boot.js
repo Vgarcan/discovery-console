@@ -9,7 +9,7 @@ applyPaneWidths();
 setPanel("nav", S.ui.nav !== false);
 setPanel("insp", S.ui.insp !== false);
 setTab(S.ui.tab || "tape");
-paintClock();
+startClock();
 $("sessionName").value = S.name || "Untitled walkthrough";
 selectSection(S.active && DEF[S.active] ? S.active : "Systems", true);
 renderAll();
