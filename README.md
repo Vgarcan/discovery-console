@@ -157,6 +157,55 @@ everywhere. On the stage, the chip row under the types narrows the list of the c
 `⌘/Ctrl + G`, or the Map icon. Every item is a node, every relation is an edge, node size
 grows with how connected a thing is, and colour is the area.
 
+### Lanes
+
+The map opens in **lanes**: one horizontal band per area, top to bottom in the same order as
+the `1`–`9` rail, so an item's area is a position and not only a colour. Inside each band the
+items that carry relations are packed into the middle and ordered by what they link to, and
+the ones with no relations fill outward from the ends where they cannot push the connected
+ones apart.
+
+The ordering is the barycentre sweep a layered graph drawing normally uses, and it is
+deterministic: the same session draws the same map every time you open it. Measured against
+the free layout on both sample sessions it lands on the same number of edge crossings, while
+never placing two items closer than 78px — the free layout reseeds at random and comes out
+anywhere between 3 and 18 crossings on the same 21 relations, so you re-read it from scratch
+each time.
+
+**free** in the left panel switches back to the force layout, and the choice is remembered.
+Dragging a node still works in lanes; it moves along its band rather than out of it.
+
+### Names, and why they do not collide
+
+A name is measured, not counted in characters, and wrapped onto at most two lines. Every other
+label in a band is drawn under its dot rather than over it, so two neighbours only have to
+clear each other's dots, and only every second pair has to clear a full label width. Bands are
+then made exactly as tall as the labels they turned out to need.
+
+That is what keeps the map at full size: on the sample session the widest band would be 1430px
+if every name got a slot as wide as the longest one, which would mean reading the whole map at
+46%. Nothing overlaps by construction rather than by luck, and `tests/audit.test.js` checks
+every pair of label rectangles on both sample sessions.
+
+### Spread
+
+The dots are then pushed apart as far as the canvas allows. Widening the gaps on its own buys
+nothing — Fit to view just zooms back out and the picture is identical — so the layout works
+out how much room there actually is: the nine bands stacked up already cap how far the map can
+be zoomed in, and any width below that cap is being wasted. The first pass packs the bands as
+tightly as the labels allow to find the stack height; the second spends the leftover width.
+
+On the sample session that takes the gap between dots from 42px to 81px and the separation you
+actually see from 41px to 68px, with the text at exactly the same size as before. The sessions
+differ — the demo has a band of 12 items and runs out of width sooner than the stress fixture's
+8 — so the gap is computed per session rather than fixed.
+
+### Direction
+
+Every edge carries an arrowhead and stops short of the dot it points at, so a relation reads
+the right way round without having to hover it. Hovering an item, or selecting it, turns its
+relations red and shows what each one is — `reads from`, `owned by`, `triggered by`.
+
 ![The relationship map](docs/images/05-relationship-map.png)
 
 The left panel filters. Pick `#sme` and only the SMEs remain. Pick two tags and choose
@@ -173,7 +222,30 @@ Select a node and the right panel opens. From there you pick a relation type, ti
 items at once and create all those links in one go. Relations read in both directions: each
 item shows what it points at and what points at it.
 
-Drag nodes, scroll to zoom, drag the background to pan, **Fit to view** to recentre.
+### Mouse and trackpad
+
+| Gesture | Does |
+| --- | --- |
+| Drag the background | Pan |
+| Drag a node | Move it. In lanes it slides along its band rather than out of it |
+| Click a node | Select it, and open the detail panel |
+| Click bare canvas | Clear the selection |
+| Wheel | Zoom, centred on the pointer |
+| Trackpad pinch | Zoom, centred on the pointer |
+| Two fingers sideways | Pan |
+| `Esc` | Put a drag in flight back where it started, or close the map |
+
+A press only becomes a drag once the pointer has travelled four pixels, so a click that wobbles
+still selects rather than nudging the node a pixel and selecting nothing. The middle button
+pans like the left one; the right button is left alone. Every dot carries an invisible 34px
+target, because a 5px dot is a poor thing to aim at with a trackpad — the spread pass keeps the
+dots far enough apart that two of those targets never overlap.
+
+Text selection is off over the graph. Without it every pan painted the labels blue, since a
+drag across text is a selection as far as the browser is concerned. The panels either side stay
+selectable; names there are worth copying.
+
+**Fit to view** recentres.
 
 ---
 
@@ -374,7 +446,7 @@ Three rules keep the boundaries honest, and `tools/audit.py` fails if any of the
 | `11-export.js` | Session Markdown and clipboard |
 | `12-settings.js` | Theme, global shortcuts, session clock |
 | `13-tags.js` | Stage tag filtering, area colours, incoming-relation lookup |
-| `14-map.js` | Map filtering, force layout, rendering, interaction, linking |
+| `14-map.js` | Map filtering, lane and force layouts, rendering, interaction, linking |
 | `15-shell.js` | View switching, collapsible and resizable panels, inspector tabs |
 | `16-pdd.js` | Maps captured evidence onto the approved PDD template and exports it |
 | `17-transfer.js` | JSON import, file saving via the downloads capability, starting a new session |

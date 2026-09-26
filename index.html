@@ -309,6 +309,12 @@
       <div class="mapside" id="mapSide">
         <input class="mapsearch" id="mapSearch" placeholder="Search names and tags" autocomplete="off">
 
+        <h3>Layout</h3>
+        <div class="modes">
+          <button id="layoutLanes" class="on">lanes</button>
+          <button id="layoutFree">free</button>
+        </div>
+
         <h3>Tags</h3>
         <div class="modes">
           <button id="modeAny" class="on">match any</button>
@@ -324,7 +330,20 @@
       </div>
 
       <div class="mapstage" id="mapStage">
-        <svg id="mapSvg"><g id="mapG"><g id="mapEdges"></g><g id="mapNodes"></g></g></svg>
+        <svg id="mapSvg">
+          <defs>
+            <marker id="arrowEdge" viewBox="0 0 9 8" refX="8.5" refY="4"
+                    markerWidth="9" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto">
+              <path d="M0 0 L9 4 L0 8 Z"/>
+            </marker>
+            <marker id="arrowHot" viewBox="0 0 9 8" refX="8.5" refY="4"
+                    markerWidth="9" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto">
+              <path d="M0 0 L9 4 L0 8 Z"/>
+            </marker>
+          </defs>
+          <g id="mapG"><g id="mapLanes"></g><g id="mapEdges"></g><g id="mapNodes"></g></g>
+        </svg>
+        <div class="lane-labels" id="mapLaneLabels"></div>
         <div class="mapempty" id="mapEmpty"></div>
         <div class="mapzoom">
           <button class="btn" id="zoomOut" aria-label="Zoom out">−</button>

@@ -466,6 +466,174 @@ async function run(){
      ctxR.d.getElementById("navResize").getAttribute("aria-valuenow"));
   ok("no page errors resizing", ctxR.errs.length === 0, ctxR.errs.join(" | "));
 
+  group("Map layout");
+  /* The map defaults to lanes: one horizontal band per area, in rail order, with
+     the order inside each band settled by barycentre sweeps. The properties that
+     matter are that it is deterministic and that no two items in a band land on
+     the same spot -- the free layout guarantees neither. */
+  const ctxM = boot({ storage: stored }); const aM = api(ctxM); await wait(150);
+  const dM = ctxM.d, wM = ctxM.w;
+  aM.view("map");
+  await wait(80);
+
+  eq("lanes is the default", dM.getElementById("layoutLanes").className, "on");
+  const populated = ["Systems","Data","Process","Operations","Rules","People",
+                     "Exceptions","Dependencies","Evidence"]
+    .filter(sec => wM.M.nodes.some(n => n.item.section === sec));
+  eq("one band per populated area",
+     dM.querySelectorAll("#mapLanes rect.lane").length, populated.length);
+  eq("one label per band",
+     dM.querySelectorAll("#mapLaneLabels span").length, populated.length);
+  eq("bands follow the rail order",
+     [...dM.querySelectorAll("#mapLaneLabels span")].map(x => x.firstChild.textContent).join(","),
+     populated.map(s2 => s2.toLowerCase()).join(","));
+
+  ok("every node is assigned to its own area's band",
+     wM.M.nodes.every(n => wM.M.lanes[n.lane].sec === n.item.section));
+  ok("every node has a slot on the band",
+     wM.M.nodes.every(n => typeof n.lx === "number" && isFinite(n.lx) &&
+                           n.ly === wM.M.lanes[n.lane].mid));
+
+  let shared = 0;
+  wM.M.lanes.forEach((l, i) => {
+    const xs = wM.M.nodes.filter(n => n.lane === i).map(n => Math.round(n.lx));
+    if(new Set(xs).size !== xs.length) shared++;
+  });
+  eq("no two items in a band share a slot", shared, 0);
+
+  const firstPass = wM.M.nodes.map(n => n.id + ":" + Math.round(n.lx)).join("|");
+  dM.getElementById("mapClear").click();
+  await wait(60);
+  const secondPass = wM.M.nodes.map(n => n.id + ":" + Math.round(n.lx)).join("|");
+  eq("the same session lays out the same way every time", secondPass, firstPass);
+
+  /* The reason the dots can sit closer together than their names are wide: a
+     name is measured rather than counted, wrapped onto at most two lines, and
+     every other label in a band goes under its dot instead of over it. */
+  ok("names wrap to no more than two lines",
+     wM.M.nodes.every(n => n.lines.length >= 1 && n.lines.length <= 2));
+  ok("every node renders one tspan per line",
+     [...dM.querySelectorAll("#mapNodes .node")].every((g, i) =>
+       g.querySelectorAll("text tspan").length === wM.M.nodes[i].lines.length));
+  ok("labels alternate above and below inside a band",
+     wM.M.lanes.every((l, i) => {
+       const band = wM.M.nodes.filter(n => n.lane === i).sort((a, b) => a.lx - b.lx);
+       return band.every((n, k) => !k || n.row !== band[k-1].row);
+     }));
+
+  const box = n => {
+    const x0 = n.lx - n.lw/2, x1 = n.lx + n.lw/2;
+    const y1 = n.row === 1 ? n.ly + n.r + 8 + n.lines.length * 12
+                           : n.ly - (n.r + 3);
+    const y0 = n.row === 1 ? n.ly + n.r + 8 : y1 - n.lines.length * 12;
+    return [x0, y0, x1, y1];
+  };
+  let collided = 0;
+  for(let i = 0; i < wM.M.nodes.length; i++){
+    for(let j = i + 1; j < wM.M.nodes.length; j++){
+      const a = box(wM.M.nodes[i]), b = box(wM.M.nodes[j]);
+      if(a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3]) collided++;
+    }
+  }
+  eq("no two labels overlap anywhere on the map", collided, 0);
+
+  /* The dots spread into whatever width the stack height leaves unused, so the
+     air is free: Fit to view was already being held back by the height. */
+  const bandSpan = i => {
+    const band = wM.M.nodes.filter(n => n.lane === i).map(n => n.lx);
+    return band.length ? Math.max(...band) - Math.min(...band) : 0;
+  };
+  const widest = Math.max(...wM.M.lanes.map((l, i) => bandSpan(i)));
+  const lastLane = wM.M.lanes[wM.M.lanes.length - 1];
+  const stack = lastLane.top + lastLane.h;
+  const byWidth = wM.M.W / (widest + 140), byHeight = wM.M.H / (stack + 140);
+  ok("the spread claims the width the stack height leaves over",
+     byWidth >= byHeight * 0.9,
+     "width caps zoom at " + byWidth.toFixed(2) + ", height at " + byHeight.toFixed(2));
+
+  let tightest = 1e9;
+  wM.M.lanes.forEach((l, i) => {
+    const xs = wM.M.nodes.filter(n => n.lane === i).map(n => n.lx).sort((a, b) => a - b);
+    xs.forEach((x, k) => { if(k) tightest = Math.min(tightest, x - xs[k-1]); });
+  });
+  ok("no two dots in a band sit closer than the minimum gap",
+     tightest >= 52, "tightest " + Math.round(tightest) + "px");
+
+  ok("every edge carries an arrowhead",
+     [...dM.querySelectorAll("#mapEdges line")].every(l =>
+       l.getAttribute("marker-end") === "url(#arrowEdge)"));
+  ok("edges stop short of the node they point at",
+     wM.M.links.every(l => {
+       const x2 = Number(l.el.getAttribute("x2")), y2 = Number(l.el.getAttribute("y2"));
+       const d = Math.hypot(l.t.x - x2, l.t.y - y2);
+       const full = Math.hypot(l.t.x - l.s.x, l.t.y - l.s.y);
+       return full <= l.s.r + l.t.r + 13 || d > l.t.r;
+     }));
+
+  const relType = wM.M.links[0].type;
+  aM.clickNode(wM.M.nodes.indexOf(wM.M.links[0].s));
+  await wait(60);
+  ok("selecting a node turns its relations hot and names them",
+     wM.M.links.filter(l => l.el.getAttribute("marker-end") === "url(#arrowHot)").length > 0 &&
+     wM.M.links.some(l => l.lab.style.opacity === "1" && l.lab.textContent === relType),
+     relType);
+
+  /* Pointer behaviour. A press only becomes a drag once it has travelled, so a
+     click that wobbles still selects; anything that travels moves the node and
+     selects nothing. */
+  const svgM = dM.getElementById("mapSvg");
+  const nodeEls = [...dM.querySelectorAll("#mapNodes .node")];
+  const press = (el, x, y, button) => el.dispatchEvent(new wM.MouseEvent("pointerdown",
+    { bubbles:true, cancelable:true, clientX:x, clientY:y, button:button || 0 }));
+  const moveTo = (x, y) => svgM.dispatchEvent(new wM.MouseEvent("pointermove",
+    { bubbles:true, clientX:x, clientY:y }));
+  const release = () => svgM.dispatchEvent(new wM.MouseEvent("pointerup", { bubbles:true }));
+
+  ok("every dot carries a bigger invisible target",
+     nodeEls.every((g, i) => Number(g.querySelector(".hit").getAttribute("r")) >
+                             Number(g.querySelectorAll("circle")[1].getAttribute("r"))));
+
+  press(svgM, 10, 10); release();
+  eq("a click on bare canvas clears the selection", String(wM.M.sel), "null");
+
+  press(nodeEls[1], 200, 200); moveTo(250, 232); release();
+  eq("a press that travels moves the node and selects nothing", String(wM.M.sel), "null");
+
+  press(nodeEls[1], 200, 200); moveTo(202, 201); release();
+  eq("a press that only wobbles still selects", wM.M.sel, wM.M.nodes[1].id);
+
+  const before2 = wM.M.sel;
+  press(nodeEls[2], 300, 300, 2); release();
+  eq("the right button does not drag or select", wM.M.sel, before2);
+  ok("and starts nothing", !wM.M.drag && !wM.M.pan);
+
+  const home = { x: wM.M.nodes[3].x, y: wM.M.nodes[3].y };
+  press(nodeEls[3], 400, 400); moveTo(460, 430);
+  ok("a drag in flight is registered", !!wM.M.drag && wM.M.drag.moved);
+  dM.dispatchEvent(new wM.KeyboardEvent("keydown", { key:"Escape", bubbles:true }));
+  ok("Escape puts a dropped drag back", !wM.M.drag &&
+     wM.M.nodes[3].x === home.x && wM.M.nodes[3].y === home.y,
+     JSON.stringify([wM.M.nodes[3].x, home.x]));
+  ok("and leaves the map open", dM.getElementById("mapScrim").classList.contains("on"));
+  release();
+
+  ok("no coordinate went infinite on an unmeasured stage",
+     wM.M.nodes.every(n => isFinite(n.x) && isFinite(n.y)));
+
+  dM.getElementById("layoutFree").click();
+  await wait(60);
+  eq("free clears the bands", dM.querySelectorAll("#mapLanes rect.lane").length, 0);
+  eq("and the band labels", dM.querySelectorAll("#mapLaneLabels span").length, 0);
+  eq("free is marked active", dM.getElementById("layoutFree").className, "on");
+  eq("the layout choice is remembered",
+     JSON.parse(wM.localStorage.getItem("process.discovery.console.v1")).ui.mapLayout, "free");
+
+  dM.getElementById("layoutLanes").click();
+  await wait(60);
+  eq("and lanes come back", dM.querySelectorAll("#mapLanes rect.lane").length, populated.length);
+  dM.getElementById("mapClose").click();
+  ok("no page errors laying out the map", ctxM.errs.length === 0, ctxM.errs.join(" | "));
+
   group("New session");
   const ctxN = boot(); const aN = api(ctxN); await wait(120);
   const dN = ctxN.d, wN = ctxN.w;

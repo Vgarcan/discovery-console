@@ -56,15 +56,52 @@
 .legend i{width:8px;height:8px;border-radius:50%;flex:0 0 auto}
 .legend u{margin-left:auto;font-family:var(--mono);font-size:9px;color:var(--ink-3);text-decoration:none}
 
-.mapstage{position:relative;background:var(--canvas);min-width:0;overflow:hidden}
-.mapstage svg{width:100%;height:100%;display:block;cursor:grab}
-.mapstage svg.grabbing{cursor:grabbing}
+.mapstage{
+  position:relative;background:var(--canvas);min-width:0;overflow:hidden;
+  /* Nothing in the graph is text to be read as text. Without this every pan
+     painted the labels blue, because a drag across them is a selection to the
+     browser. The side panels stay selectable -- names there are worth copying. */
+  user-select:none;-webkit-user-select:none;
+}
+.mapstage svg{
+  width:100%;height:100%;display:block;cursor:grab;
+  /* the pointer handlers own every gesture, so the browser must not also
+     scroll or zoom the page underneath them on a touch device */
+  touch-action:none;
+}
+.mapstage svg.grabbing,.mapstage svg.grabbing .node{cursor:grabbing}
+/* Lane bands sit behind everything and read as table rows. The labels are an
+   overlay rather than SVG text, so they stay legible whatever the zoom is. */
+.lane{fill:var(--ink);opacity:.030}
+.lane.alt{opacity:0}
+.lane-div{stroke:var(--line);stroke-width:1;opacity:.45}
+.lane-labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.lane-labels span{
+  position:absolute;left:.65rem;transform:translateY(-50%);
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.05em;
+  text-transform:uppercase;white-space:nowrap;
+}
+.lane-labels u{text-decoration:none;color:var(--ink-3);margin-left:.4rem}
+
 .edge{stroke:var(--line);stroke-width:1}
 .edge.hot{stroke:var(--accent);stroke-width:1.6}
 .edge.dim{opacity:.22}
-.elabel{font-family:var(--mono);font-size:8px;fill:var(--ink-3)}
-.node{cursor:pointer}
+/* Relations are directional and read both ways in the item list, so the map has
+   to say which way round each one is. */
+#arrowEdge path{fill:var(--line)}
+#arrowHot path{fill:var(--accent)}
+/* The type sits on top of the lines it describes, so it carries its own halo
+   rather than a background rectangle. */
+.elabel{
+  font-family:var(--mono);font-size:8px;fill:var(--ink-3);
+  paint-order:stroke;stroke:var(--canvas);stroke-width:3px;stroke-linejoin:round;
+}
+.node{cursor:grab}
 .node circle{stroke:var(--canvas);stroke-width:2;transition:opacity .15s}
+/* A 5px dot is a poor target for a mouse and a worse one for a trackpad. This
+   sits under the dot and takes the pointer for it; the spread pass keeps the
+   dots far enough apart that two of these never overlap. */
+.node .hit{fill:transparent;stroke:none;pointer-events:all}
 .node text{font-size:11px;fill:var(--ink-2);font-weight:500}
 .node.sel circle{stroke:var(--accent);stroke-width:2.5}
 .node.sel text{fill:var(--ink);font-weight:700}
