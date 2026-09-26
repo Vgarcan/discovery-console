@@ -162,6 +162,13 @@ already captured. Tick one when the client confirms it, and the area meter moves
 
 **Note** parks anything you have no time to classify.
 
+Every note and every mark can be corrected from the tape. **Edit** rewrites a note, **Name**
+gives a mark something better than `Moment 3`, and **Delete** takes two presses like everything
+else here that cannot be undone. A mark whose name is cleared goes back to its number.
+
+**Mark** sits in the top bar next to the clock rather than in the capture bar, because what it
+records is the time, not whatever you happen to be typing.
+
 ### Tags as filters
 
 Tags are free-form. Type `programx` or `sme` in the detail sheet and it becomes a filter
@@ -312,6 +319,18 @@ it becomes the Description.
 
 ![Exceptions, with business actions filled from thread replies](docs/images/09-pdd-exceptions.png)
 
+### Filling in the rest
+
+Click any `TBC` in a dashed outline and type into it. Those are the cells the console has no
+way to capture — a contact, an access date, where an input arrives — and the draft is where
+they get filled in rather than the exported document. What you type is keyed by item id, so
+renaming a system keeps the access note filed against it, and it survives a reload and travels
+in the JSON. It renders with a dotted underline, in the PDF too: the draft does not pretend a
+typed answer was captured evidence.
+
+The header counts down as you go — *33 still to fill in by hand* — and reaches zero when the
+document is complete.
+
 Outputs: **Copy as Markdown**, **Download .md**, and **Print / Save as PDF**, which uses a
 separate black-on-white stylesheet.
 
@@ -341,6 +360,11 @@ else you click, or `Esc`, calls it off. Nothing here has an undo, which is why.
 **Replace** on import uses the same two presses. **New session** is the one exception: it
 clears the whole session, so it goes behind a dialog instead, where the confirm sits somewhere
 a stray second click cannot reach and the export is one click away.
+
+### On a narrow screen
+
+Below 900px the session actions fold behind one **Actions** control, so nothing runs off the
+side of the page. Mark stays out of it: it is the one you press without looking.
 
 ### Light theme and focus mode
 

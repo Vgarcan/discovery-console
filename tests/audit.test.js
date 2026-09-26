@@ -817,6 +817,127 @@ async function run(){
   eq("PDD-04: no duplicate ids after merge", allIds.size, merged.items.length);
   ok("no page errors on the stress fixture", ctxS.errs.length === 0, ctxS.errs.join(" | "));
 
+  group("Notes and marks can be corrected");
+  /* A mark arrived as "Moment 3" and stayed that way, and neither a mark nor a
+     note could be renamed, edited or removed from anywhere in the console. */
+  const ctxM2 = boot({ storage: stored }); const aM2 = api(ctxM2); await wait(150);
+  const dM2 = ctxM2.d, wM2 = ctxM2.w;
+
+  ok("Mark has left the capture bar",
+     !dM2.querySelector(".capture-actions #markBtn"));
+  ok("and sits with the clock instead", !!dM2.querySelector(".topbar #markBtn"));
+
+  dM2.getElementById("markBtn").click();
+  await wait(60);
+  const freshMark = wM2.S.marks[wM2.S.marks.length - 1];
+  const markRow = [...dM2.querySelectorAll("#tape .tape-row")]
+    .find(r => r.textContent.includes("Mark"));
+  ok("a new mark is numbered until it is named",
+     markRow.querySelector(".ttext").textContent.startsWith("Moment"));
+  [...markRow.querySelectorAll(".entry-acts button")]
+    .find(b => b.textContent === "Name").click();
+  await wait(60);
+  const nameField = dM2.querySelector("#tape .entry-edit input");
+  ok("naming opens a field on the row", !!nameField);
+  nameField.value = "Screen share of the posting queue";
+  nameField.dispatchEvent(new wM2.KeyboardEvent("keydown", { key:"Enter", bubbles:true }));
+  await wait(60);
+  eq("the name is kept", freshMark.label, "Screen share of the posting queue");
+  ok("and replaces the number on the tape",
+     aM2.text("tape").includes("Screen share of the posting queue"));
+
+  const marksBefore = wM2.S.marks.length;
+  const named = [...dM2.querySelectorAll("#tape .tape-row")]
+    .find(r => r.textContent.includes("Screen share of the posting queue"));
+  const delMark = [...named.querySelectorAll(".entry-acts button")]
+    .find(b => b.textContent === "Delete");
+  delMark.click();
+  eq("the first press on delete only arms it", wM2.S.marks.length, marksBefore);
+  await wait(450);
+  delMark.click();
+  await wait(60);
+  eq("the second press removes the mark", wM2.S.marks.length, marksBefore - 1);
+
+  const noteRow = [...dM2.querySelectorAll("#tape .tape-row")]
+    .find(r => r.textContent.includes("Note"));
+  const noteId = wM2.S.notes[0].id;
+  [...noteRow.querySelectorAll(".entry-acts button")]
+    .find(b => b.textContent === "Edit").click();
+  await wait(60);
+  const noteField = dM2.querySelector("#tape .entry-edit textarea");
+  ok("a note opens in a box", !!noteField);
+  noteField.value = "Corrected after the call";
+  noteField.dispatchEvent(new wM2.KeyboardEvent("keydown", { key:"Enter", bubbles:true }));
+  await wait(60);
+  eq("the note is corrected",
+     wM2.S.notes.find(n => n.id === noteId).text, "Corrected after the call");
+  ok("no page errors correcting the tape", ctxM2.errs.length === 0, ctxM2.errs.join(" | "));
+
+  group("By-hand PDD cells");
+  /* The cells the console has no way to capture are typed into the draft
+     itself, keyed by item id so renaming an item keeps what was filed there. */
+  const ctxH = boot({ storage: stored }); const aH = api(ctxH); await wait(150);
+  const dH = ctxH.d, wH = ctxH.w;
+  aH.view("pdd");
+  eq("the draft counts what is still to fill in by hand",
+     dH.querySelector("#pddMeta .byhand-count").textContent, "33");
+  const attended = dH.querySelector('[data-mk="1.3|attended"]');
+  ok("Attended/Unattended is one of them", !!attended);
+  attended.click();
+  const typed = dH.querySelector("#pddDoc .pdd-input");
+  ok("clicking it opens a field where it stood", !!typed);
+  typed.value = "Unattended, agreed with the RPA lead";
+  typed.dispatchEvent(new wH.KeyboardEvent("keydown", { key:"Enter", bubbles:true }));
+  await wait(60);
+  eq("what was typed is kept on the session",
+     wH.S.manual["1.3|attended"], "Unattended, agreed with the RPA lead");
+  ok("and reads in the draft",
+     aH.text("pddDoc").includes("Unattended, agreed with the RPA lead"));
+  eq("the outstanding count comes down",
+     dH.querySelector("#pddMeta .byhand-count").textContent, "32");
+  ok("it is marked as typed rather than captured",
+     !!dH.querySelector('.pdd-hand[data-mk="1.3|attended"]'));
+  ok("the markdown carries it", wH.pddMarkdown().includes("Unattended, agreed with the RPA lead"));
+  ok("and still flags the rest", wH.pddMarkdown().includes("TBC (by hand)"));
+
+  const sys0 = wH.S.items.find(i => i.section === "Systems");
+  wH.S.manual["1.4|granted|" + sys0.id] = "Granted 12 March";
+  sys0.name = "Renamed core system";
+  wH.renderPDD();
+  ok("a typed value survives its item being renamed",
+     aH.text("pddDoc").includes("Granted 12 March"));
+  ok("it is written down with the session",
+     JSON.parse(wH.localStorage.getItem("process.discovery.console.v1"))
+       .manual["1.3|attended"] === "Unattended, agreed with the RPA lead");
+  ok("no page errors typing into the draft", ctxH.errs.length === 0, ctxH.errs.join(" | "));
+
+  group("Narrow screen actions");
+  /* Three buttons and a clock wanted 508px of a 390px screen, so the page
+     scrolled sideways and End walkthrough was off it entirely. */
+  const ctxW = boot(); await wait(120);
+  const dW = ctxW.d, wW = ctxW.w;
+  ok("the actions live in one group that can fold away",
+     !!dW.getElementById("topbarActs") && !!dW.getElementById("topbarMore"));
+  ok("every action is inside it",
+     ["newBtn","undoBtn","finishBtn"].every(id =>
+       dW.getElementById("topbarActs").contains(dW.getElementById(id))));
+  ok("and Mark stays out, because it is the one you press mid-call",
+     !dW.getElementById("topbarActs").contains(dW.getElementById("markBtn")));
+  eq("it starts closed", dW.getElementById("topbarMore").getAttribute("aria-expanded"), "false");
+  dW.getElementById("topbarMore").click();
+  ok("the control opens it", dW.getElementById("topbarActs").classList.contains("on"));
+  eq("and says so", dW.getElementById("topbarMore").getAttribute("aria-expanded"), "true");
+  dW.getElementById("undoBtn").click();
+  ok("choosing an action closes it", !dW.getElementById("topbarActs").classList.contains("on"));
+  dW.getElementById("topbarMore").click();
+  dW.dispatchEvent(new wW.KeyboardEvent("keydown", { key:"Escape", bubbles:true }));
+  ok("Escape closes it", !dW.getElementById("topbarActs").classList.contains("on"));
+  dW.getElementById("topbarMore").click();
+  dW.getElementById("stage").dispatchEvent(new wW.MouseEvent("pointerdown", { bubbles:true }));
+  ok("so does a press anywhere else",
+     !dW.getElementById("topbarActs").classList.contains("on"));
+  ok("no page errors on the narrow layout", ctxW.errs.length === 0, ctxW.errs.join(" | "));
+
   group("Session clock");
   /* The clock reads the wall clock rather than counting its own ticks. A
      browser throttles a hidden tab's timers to about once a minute, so a tick

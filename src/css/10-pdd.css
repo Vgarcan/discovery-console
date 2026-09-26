@@ -49,8 +49,21 @@
    one will never fill itself in, whatever the client answers. */
 .tbc.byhand{
   background:transparent;color:var(--ink-3);
-  border:1px dashed var(--line);cursor:help;
+  border:1px dashed var(--line);cursor:text;
 }
+.tbc.byhand:hover,.tbc.byhand:focus-visible{border-color:var(--accent);color:var(--ink-2)}
+/* Typed rather than captured, and the draft should not pretend otherwise. */
+.pdd-hand{
+  border-bottom:1px dotted var(--ink-3);cursor:text;
+  -webkit-print-color-adjust:exact;print-color-adjust:exact;
+}
+.pdd-hand:hover,.pdd-hand:focus-visible{border-bottom-color:var(--accent);color:var(--accent)}
+.pdd-input{
+  font:inherit;color:var(--ink);background:var(--raise);
+  border:1px solid var(--accent);border-radius:2px;
+  padding:.1rem .3rem;min-width:11rem;max-width:100%;
+}
+.pdd-input:focus{outline:0}
 .pdd-meta .byhand-count{margin-left:1.1rem}
 #importBox{font-family:var(--mono);font-size:.74rem;line-height:1.5;resize:vertical}
 
@@ -69,4 +82,5 @@
   .pdd-hint{display:none}
   .tbc{border-color:#888888}
   .tbc.byhand{color:#444444}
+  .pdd-hand{border-bottom-color:#999999}
 }

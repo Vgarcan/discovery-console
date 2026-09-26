@@ -7,7 +7,14 @@
    carry it, so it falls to the analyst to fill in by hand. Both print as TBC
    in the template; only TBC counts against the evidence score. */
 const TBC = null;
-const NA = {byHand:true};
+
+/* A cell the console has no way to capture. It still carries a key, because the
+   analyst can type into it in the draft itself and that has to land somewhere
+   that survives a reload and an export. Keys are built from item ids rather
+   than names, so renaming a system keeps whatever was filed against it. */
+function NA(key){
+  return {byHand:true, key:key, value:(S.manual && S.manual[key]) || ""};
+}
 
 function byTag(sec, ...tags){
   return inSection(sec).filter(i => tags.some(t => i.tags.includes(t)));
@@ -44,7 +51,7 @@ function pddModel(){
 
    {no:"1.1", title:"Version Control", blocks:[
      {type:"table", columns:["Version No.","Change Description","Date","Author"],
-      rows:[["1.0","Initial Documentation", today(), NA]]}
+      rows:[["1.0","Initial Documentation", today(), NA("1.1|author")]]}
    ]},
 
    {no:"1.2", title:"RPA Projects Team", blocks:[
@@ -52,8 +59,8 @@ function pddModel(){
       rows: ppl.length ? ppl.map(p => [
         p.tags.find(t => ["SME","Process owner","Team","Approval","Escalation"].includes(t)) || TBC,
         p.tags.includes("External") ? "External" : (p.tags.includes("Internal") ? "Internal" : TBC),
-        p.name, NA
-      ]) : [[TBC,TBC,TBC,NA]]}
+        p.name, NA("1.2|contact|" + p.id)
+      ]) : [[TBC,TBC,TBC,NA("1.2|contact|none")]]}
    ]},
 
    {no:"1.3", title:"General Process Information", blocks:[
@@ -64,11 +71,11 @@ function pddModel(){
      {type:"list", label:"Dependencies", items:dep.map(d =>
         d.name + (d.tags.length ? " — " + d.tags.join(", ") : "") + (firstReply(d) ? ". " + firstReply(d) : ""))},
      {type:"field", label:"Exception Rate", value:joinNames(byTag("Operations","Exception rate"))},
-     {type:"field", label:"Orchestrator Available/Link", value:NA,
+     {type:"field", label:"Orchestrator Available/Link", value:NA("1.3|orchestrator"),
       hint:"Platform detail, not a walkthrough question."},
-     {type:"field", label:"Attended/Unattended Process(es)", value:NA,
+     {type:"field", label:"Attended/Unattended Process(es)", value:NA("1.3|attended"),
       hint:"Agreed classification, not a Business Analyst decision."},
-     {type:"field", label:"(In)Stability Factors", value:NA,
+     {type:"field", label:"(In)Stability Factors", value:NA("1.3|stability"),
       hint:"Known slow reports or intermittent application behaviour."},
      {type:"list", label:"External Sources of Information",
       items:byTag("Process","External source","External").concat(byTag("Dependencies","Third party","External"))
@@ -77,8 +84,9 @@ function pddModel(){
 
    {no:"1.4", title:"Applications & Environments", blocks:[
      {type:"table", columns:["App/System","Environment","Access Type","Access Granted","URL/Details","User Details","Owner"],
-      rows: sys.length ? sys.map(s => [s.name, envOf(s), accessOf(s), NA, firstReply(s) || TBC, NA, ownerOf(s)])
-                       : [[TBC,TBC,TBC,NA,TBC,NA,TBC]],
+      rows: sys.length ? sys.map(s => [s.name, envOf(s), accessOf(s), NA("1.4|granted|" + s.id),
+                                       firstReply(s) || TBC, NA("1.4|user|" + s.id), ownerOf(s)])
+                       : [[TBC,TBC,TBC,NA("1.4|granted|none"),TBC,NA("1.4|user|none"),TBC]],
       note:"Never record passwords, MFA codes or tokens here. Document the access method or credential store instead."}
    ]},
 
@@ -117,11 +125,13 @@ function pddModel(){
 
    {no:"2.5", title:"Inputs/Outputs", blocks:[
      {type:"table", label:"Inputs", columns:["Name","Description","Format","Location","Owner","Provider"],
-      rows: inputs.length ? inputs.map(i => [i.name, firstReply(i) || TBC, formatOf(i), NA, NA, NA])
-                          : [[TBC,TBC,TBC,NA,NA,NA]]},
+      rows: inputs.length ? inputs.map(i => [i.name, firstReply(i) || TBC, formatOf(i),
+              NA("2.5|loc|" + i.id), NA("2.5|owner|" + i.id), NA("2.5|prov|" + i.id)])
+                          : [[TBC,TBC,TBC,NA("2.5|loc|none"),NA("2.5|owner|none"),NA("2.5|prov|none")]]},
      {type:"table", label:"Outputs", columns:["Name","Description","Format","Location","Owner","Provider"],
-      rows: outputs.length ? outputs.map(i => [i.name, firstReply(i) || TBC, formatOf(i), NA, NA, NA])
-                           : [[TBC,TBC,TBC,NA,NA,NA]],
+      rows: outputs.length ? outputs.map(i => [i.name, firstReply(i) || TBC, formatOf(i),
+              NA("2.5|loc|" + i.id), NA("2.5|owner|" + i.id), NA("2.5|prov|" + i.id)])
+                           : [[TBC,TBC,TBC,NA("2.5|loc|none"),NA("2.5|owner|none"),NA("2.5|prov|none")]],
       note:"Business-level artifacts only. Granular runtime values belong in the IOE."}
    ]},
 
@@ -168,7 +178,9 @@ function pddStats(model){
   let filled = 0, total = 0, byHand = 0;
 
   function score(v){
-    if(v && v.byHand){ byHand++; return; }
+    /* Typed by hand counts as neither captured evidence nor still outstanding,
+       so the second figure counts down as the analyst works through them. */
+    if(v && v.byHand){ if(!v.value) byHand++; return; }
     if(v === "") return;
     total++;
     if(v) filled++;
@@ -194,10 +206,65 @@ function pddSectionFill(){
 }
 
 function cell(v){
-  if(v && v.byHand)
-    return '<span class="tbc byhand" title="The console has no field for this. Fill it in by hand.">TBC</span>';
+  if(v && v.byHand){
+    const attrs = ' data-mk="' + esc(v.key) + '" tabindex="0" role="button"';
+    return v.value
+      ? '<span class="pdd-hand"' + attrs + ' title="Typed by hand. Click to change.">' +
+        esc(v.value) + "</span>"
+      : '<span class="tbc byhand"' + attrs +
+        ' title="The console has no field for this. Click to type it in.">TBC</span>';
+  }
   return v ? esc(v) : '<span class="tbc">TBC</span>';
 }
+
+/* Click a by-hand cell and it becomes an input where it stands. Everything in
+   the draft is derived from the session, so the typed value lives in the
+   session too and the draft is rebuilt from it. */
+let editingCell = null;
+
+function editManualCell(host){
+  if(editingCell) return;
+  const key = host.dataset.mk;
+  editingCell = key;
+  const input = document.createElement("input");
+  input.className = "pdd-input";
+  input.value = (S.manual && S.manual[key]) || "";
+  input.placeholder = "Type it in";
+  host.replaceWith(input);
+  input.focus();
+  input.select();
+
+  let closed = false;
+  const close = keep => {
+    if(closed) return;
+    closed = true;
+    editingCell = null;
+    if(keep){
+      const val = input.value.trim();
+      S.manual = S.manual || {};
+      if(val) S.manual[key] = val; else delete S.manual[key];
+      save();
+    }
+    renderPDD();
+  };
+  input.addEventListener("keydown", e => {
+    if(e.key === "Enter"){ e.preventDefault(); close(true); }
+    if(e.key === "Escape"){ e.preventDefault(); close(false); }
+  });
+  input.addEventListener("blur", () => close(true));
+}
+
+$("pddDoc").addEventListener("click", e => {
+  const host = e.target.closest("[data-mk]");
+  if(host) editManualCell(host);
+});
+$("pddDoc").addEventListener("keydown", e => {
+  if(e.key !== "Enter" && e.key !== " ") return;
+  const host = e.target.closest && e.target.closest("[data-mk]");
+  if(!host) return;
+  e.preventDefault();
+  editManualCell(host);
+});
 
 function renderPDD(){
   const model = pddModel();
@@ -206,7 +273,7 @@ function renderPDD(){
   $("pddMeta").innerHTML =
     '<b>' + st.filled + " of " + st.total + "</b><span>fields carrying captured evidence</span>" +
     (st.byHand ? '<b class="byhand-count">' + st.byHand +
-      "</b><span>the console cannot ask for, to fill in by hand</span>" : "");
+      "</b><span>still to fill in by hand</span>" : "");
 
   const wrap = $("pddDoc");
   wrap.innerHTML = "";
@@ -269,9 +336,10 @@ function pddMarkdown(){
      ordinary character. Either one used to break the table it landed in. */
   const flat = x => String(x).replace(/\r?\n/g, " ");
   const piped = x => String(x).replace(/\|/g, "\\|").replace(/\r?\n/g, "<br>");
-  const v = x => (x && x.byHand) ? "TBC (by hand)" : (x ? flat(x) : "TBC");
+  const hand = x => x.value ? flat(x.value) : "TBC (by hand)";
+  const v = x => (x && x.byHand) ? hand(x) : (x ? flat(x) : "TBC");
   const cellv = x => x === "" ? " "
-                   : (x && x.byHand) ? "TBC (by hand)"
+                   : (x && x.byHand) ? (x.value ? piped(x.value) : "TBC (by hand)")
                    : (x ? piped(x) : "TBC");
   model.forEach(sec => {
     if(sec.head){ L.push("# " + sec.no + ". " + sec.title, ""); return; }

@@ -125,7 +125,10 @@ button,input,textarea,select{font:inherit;color:inherit}
 .session-name:hover{border-bottom-color:var(--line)}
 .session-name:focus{outline:0;border-bottom-color:var(--accent)}
 
-.topbar-right{display:flex;align-items:center;gap:.6rem;flex:0 0 auto}
+.topbar-right{display:flex;align-items:center;gap:.6rem;flex:0 0 auto;position:relative}
+.topbar-acts{display:flex;align-items:center;gap:.6rem}
+/* Only earns its place when there is no room for the buttons themselves. */
+.topbar-more{display:none}
 
 .live{
   display:inline-flex;align-items:center;gap:.4rem;
@@ -537,6 +540,26 @@ kbd{
   .tape-rail{border-left:0;border-top:1px solid var(--line)}
   .topbar{flex-wrap:wrap;gap:.6rem;padding:.6rem .9rem}
   .session-name{order:3;flex:1 0 100%}
+  /* Three buttons plus the clock needed 508px of a 390px screen, so the page
+     scrolled sideways and End walkthrough was simply off it. They fold behind
+     one control instead, and the recording word goes with them -- the dot says
+     the same thing in a tenth of the width. */
+  .brand span{display:none}
+  .live span{display:none}
+  .live{gap:0}
+  .topbar-more{display:inline-flex}
+  .topbar-acts{
+    display:none;position:absolute;top:calc(100% + .5rem);right:0;z-index:95;
+    flex-direction:column;align-items:stretch;gap:1px;min-width:170px;
+    background:var(--line);border:1px solid var(--line);border-radius:4px;
+    box-shadow:0 12px 30px rgba(0,0,0,.4);overflow:hidden;
+  }
+  .topbar-acts.on{display:flex}
+  .topbar-acts .btn{
+    border:0;border-radius:0;background:var(--raise);
+    text-align:left;padding:.6rem .7rem;
+  }
+  .topbar-acts .btn-solid{background:var(--accent);color:var(--accent-ink)}
   .rv-wrap{padding:1.5rem 1rem 3rem}
   .rv-head h1{font-size:1.5rem}
   .types{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
@@ -875,6 +898,12 @@ body.resizing .work,body.resizing .pane-resize{transition:none}
 .reply .icon-btn{opacity:0;padding:0 .2rem}
 .reply:hover .icon-btn{opacity:1}
 
+.tape-foot{display:flex;align-items:center;gap:.15rem}
+.entry-acts{display:flex;gap:.15rem;margin-left:auto;opacity:0;transition:opacity .12s}
+.tape-row:hover .entry-acts,.tape-row:focus-within .entry-acts{opacity:1}
+.entry-edit{margin:.3rem 0}
+.entry-edit .reply-input{width:100%}
+
 .reply-btn{margin-top:.35rem;padding:.12rem .32rem;font-size:.72rem;opacity:.5}
 .reply-btn u{font-family:var(--mono);font-size:9px;text-decoration:none;color:var(--accent)}
 .tape-row:hover .reply-btn,.item:hover .reply-btn,.reply-btn:focus{opacity:1}
@@ -939,8 +968,21 @@ body.resizing .work,body.resizing .pane-resize{transition:none}
    one will never fill itself in, whatever the client answers. */
 .tbc.byhand{
   background:transparent;color:var(--ink-3);
-  border:1px dashed var(--line);cursor:help;
+  border:1px dashed var(--line);cursor:text;
 }
+.tbc.byhand:hover,.tbc.byhand:focus-visible{border-color:var(--accent);color:var(--ink-2)}
+/* Typed rather than captured, and the draft should not pretend otherwise. */
+.pdd-hand{
+  border-bottom:1px dotted var(--ink-3);cursor:text;
+  -webkit-print-color-adjust:exact;print-color-adjust:exact;
+}
+.pdd-hand:hover,.pdd-hand:focus-visible{border-bottom-color:var(--accent);color:var(--accent)}
+.pdd-input{
+  font:inherit;color:var(--ink);background:var(--raise);
+  border:1px solid var(--accent);border-radius:2px;
+  padding:.1rem .3rem;min-width:11rem;max-width:100%;
+}
+.pdd-input:focus{outline:0}
 .pdd-meta .byhand-count{margin-left:1.1rem}
 #importBox{font-family:var(--mono);font-size:.74rem;line-height:1.5;resize:vertical}
 
@@ -959,6 +1001,7 @@ body.resizing .work,body.resizing .pane-resize{transition:none}
   .pdd-hint{display:none}
   .tbc{border-color:#888888}
   .tbc.byhand{color:#444444}
+  .pdd-hand{border-bottom-color:#999999}
 }
 
 /* 11-transfer.css
@@ -1010,6 +1053,7 @@ body.resizing .work,body.resizing .pane-resize{transition:none}
           <button class="clock-act" id="clockHide" type="button" role="menuitem">Hide</button>
         </span>
       </span>
+      <button class="btn" id="markBtn" title="Mark this moment for finding in the recording">Mark</button>
       <span class="divider-v"></span>
       <button class="btn btn-ghost pane-toggle" id="navToggle" title="Hide or show the areas panel" aria-pressed="true">
         <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="11" rx="1"/><line x1="6" y1="2.5" x2="6" y2="13.5"/></svg>
@@ -1018,9 +1062,13 @@ body.resizing .work,body.resizing .pane-resize{transition:none}
         <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="11" rx="1"/><line x1="10" y1="2.5" x2="10" y2="13.5"/></svg>
       </button>
       <span class="divider-v"></span>
-      <button class="btn" id="newBtn" title="Clear this session and start a new one" disabled>New session</button>
-      <button class="btn" id="undoBtn" disabled>Undo</button>
-      <button class="btn btn-solid" id="finishBtn">End walkthrough</button>
+      <button class="btn topbar-more" id="topbarMore" type="button"
+              aria-expanded="false" aria-controls="topbarActs" title="Session actions">Actions</button>
+      <div class="topbar-acts" id="topbarActs">
+        <button class="btn" id="newBtn" title="Clear this session and start a new one" disabled>New session</button>
+        <button class="btn" id="undoBtn" disabled>Undo</button>
+        <button class="btn btn-solid" id="finishBtn">End walkthrough</button>
+      </div>
     </div>
   </header>
 
@@ -1090,7 +1138,6 @@ body.resizing .work,body.resizing .pane-resize{transition:none}
               <div class="capture-actions">
                 <kbd class="capture-hint">Enter</kbd>
                 <button class="btn btn-ghost" id="detailBtn" title="Add tags and relations">Details</button>
-                <button class="btn btn-ghost" id="markBtn" title="Mark this moment">Mark</button>
               </div>
               <div class="suggest" id="suggest"></div>
             </div>
@@ -1510,6 +1557,7 @@ let S = {
   marks:[],
   resolved:[],
   shots:{},
+  manual:{},
   seconds:0,
   paused:false,
   theme:"dark"
@@ -1545,6 +1593,18 @@ function newProjectId(){
    another walkthrough can still find images that belong to that one. */
 function shotEntry(prj, extra){
   return Object.assign({w:0, h:0, bytes:0, type:"", at:"", ts:0, prj:prj}, extra || {});
+}
+
+/* What the analyst typed into the PDD cells the console has no way to capture,
+   keyed by where in the template it goes. Item ids are part of the key, so
+   renaming a system does not lose the access note filed against it. */
+function normaliseManual(raw){
+  const out = {};
+  if(!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
+  Object.keys(raw).forEach(k => {
+    if(typeof raw[k] === "string" && raw[k].trim()) out[k] = raw[k];
+  });
+  return out;
 }
 
 function normaliseShots(raw, prj){
@@ -1624,6 +1684,7 @@ function load(){
   }catch(e){}
   if(!S.id) S.id = newProjectId();
   S.shots = normaliseShots(S.shots, S.id);
+  S.manual = normaliseManual(S.manual);
   let seq = 0;
   [S.items, S.notes, S.marks].forEach(list => (list || []).forEach(e => {
     if(!e.id) e.id = uid();
@@ -1687,6 +1748,7 @@ document.addEventListener("keydown", e => { if(e.key === "Escape") disarm(); });
 function sessionIsEmpty(){
   return !S.items.length && !S.notes.length && !S.marks.length &&
          !S.resolved.length && !Object.keys(S.shots || {}).length &&
+         !Object.keys(S.manual || {}).length &&
          (S.name || "") === DEFAULT_NAME;
 }
 
@@ -1695,6 +1757,7 @@ function resetSession(){
      folder. The old one keeps whatever was filed under it. */
   S.id = newProjectId();
   S.shots = {};
+  S.manual = {};
   S.name = DEFAULT_NAME;
   S.items = [];
   S.notes = [];
@@ -1955,6 +2018,10 @@ function renderItems(){
    Session tape: chronological feed, colour coding, kind filter and reply threads. */
 /* ---------- tape ---------- */
 let lastCount = 0;
+/* Which entry is being renamed. Notes and marks had no way to be corrected or
+   removed at all: a mark arrived as "Moment 3" and stayed that, and a note
+   typed in a hurry could not be fixed. */
+let editingEntry = null;
 let tapeKinds = [];
 const openThreads = new Set();
 let focusComposer = null;
@@ -1969,7 +2036,8 @@ function entities(){
   return [
     ...S.items.map(i => ({id:i.id, kind:i.section, text:i.name, at:i.at, ts:i.ts||0, ent:i})),
     ...S.notes.map(n => ({id:n.id, kind:"Note", text:n.text, at:n.at, ts:n.ts||0, ent:n})),
-    ...S.marks.map((m,idx) => ({id:m.id, kind:"Mark", text:"Moment " + (idx+1), at:m.at, ts:m.ts||0, ent:m}))
+    ...S.marks.map((m,idx) => ({id:m.id, kind:"Mark",
+       text:(m.label || "").trim() || "Moment " + (idx+1), at:m.at, ts:m.ts||0, ent:m}))
   ].sort((a,b) => b.ts - a.ts);
 }
 
@@ -2058,6 +2126,63 @@ function replyButton(ent, id){
   return b;
 }
 
+/* ----- editing and removing an entry ----- */
+function entryEditor(r){
+  const wrap = document.createElement("div");
+  wrap.className = "entry-edit";
+  const mark = r.kind === "Mark";
+  const f = document.createElement(mark ? "input" : "textarea");
+  f.className = "reply-input";
+  if(mark){
+    f.value = (r.ent.label || "");
+    f.placeholder = "Name this moment";
+  }else{
+    f.rows = 2;
+    f.value = r.ent.text || "";
+  }
+  const done = () => {
+    const v = f.value.trim();
+    /* A mark cleared back to nothing goes back to its number; a note cleared to
+       nothing is left alone, because emptying it is not how you delete it. */
+    if(mark) r.ent.label = v;
+    else if(v) r.ent.text = v;
+    editingEntry = null;
+    save(); renderAll();
+  };
+  f.addEventListener("keydown", e => {
+    if(e.key === "Enter" && !e.shiftKey){ e.preventDefault(); done(); }
+    if(e.key === "Escape"){ e.preventDefault(); editingEntry = null; renderAll(); }
+  });
+  f.addEventListener("blur", done);
+  wrap.appendChild(f);
+  setTimeout(() => { f.focus(); f.select && f.select(); }, 20);
+  return wrap;
+}
+
+function entryActions(r){
+  const wrap = document.createElement("span");
+  wrap.className = "entry-acts";
+  if(r.kind !== "Note" && r.kind !== "Mark") return wrap;
+
+  const ed = document.createElement("button");
+  ed.className = "icon-btn"; ed.type = "button";
+  ed.textContent = r.kind === "Mark" ? "Name" : "Edit";
+  ed.title = r.kind === "Mark" ? "Name this moment" : "Edit this note";
+  ed.addEventListener("click", () => { editingEntry = r.id; renderAll(); });
+
+  const rm = document.createElement("button");
+  rm.className = "icon-btn danger"; rm.type = "button"; rm.textContent = "Delete";
+  rm.addEventListener("click", () => confirmAction(rm, "Confirm delete", () => {
+    if(r.kind === "Note") S.notes = S.notes.filter(n => n.id !== r.id);
+    else S.marks = S.marks.filter(m => m.id !== r.id);
+    save(); renderAll();
+    toast(r.kind === "Note" ? "Note deleted" : "Moment deleted");
+  }));
+
+  wrap.appendChild(ed); wrap.appendChild(rm);
+  return wrap;
+}
+
 /* ----- kind filter ----- */
 function renderTapeFilter(){
   const bar = $("tapeFilter");
@@ -2118,9 +2243,14 @@ function renderTape(){
       '<span class="k"><i class="kdot' + (r.kind === "Mark" ? " ring" : "") + '" style="' +
       (r.kind === "Mark" ? "border-color:" : "background:") + kindColor(r.kind) + '"></i>' +
       esc(r.kind) + "</span>" +
-      '<span class="ttext">' + esc(r.text) + "</span>";
+      (editingEntry === r.id ? "" : '<span class="ttext">' + esc(r.text) + "</span>");
+    if(editingEntry === r.id) body.appendChild(entryEditor(r));
     body.appendChild(threadBlock(r.ent, r.id));
-    body.appendChild(replyButton(r.ent, r.id));
+    const foot = document.createElement("div");
+    foot.className = "tape-foot";
+    foot.appendChild(replyButton(r.ent, r.id));
+    foot.appendChild(entryActions(r));
+    body.appendChild(foot);
 
     d.appendChild(t);
     d.appendChild(body);
@@ -2214,7 +2344,7 @@ function markMoment(){
   /* The live figure, not the banked one, and not whatever the clock happens to
      be showing -- hiding it must not stamp a mark with dashes. */
   const at = elapsed();
-  S.marks.push({id:uid(), at:now(), seconds:at, replies:[], shots:[], ts:Date.now()});
+  S.marks.push({id:uid(), label:"", at:now(), seconds:at, replies:[], shots:[], ts:Date.now()});
   renderAll(); save(); toast("Moment marked at " + clockText(at));
 }
 
@@ -3548,6 +3678,23 @@ function setPanel(which, on){
 $("navToggle").addEventListener("click", () => setPanel("nav", !S.ui.nav));
 $("inspToggle").addEventListener("click", () => setPanel("insp", !S.ui.insp));
 
+/* The narrow-screen actions menu. Closes on anything that is not itself, so it
+   never sits open over the console while you are trying to use it. */
+function setTopbarMenu(on){
+  $("topbarActs").classList.toggle("on", on);
+  $("topbarMore").setAttribute("aria-expanded", on ? "true" : "false");
+}
+$("topbarMore").addEventListener("click", e => {
+  e.stopPropagation();
+  setTopbarMenu(!$("topbarActs").classList.contains("on"));
+});
+$("topbarActs").addEventListener("click", () => setTopbarMenu(false));
+document.addEventListener("pointerdown", e => {
+  if(!$("topbarActs").classList.contains("on")) return;
+  if(!$("topbarActs").contains(e.target) && e.target !== $("topbarMore")) setTopbarMenu(false);
+});
+document.addEventListener("keydown", e => { if(e.key === "Escape") setTopbarMenu(false); });
+
 function setTab(t){
   S.ui = S.ui || {};
   S.ui.tab = t;
@@ -3697,7 +3844,14 @@ window.addEventListener("resize", () => {
    carry it, so it falls to the analyst to fill in by hand. Both print as TBC
    in the template; only TBC counts against the evidence score. */
 const TBC = null;
-const NA = {byHand:true};
+
+/* A cell the console has no way to capture. It still carries a key, because the
+   analyst can type into it in the draft itself and that has to land somewhere
+   that survives a reload and an export. Keys are built from item ids rather
+   than names, so renaming a system keeps whatever was filed against it. */
+function NA(key){
+  return {byHand:true, key:key, value:(S.manual && S.manual[key]) || ""};
+}
 
 function byTag(sec, ...tags){
   return inSection(sec).filter(i => tags.some(t => i.tags.includes(t)));
@@ -3734,7 +3888,7 @@ function pddModel(){
 
    {no:"1.1", title:"Version Control", blocks:[
      {type:"table", columns:["Version No.","Change Description","Date","Author"],
-      rows:[["1.0","Initial Documentation", today(), NA]]}
+      rows:[["1.0","Initial Documentation", today(), NA("1.1|author")]]}
    ]},
 
    {no:"1.2", title:"RPA Projects Team", blocks:[
@@ -3742,8 +3896,8 @@ function pddModel(){
       rows: ppl.length ? ppl.map(p => [
         p.tags.find(t => ["SME","Process owner","Team","Approval","Escalation"].includes(t)) || TBC,
         p.tags.includes("External") ? "External" : (p.tags.includes("Internal") ? "Internal" : TBC),
-        p.name, NA
-      ]) : [[TBC,TBC,TBC,NA]]}
+        p.name, NA("1.2|contact|" + p.id)
+      ]) : [[TBC,TBC,TBC,NA("1.2|contact|none")]]}
    ]},
 
    {no:"1.3", title:"General Process Information", blocks:[
@@ -3754,11 +3908,11 @@ function pddModel(){
      {type:"list", label:"Dependencies", items:dep.map(d =>
         d.name + (d.tags.length ? " — " + d.tags.join(", ") : "") + (firstReply(d) ? ". " + firstReply(d) : ""))},
      {type:"field", label:"Exception Rate", value:joinNames(byTag("Operations","Exception rate"))},
-     {type:"field", label:"Orchestrator Available/Link", value:NA,
+     {type:"field", label:"Orchestrator Available/Link", value:NA("1.3|orchestrator"),
       hint:"Platform detail, not a walkthrough question."},
-     {type:"field", label:"Attended/Unattended Process(es)", value:NA,
+     {type:"field", label:"Attended/Unattended Process(es)", value:NA("1.3|attended"),
       hint:"Agreed classification, not a Business Analyst decision."},
-     {type:"field", label:"(In)Stability Factors", value:NA,
+     {type:"field", label:"(In)Stability Factors", value:NA("1.3|stability"),
       hint:"Known slow reports or intermittent application behaviour."},
      {type:"list", label:"External Sources of Information",
       items:byTag("Process","External source","External").concat(byTag("Dependencies","Third party","External"))
@@ -3767,8 +3921,9 @@ function pddModel(){
 
    {no:"1.4", title:"Applications & Environments", blocks:[
      {type:"table", columns:["App/System","Environment","Access Type","Access Granted","URL/Details","User Details","Owner"],
-      rows: sys.length ? sys.map(s => [s.name, envOf(s), accessOf(s), NA, firstReply(s) || TBC, NA, ownerOf(s)])
-                       : [[TBC,TBC,TBC,NA,TBC,NA,TBC]],
+      rows: sys.length ? sys.map(s => [s.name, envOf(s), accessOf(s), NA("1.4|granted|" + s.id),
+                                       firstReply(s) || TBC, NA("1.4|user|" + s.id), ownerOf(s)])
+                       : [[TBC,TBC,TBC,NA("1.4|granted|none"),TBC,NA("1.4|user|none"),TBC]],
       note:"Never record passwords, MFA codes or tokens here. Document the access method or credential store instead."}
    ]},
 
@@ -3807,11 +3962,13 @@ function pddModel(){
 
    {no:"2.5", title:"Inputs/Outputs", blocks:[
      {type:"table", label:"Inputs", columns:["Name","Description","Format","Location","Owner","Provider"],
-      rows: inputs.length ? inputs.map(i => [i.name, firstReply(i) || TBC, formatOf(i), NA, NA, NA])
-                          : [[TBC,TBC,TBC,NA,NA,NA]]},
+      rows: inputs.length ? inputs.map(i => [i.name, firstReply(i) || TBC, formatOf(i),
+              NA("2.5|loc|" + i.id), NA("2.5|owner|" + i.id), NA("2.5|prov|" + i.id)])
+                          : [[TBC,TBC,TBC,NA("2.5|loc|none"),NA("2.5|owner|none"),NA("2.5|prov|none")]]},
      {type:"table", label:"Outputs", columns:["Name","Description","Format","Location","Owner","Provider"],
-      rows: outputs.length ? outputs.map(i => [i.name, firstReply(i) || TBC, formatOf(i), NA, NA, NA])
-                           : [[TBC,TBC,TBC,NA,NA,NA]],
+      rows: outputs.length ? outputs.map(i => [i.name, firstReply(i) || TBC, formatOf(i),
+              NA("2.5|loc|" + i.id), NA("2.5|owner|" + i.id), NA("2.5|prov|" + i.id)])
+                           : [[TBC,TBC,TBC,NA("2.5|loc|none"),NA("2.5|owner|none"),NA("2.5|prov|none")]],
       note:"Business-level artifacts only. Granular runtime values belong in the IOE."}
    ]},
 
@@ -3858,7 +4015,9 @@ function pddStats(model){
   let filled = 0, total = 0, byHand = 0;
 
   function score(v){
-    if(v && v.byHand){ byHand++; return; }
+    /* Typed by hand counts as neither captured evidence nor still outstanding,
+       so the second figure counts down as the analyst works through them. */
+    if(v && v.byHand){ if(!v.value) byHand++; return; }
     if(v === "") return;
     total++;
     if(v) filled++;
@@ -3884,10 +4043,65 @@ function pddSectionFill(){
 }
 
 function cell(v){
-  if(v && v.byHand)
-    return '<span class="tbc byhand" title="The console has no field for this. Fill it in by hand.">TBC</span>';
+  if(v && v.byHand){
+    const attrs = ' data-mk="' + esc(v.key) + '" tabindex="0" role="button"';
+    return v.value
+      ? '<span class="pdd-hand"' + attrs + ' title="Typed by hand. Click to change.">' +
+        esc(v.value) + "</span>"
+      : '<span class="tbc byhand"' + attrs +
+        ' title="The console has no field for this. Click to type it in.">TBC</span>';
+  }
   return v ? esc(v) : '<span class="tbc">TBC</span>';
 }
+
+/* Click a by-hand cell and it becomes an input where it stands. Everything in
+   the draft is derived from the session, so the typed value lives in the
+   session too and the draft is rebuilt from it. */
+let editingCell = null;
+
+function editManualCell(host){
+  if(editingCell) return;
+  const key = host.dataset.mk;
+  editingCell = key;
+  const input = document.createElement("input");
+  input.className = "pdd-input";
+  input.value = (S.manual && S.manual[key]) || "";
+  input.placeholder = "Type it in";
+  host.replaceWith(input);
+  input.focus();
+  input.select();
+
+  let closed = false;
+  const close = keep => {
+    if(closed) return;
+    closed = true;
+    editingCell = null;
+    if(keep){
+      const val = input.value.trim();
+      S.manual = S.manual || {};
+      if(val) S.manual[key] = val; else delete S.manual[key];
+      save();
+    }
+    renderPDD();
+  };
+  input.addEventListener("keydown", e => {
+    if(e.key === "Enter"){ e.preventDefault(); close(true); }
+    if(e.key === "Escape"){ e.preventDefault(); close(false); }
+  });
+  input.addEventListener("blur", () => close(true));
+}
+
+$("pddDoc").addEventListener("click", e => {
+  const host = e.target.closest("[data-mk]");
+  if(host) editManualCell(host);
+});
+$("pddDoc").addEventListener("keydown", e => {
+  if(e.key !== "Enter" && e.key !== " ") return;
+  const host = e.target.closest && e.target.closest("[data-mk]");
+  if(!host) return;
+  e.preventDefault();
+  editManualCell(host);
+});
 
 function renderPDD(){
   const model = pddModel();
@@ -3896,7 +4110,7 @@ function renderPDD(){
   $("pddMeta").innerHTML =
     '<b>' + st.filled + " of " + st.total + "</b><span>fields carrying captured evidence</span>" +
     (st.byHand ? '<b class="byhand-count">' + st.byHand +
-      "</b><span>the console cannot ask for, to fill in by hand</span>" : "");
+      "</b><span>still to fill in by hand</span>" : "");
 
   const wrap = $("pddDoc");
   wrap.innerHTML = "";
@@ -3959,9 +4173,10 @@ function pddMarkdown(){
      ordinary character. Either one used to break the table it landed in. */
   const flat = x => String(x).replace(/\r?\n/g, " ");
   const piped = x => String(x).replace(/\|/g, "\\|").replace(/\r?\n/g, "<br>");
-  const v = x => (x && x.byHand) ? "TBC (by hand)" : (x ? flat(x) : "TBC");
+  const hand = x => x.value ? flat(x.value) : "TBC (by hand)";
+  const v = x => (x && x.byHand) ? hand(x) : (x ? flat(x) : "TBC");
   const cellv = x => x === "" ? " "
-                   : (x && x.byHand) ? "TBC (by hand)"
+                   : (x && x.byHand) ? (x.value ? piped(x.value) : "TBC (by hand)")
                    : (x ? piped(x) : "TBC");
   model.forEach(sec => {
     if(sec.head){ L.push("# " + sec.no + ". " + sec.title, ""); return; }
@@ -4069,6 +4284,7 @@ function doReplace(){
     S.marks = normalise(o.marks, seq);
     S.resolved = Array.isArray(o.resolved) ? o.resolved.filter(r => typeof r === "string") : [];
     S.shots = normaliseShots(o.shots, S.id);
+    S.manual = normaliseManual(o.manual);
     const loose = [S.items, S.notes, S.marks]
       .reduce((n, list) => n + attachShots(list, S.shots, S.id), 0);
     if(typeof o.seconds === "number") S.seconds = o.seconds;
@@ -4095,6 +4311,7 @@ $("importMerge").addEventListener("click", () => {
        which folder they came from or they would be looked for in the wrong one. */
     const fromPrj = typeof o.id === "string" && o.id ? o.id : S.id;
     Object.assign(S.shots, normaliseShots(o.shots, fromPrj));
+    Object.assign(S.manual, normaliseManual(o.manual));
     incoming.forEach(i => { const old = i.id; i.id = uid(); map[old] = i.id; });
     /* Filter on the ORIGINAL target, then rewrite it. Rewriting first and then
        testing the new id against a map keyed by the old ones dropped every

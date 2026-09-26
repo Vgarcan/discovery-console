@@ -69,6 +69,7 @@ function doReplace(){
     S.marks = normalise(o.marks, seq);
     S.resolved = Array.isArray(o.resolved) ? o.resolved.filter(r => typeof r === "string") : [];
     S.shots = normaliseShots(o.shots, S.id);
+    S.manual = normaliseManual(o.manual);
     const loose = [S.items, S.notes, S.marks]
       .reduce((n, list) => n + attachShots(list, S.shots, S.id), 0);
     if(typeof o.seconds === "number") S.seconds = o.seconds;
@@ -95,6 +96,7 @@ $("importMerge").addEventListener("click", () => {
        which folder they came from or they would be looked for in the wrong one. */
     const fromPrj = typeof o.id === "string" && o.id ? o.id : S.id;
     Object.assign(S.shots, normaliseShots(o.shots, fromPrj));
+    Object.assign(S.manual, normaliseManual(o.manual));
     incoming.forEach(i => { const old = i.id; i.id = uid(); map[old] = i.id; });
     /* Filter on the ORIGINAL target, then rewrite it. Rewriting first and then
        testing the new id against a map keyed by the old ones dropped every

@@ -25,7 +25,10 @@
 .session-name:hover{border-bottom-color:var(--line)}
 .session-name:focus{outline:0;border-bottom-color:var(--accent)}
 
-.topbar-right{display:flex;align-items:center;gap:.6rem;flex:0 0 auto}
+.topbar-right{display:flex;align-items:center;gap:.6rem;flex:0 0 auto;position:relative}
+.topbar-acts{display:flex;align-items:center;gap:.6rem}
+/* Only earns its place when there is no room for the buttons themselves. */
+.topbar-more{display:none}
 
 .live{
   display:inline-flex;align-items:center;gap:.4rem;

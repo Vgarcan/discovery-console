@@ -15,6 +15,7 @@ let S = {
   marks:[],
   resolved:[],
   shots:{},
+  manual:{},
   seconds:0,
   paused:false,
   theme:"dark"
@@ -50,6 +51,18 @@ function newProjectId(){
    another walkthrough can still find images that belong to that one. */
 function shotEntry(prj, extra){
   return Object.assign({w:0, h:0, bytes:0, type:"", at:"", ts:0, prj:prj}, extra || {});
+}
+
+/* What the analyst typed into the PDD cells the console has no way to capture,
+   keyed by where in the template it goes. Item ids are part of the key, so
+   renaming a system does not lose the access note filed against it. */
+function normaliseManual(raw){
+  const out = {};
+  if(!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
+  Object.keys(raw).forEach(k => {
+    if(typeof raw[k] === "string" && raw[k].trim()) out[k] = raw[k];
+  });
+  return out;
 }
 
 function normaliseShots(raw, prj){
@@ -129,6 +142,7 @@ function load(){
   }catch(e){}
   if(!S.id) S.id = newProjectId();
   S.shots = normaliseShots(S.shots, S.id);
+  S.manual = normaliseManual(S.manual);
   let seq = 0;
   [S.items, S.notes, S.marks].forEach(list => (list || []).forEach(e => {
     if(!e.id) e.id = uid();
@@ -192,6 +206,7 @@ document.addEventListener("keydown", e => { if(e.key === "Escape") disarm(); });
 function sessionIsEmpty(){
   return !S.items.length && !S.notes.length && !S.marks.length &&
          !S.resolved.length && !Object.keys(S.shots || {}).length &&
+         !Object.keys(S.manual || {}).length &&
          (S.name || "") === DEFAULT_NAME;
 }
 
@@ -200,6 +215,7 @@ function resetSession(){
      folder. The old one keeps whatever was filed under it. */
   S.id = newProjectId();
   S.shots = {};
+  S.manual = {};
   S.name = DEFAULT_NAME;
   S.items = [];
   S.notes = [];

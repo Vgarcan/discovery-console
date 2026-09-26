@@ -33,6 +33,23 @@ function setPanel(which, on){
 $("navToggle").addEventListener("click", () => setPanel("nav", !S.ui.nav));
 $("inspToggle").addEventListener("click", () => setPanel("insp", !S.ui.insp));
 
+/* The narrow-screen actions menu. Closes on anything that is not itself, so it
+   never sits open over the console while you are trying to use it. */
+function setTopbarMenu(on){
+  $("topbarActs").classList.toggle("on", on);
+  $("topbarMore").setAttribute("aria-expanded", on ? "true" : "false");
+}
+$("topbarMore").addEventListener("click", e => {
+  e.stopPropagation();
+  setTopbarMenu(!$("topbarActs").classList.contains("on"));
+});
+$("topbarActs").addEventListener("click", () => setTopbarMenu(false));
+document.addEventListener("pointerdown", e => {
+  if(!$("topbarActs").classList.contains("on")) return;
+  if(!$("topbarActs").contains(e.target) && e.target !== $("topbarMore")) setTopbarMenu(false);
+});
+document.addEventListener("keydown", e => { if(e.key === "Escape") setTopbarMenu(false); });
+
 function setTab(t){
   S.ui = S.ui || {};
   S.ui.tab = t;

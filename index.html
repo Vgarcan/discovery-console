@@ -44,6 +44,7 @@
           <button class="clock-act" id="clockHide" type="button" role="menuitem">Hide</button>
         </span>
       </span>
+      <button class="btn" id="markBtn" title="Mark this moment for finding in the recording">Mark</button>
       <span class="divider-v"></span>
       <button class="btn btn-ghost pane-toggle" id="navToggle" title="Hide or show the areas panel" aria-pressed="true">
         <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="11" rx="1"/><line x1="6" y1="2.5" x2="6" y2="13.5"/></svg>
@@ -52,9 +53,13 @@
         <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="11" rx="1"/><line x1="10" y1="2.5" x2="10" y2="13.5"/></svg>
       </button>
       <span class="divider-v"></span>
-      <button class="btn" id="newBtn" title="Clear this session and start a new one" disabled>New session</button>
-      <button class="btn" id="undoBtn" disabled>Undo</button>
-      <button class="btn btn-solid" id="finishBtn">End walkthrough</button>
+      <button class="btn topbar-more" id="topbarMore" type="button"
+              aria-expanded="false" aria-controls="topbarActs" title="Session actions">Actions</button>
+      <div class="topbar-acts" id="topbarActs">
+        <button class="btn" id="newBtn" title="Clear this session and start a new one" disabled>New session</button>
+        <button class="btn" id="undoBtn" disabled>Undo</button>
+        <button class="btn btn-solid" id="finishBtn">End walkthrough</button>
+      </div>
     </div>
   </header>
 
@@ -124,7 +129,6 @@
               <div class="capture-actions">
                 <kbd class="capture-hint">Enter</kbd>
                 <button class="btn btn-ghost" id="detailBtn" title="Add tags and relations">Details</button>
-                <button class="btn btn-ghost" id="markBtn" title="Mark this moment">Mark</button>
               </div>
               <div class="suggest" id="suggest"></div>
             </div>

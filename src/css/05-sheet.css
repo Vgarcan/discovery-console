@@ -80,6 +80,26 @@
   .tape-rail{border-left:0;border-top:1px solid var(--line)}
   .topbar{flex-wrap:wrap;gap:.6rem;padding:.6rem .9rem}
   .session-name{order:3;flex:1 0 100%}
+  /* Three buttons plus the clock needed 508px of a 390px screen, so the page
+     scrolled sideways and End walkthrough was simply off it. They fold behind
+     one control instead, and the recording word goes with them -- the dot says
+     the same thing in a tenth of the width. */
+  .brand span{display:none}
+  .live span{display:none}
+  .live{gap:0}
+  .topbar-more{display:inline-flex}
+  .topbar-acts{
+    display:none;position:absolute;top:calc(100% + .5rem);right:0;z-index:95;
+    flex-direction:column;align-items:stretch;gap:1px;min-width:170px;
+    background:var(--line);border:1px solid var(--line);border-radius:4px;
+    box-shadow:0 12px 30px rgba(0,0,0,.4);overflow:hidden;
+  }
+  .topbar-acts.on{display:flex}
+  .topbar-acts .btn{
+    border:0;border-radius:0;background:var(--raise);
+    text-align:left;padding:.6rem .7rem;
+  }
+  .topbar-acts .btn-solid{background:var(--accent);color:var(--accent-ink)}
   .rv-wrap{padding:1.5rem 1rem 3rem}
   .rv-head h1{font-size:1.5rem}
   .types{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}

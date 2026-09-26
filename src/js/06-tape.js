@@ -2,6 +2,10 @@
    Session tape: chronological feed, colour coding, kind filter and reply threads. */
 /* ---------- tape ---------- */
 let lastCount = 0;
+/* Which entry is being renamed. Notes and marks had no way to be corrected or
+   removed at all: a mark arrived as "Moment 3" and stayed that, and a note
+   typed in a hurry could not be fixed. */
+let editingEntry = null;
 let tapeKinds = [];
 const openThreads = new Set();
 let focusComposer = null;
@@ -16,7 +20,8 @@ function entities(){
   return [
     ...S.items.map(i => ({id:i.id, kind:i.section, text:i.name, at:i.at, ts:i.ts||0, ent:i})),
     ...S.notes.map(n => ({id:n.id, kind:"Note", text:n.text, at:n.at, ts:n.ts||0, ent:n})),
-    ...S.marks.map((m,idx) => ({id:m.id, kind:"Mark", text:"Moment " + (idx+1), at:m.at, ts:m.ts||0, ent:m}))
+    ...S.marks.map((m,idx) => ({id:m.id, kind:"Mark",
+       text:(m.label || "").trim() || "Moment " + (idx+1), at:m.at, ts:m.ts||0, ent:m}))
   ].sort((a,b) => b.ts - a.ts);
 }
 
@@ -105,6 +110,63 @@ function replyButton(ent, id){
   return b;
 }
 
+/* ----- editing and removing an entry ----- */
+function entryEditor(r){
+  const wrap = document.createElement("div");
+  wrap.className = "entry-edit";
+  const mark = r.kind === "Mark";
+  const f = document.createElement(mark ? "input" : "textarea");
+  f.className = "reply-input";
+  if(mark){
+    f.value = (r.ent.label || "");
+    f.placeholder = "Name this moment";
+  }else{
+    f.rows = 2;
+    f.value = r.ent.text || "";
+  }
+  const done = () => {
+    const v = f.value.trim();
+    /* A mark cleared back to nothing goes back to its number; a note cleared to
+       nothing is left alone, because emptying it is not how you delete it. */
+    if(mark) r.ent.label = v;
+    else if(v) r.ent.text = v;
+    editingEntry = null;
+    save(); renderAll();
+  };
+  f.addEventListener("keydown", e => {
+    if(e.key === "Enter" && !e.shiftKey){ e.preventDefault(); done(); }
+    if(e.key === "Escape"){ e.preventDefault(); editingEntry = null; renderAll(); }
+  });
+  f.addEventListener("blur", done);
+  wrap.appendChild(f);
+  setTimeout(() => { f.focus(); f.select && f.select(); }, 20);
+  return wrap;
+}
+
+function entryActions(r){
+  const wrap = document.createElement("span");
+  wrap.className = "entry-acts";
+  if(r.kind !== "Note" && r.kind !== "Mark") return wrap;
+
+  const ed = document.createElement("button");
+  ed.className = "icon-btn"; ed.type = "button";
+  ed.textContent = r.kind === "Mark" ? "Name" : "Edit";
+  ed.title = r.kind === "Mark" ? "Name this moment" : "Edit this note";
+  ed.addEventListener("click", () => { editingEntry = r.id; renderAll(); });
+
+  const rm = document.createElement("button");
+  rm.className = "icon-btn danger"; rm.type = "button"; rm.textContent = "Delete";
+  rm.addEventListener("click", () => confirmAction(rm, "Confirm delete", () => {
+    if(r.kind === "Note") S.notes = S.notes.filter(n => n.id !== r.id);
+    else S.marks = S.marks.filter(m => m.id !== r.id);
+    save(); renderAll();
+    toast(r.kind === "Note" ? "Note deleted" : "Moment deleted");
+  }));
+
+  wrap.appendChild(ed); wrap.appendChild(rm);
+  return wrap;
+}
+
 /* ----- kind filter ----- */
 function renderTapeFilter(){
   const bar = $("tapeFilter");
@@ -165,9 +227,14 @@ function renderTape(){
       '<span class="k"><i class="kdot' + (r.kind === "Mark" ? " ring" : "") + '" style="' +
       (r.kind === "Mark" ? "border-color:" : "background:") + kindColor(r.kind) + '"></i>' +
       esc(r.kind) + "</span>" +
-      '<span class="ttext">' + esc(r.text) + "</span>";
+      (editingEntry === r.id ? "" : '<span class="ttext">' + esc(r.text) + "</span>");
+    if(editingEntry === r.id) body.appendChild(entryEditor(r));
     body.appendChild(threadBlock(r.ent, r.id));
-    body.appendChild(replyButton(r.ent, r.id));
+    const foot = document.createElement("div");
+    foot.className = "tape-foot";
+    foot.appendChild(replyButton(r.ent, r.id));
+    foot.appendChild(entryActions(r));
+    body.appendChild(foot);
 
     d.appendChild(t);
     d.appendChild(body);

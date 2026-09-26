@@ -25,6 +25,12 @@
 .reply .icon-btn{opacity:0;padding:0 .2rem}
 .reply:hover .icon-btn{opacity:1}
 
+.tape-foot{display:flex;align-items:center;gap:.15rem}
+.entry-acts{display:flex;gap:.15rem;margin-left:auto;opacity:0;transition:opacity .12s}
+.tape-row:hover .entry-acts,.tape-row:focus-within .entry-acts{opacity:1}
+.entry-edit{margin:.3rem 0}
+.entry-edit .reply-input{width:100%}
+
 .reply-btn{margin-top:.35rem;padding:.12rem .32rem;font-size:.72rem;opacity:.5}
 .reply-btn u{font-family:var(--mono);font-size:9px;text-decoration:none;color:var(--accent)}
 .tape-row:hover .reply-btn,.item:hover .reply-btn,.reply-btn:focus{opacity:1}
