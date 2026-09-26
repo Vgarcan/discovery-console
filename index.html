@@ -32,6 +32,8 @@
     </div>
     <input class="session-name" id="sessionName" value="Untitled walkthrough" aria-label="Session name">
     <div class="topbar-right">
+      <span class="storage-warn" id="storageWarn" hidden
+            title="The browser will not accept any more data. Download the session as JSON before you lose it.">not saving</span>
       <span class="live" id="liveBadge"><i></i>recording</span>
       <span class="clock" id="clock">00:00:00</span>
       <span class="divider-v"></span>
@@ -173,6 +175,7 @@
         <div>
           <span class="label">post-walkthrough</span>
           <h1 id="rvTitle">Review</h1>
+          <p class="rv-project">project <b id="rvProject"></b></p>
           <p>The capture is done. This is where the console asks you to think, before the PDD and IOE get written.</p>
         </div>
         <div class="row-inline">

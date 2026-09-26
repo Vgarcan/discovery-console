@@ -7,12 +7,14 @@ const LEGACY_KEY = "tqa.discovery.console.v1";
 const DEFAULT_NAME = "Untitled walkthrough";
 
 let S = {
+  id:"",
   name:DEFAULT_NAME,
   active:"Systems",
   items:[],
   notes:[],
   marks:[],
   resolved:[],
+  shots:{},
   seconds:0,
   theme:"dark"
 };
@@ -21,6 +23,10 @@ let seed = null;
 let editingId = null;
 let draftTags = [];
 let draftRels = [];
+/* Which relations were made while the sheet has been open, so the ones that
+   were already on the item can be told apart from the ones you just added. */
+let freshRels = new Set();
+const relKey = r => r.type + "\u0000" + r.targetId;
 let sugIndex = 0;
 let sugList = [];
 
@@ -28,12 +34,82 @@ const $ = id => document.getElementById(id);
 const esc = v => String(v).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
 const now = () => new Date().toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+
+/* A project keeps this for life. Its name does not: it gets rewritten halfway
+   through a walkthrough, and anything filed under the name -- screenshots, most
+   of all -- would come loose the moment it changed. Short enough to read out
+   over a call, because that is how someone finds the right folder. */
+function newProjectId(){
+  let s = "";
+  while(s.length < 6) s += Math.random().toString(36).slice(2);
+  return "prj-" + s.slice(0, 6);
+}
+/* A screenshot never lives in the session, only its description does. Every
+   entry remembers whose folder holds the file, so a session merged in from
+   another walkthrough can still find images that belong to that one. */
+function shotEntry(prj, extra){
+  return Object.assign({w:0, h:0, bytes:0, type:"", at:"", ts:0, prj:prj}, extra || {});
+}
+
+function normaliseShots(raw, prj){
+  const out = {};
+  if(!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
+  Object.keys(raw).forEach(id => {
+    const s = raw[id];
+    if(!s || typeof s !== "object") return;
+    out[id] = shotEntry(typeof s.prj === "string" && s.prj ? s.prj : prj, {
+      w:Number(s.w) || 0, h:Number(s.h) || 0, bytes:Number(s.bytes) || 0,
+      type:typeof s.type === "string" ? s.type : "",
+      at:typeof s.at === "string" ? s.at : "",
+      ts:Number(s.ts) || 0
+    });
+  });
+  return out;
+}
+
+/* Anything that points at a screenshot the manifest has never heard of gets a
+   bare entry rather than being dropped: the id is still enough to go and look
+   for the file, and a blank where a screenshot should be is worth seeing. */
+function attachShots(list, manifest, prj){
+  let orphans = 0;
+  const keep = ids => {
+    if(!Array.isArray(ids)) return [];
+    return ids.filter(x => typeof x === "string").map(x => {
+      if(!manifest[x]){ manifest[x] = shotEntry(prj); orphans++; }
+      return x;
+    });
+  };
+  (list || []).forEach(e => {
+    e.shots = keep(e.shots);
+    (e.replies || []).forEach(r => { r.shots = keep(r.shots); });
+  });
+  return orphans;
+}
 const inSection = s => S.items.filter(i => i.section === s);
 const gapKey = (s,g) => s + "::" + g;
 
 /* ---------- storage ---------- */
+/* A full quota used to be swallowed here. The analyst kept capturing into a
+   session that had silently stopped being written, and lost the lot on the next
+   refresh. Nothing recovers from that after the fact, so it has to be said out
+   loud the moment it happens, and kept on screen until it is no longer true. */
+let storageDown = false;
+
 function save(){
-  try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){}
+  try{
+    localStorage.setItem(KEY, JSON.stringify(S));
+    if(storageDown){
+      storageDown = false;
+      $("storageWarn").hidden = true;
+      toast("Saving again");
+    }
+  }catch(e){
+    if(!storageDown){
+      storageDown = true;
+      $("storageWarn").hidden = false;
+      toast("Out of browser storage. This session is NOT being saved — download the JSON now.");
+    }
+  }
 }
 function load(){
   try{
@@ -50,6 +126,8 @@ function load(){
     }
     if(raw) S = Object.assign(S, JSON.parse(raw));
   }catch(e){}
+  if(!S.id) S.id = newProjectId();
+  S.shots = normaliseShots(S.shots, S.id);
   let seq = 0;
   [S.items, S.notes, S.marks].forEach(list => (list || []).forEach(e => {
     if(!e.id) e.id = uid();
@@ -57,6 +135,7 @@ function load(){
     if(!Array.isArray(e.replies)) e.replies = [];
     if(!Array.isArray(e.relations) && list === S.items) e.relations = [];
   }));
+  [S.items, S.notes, S.marks].forEach(list => attachShots(list, S.shots, S.id));
 }
 
 /* ---------- two-step destructive actions ---------- */
@@ -111,10 +190,15 @@ document.addEventListener("keydown", e => { if(e.key === "Escape") disarm(); });
    widths, the open inspector tab -- are deliberately kept. */
 function sessionIsEmpty(){
   return !S.items.length && !S.notes.length && !S.marks.length &&
-         !S.resolved.length && (S.name || "") === DEFAULT_NAME;
+         !S.resolved.length && !Object.keys(S.shots || {}).length &&
+         (S.name || "") === DEFAULT_NAME;
 }
 
 function resetSession(){
+  /* A new walkthrough is a new project, so it gets its own id and its own
+     folder. The old one keeps whatever was filed under it. */
+  S.id = newProjectId();
+  S.shots = {};
   S.name = DEFAULT_NAME;
   S.items = [];
   S.notes = [];

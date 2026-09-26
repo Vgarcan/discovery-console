@@ -87,6 +87,12 @@ function rebuildMap(reheat){
   }));
 
   M.nodes = nodes; M.links = links;
+  /* Positions are only ever needed to seed a node that is about to be drawn.
+     Keeping them for everything ever filtered out or deleted meant the map
+     carried a growing pile of coordinates nothing would read again. */
+  const live = {};
+  nodes.forEach(n => { live[n.id] = M.pos[n.id]; });
+  M.pos = live;
   layoutLanes();
   if(M.sel && !byId[M.sel]) M.sel = null;
 
@@ -105,9 +111,30 @@ function rebuildMap(reheat){
 const LABEL_MAX = 112, LABEL_LINE = 12, LABEL_CH = 5.6;
 const GAP_MIN = 52, GAP_MAX = 110, LABEL_PAD = 26, LANE_SWEEPS = 10;
 const MAP_FIT_PAD = 70;
+/* The band names are an overlay pinned to the left of the stage, so the graph
+   has to be kept clear of them. Wide enough for DEPENDENCIES and its count. */
+const LANE_GUTTER = 118;
+
+function laneGutter(){
+  return M.layout === "lanes" && M.lanes.length ? LANE_GUTTER : 0;
+}
 
 let measurer;
 const labelCache = new Map();
+
+/* Canvas measures against whatever face is loaded at that moment, and this app
+   fetches its own over the network with display=swap. Measure before it lands
+   and every label is sized to the fallback's metrics; when the real face swaps
+   in the labels grow and collide -- which is the one failure this layout exists
+   to prevent. So throw the measurements away when the face arrives and lay out
+   again. Resolves immediately when the font was already cached. */
+if(document.fonts && document.fonts.ready){
+  document.fonts.ready.then(() => {
+    labelCache.clear();
+    measurer = undefined;
+    if($("mapScrim").classList.contains("on")) rebuildMap(false);
+  });
+}
 
 function measureLabel(str){
   if(labelCache.has(str)) return labelCache.get(str);
@@ -244,7 +271,7 @@ function layoutLanes(){
      being held back by the height either way. */
   const tight = settle(GAP_MIN);
   const fit = M.H / (tight + MAP_FIT_PAD * 2);
-  const budget = Math.max(0, M.W / Math.max(.25, fit) - MAP_FIT_PAD * 2);
+  const budget = Math.max(0, (M.W - LANE_GUTTER) / Math.max(.25, fit) - MAP_FIT_PAD * 2);
   let steps = 0;
   bands.forEach(b => { steps = Math.max(steps, b.length - 1); });
   settle(steps ? Math.max(GAP_MIN, Math.min(GAP_MAX, budget / steps)) : GAP_MAX);
@@ -344,8 +371,11 @@ function buildLaneLabels(){
   const wrap = $("mapLaneLabels");
   wrap.innerHTML = "";
   if(M.layout !== "lanes" || !M.lanes.length) return;
+  /* Count what the row actually shows. Counting only the matches put a 0 next
+     to two visible dots whenever a filter pulled in linked items; which of them
+     are matches is already said by the dimming, and by the header. */
   const counts = {};
-  M.nodes.forEach(n => { if(!n.ghost) counts[n.item.section] = (counts[n.item.section]||0) + 1; });
+  M.nodes.forEach(n => { counts[n.item.section] = (counts[n.item.section]||0) + 1; });
   M.lanes.forEach(l => {
     const el = document.createElement("span");
     el.style.color = SEC_COLOR[l.sec];
@@ -537,10 +567,10 @@ function fitMap(){
     const last = M.lanes[M.lanes.length-1];
     y0 = Math.min(y0, 0); y1 = Math.max(y1, last.top + last.h);
   }
-  const pad = MAP_FIT_PAD;
+  const pad = MAP_FIT_PAD, gutter = laneGutter();
   const w = Math.max(80, x1-x0) + pad*2, h = Math.max(80, y1-y0) + pad*2;
-  M.k = Math.max(.25, Math.min(1.7, Math.min(M.W/w, M.H/h)));
-  M.tx = M.W/2 - ((x0+x1)/2) * M.k;
+  M.k = Math.max(.25, Math.min(1.7, Math.min((M.W - gutter)/w, M.H/h)));
+  M.tx = gutter + (M.W - gutter)/2 - ((x0+x1)/2) * M.k;
   M.ty = M.H/2 - ((y0+y1)/2) * M.k;
   applyTransform();
 }

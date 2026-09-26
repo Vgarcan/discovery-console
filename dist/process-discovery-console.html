@@ -34,6 +34,11 @@
   --accent-dim:rgba(98,255,207,.14);
   --alert:#EF6461;
   --alert-dim:rgba(239,100,97,.14);
+  /* --accent is mint here but red in the light theme, so it cannot carry
+     "this went well". This one reads the same way in both. */
+  --good:#62FFCF;
+  --good-ink:#1b1b1b;
+  --good-dim:rgba(98,255,207,.16);
 
   --sans:"Instrument Sans","Helvetica Neue",Arial,sans-serif;
   --mono:"Martian Mono",ui-monospace,"SF Mono",Menlo,monospace;
@@ -51,6 +56,7 @@
     --ink:#222222; --ink-2:#4a4a45; --ink-3:#7d7d76;
     --accent:#EF6461; --accent-ink:#ffffff; --accent-dim:rgba(239,100,97,.12);
     --alert:#C9403D; --alert-dim:rgba(201,64,61,.12);
+    --good:#1B7A5A; --good-ink:#ffffff; --good-dim:rgba(27,122,90,.12);
     color-scheme:light;
   }
 }
@@ -60,10 +66,15 @@
   --ink:#222222; --ink-2:#4a4a45; --ink-3:#7d7d76;
   --accent:#EF6461; --accent-ink:#ffffff; --accent-dim:rgba(239,100,97,.12);
   --alert:#C9403D; --alert-dim:rgba(201,64,61,.12);
+  --good:#1B7A5A; --good-ink:#ffffff; --good-dim:rgba(27,122,90,.12);
   color-scheme:light;
 }
 
 *,*::before,*::after{box-sizing:inherit}
+/* The browser's own [hidden] rule is weaker than any class that sets display,
+   so an element with a display of its own stays on screen while the attribute
+   says it is gone. Anything toggled with .hidden needs this to mean it. */
+[hidden]{display:none!important}
 html,body{height:100%}
 body{
   margin:0;
@@ -125,6 +136,12 @@ button,input,textarea,select{font:inherit;color:inherit}
   animation:pulse 2.4s ease-in-out infinite;
 }
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+.storage-warn{
+  display:inline-flex;align-items:center;gap:.35rem;
+  font-family:var(--mono);font-size:10px;letter-spacing:.04em;text-transform:uppercase;
+  background:var(--alert);color:#ffffff;padding:.2rem .45rem;border-radius:2px;
+  animation:pulse 1.6s ease-in-out infinite;cursor:help;
+}
 .clock{font-family:var(--mono);font-size:.82rem;font-weight:500;letter-spacing:-.04em}
 
 .btn{
@@ -388,6 +405,8 @@ kbd{
 .rv-sec h2{font-size:1.05rem;font-weight:600;margin:.3rem 0 .2rem;letter-spacing:-.02em}
 .rv-sec > p{margin:0 0 1rem;color:var(--ink-3);font-size:.82rem;max-width:50ch}
 
+.rv-project{margin:.2rem 0 0;font-size:.74rem;color:var(--ink-3)}
+.rv-project b{font-family:var(--mono);font-weight:400;color:var(--ink-2);user-select:all}
 .cov{display:grid;grid-template-columns:minmax(120px,1.4fr) 1fr auto;gap:.9rem;align-items:center;padding:.6rem 0;border-bottom:1px solid var(--line-soft);font-size:.82rem}
 .cov:last-child{border-bottom:0}
 .bar{height:3px;background:var(--line-soft)}
@@ -450,6 +469,28 @@ kbd{
   opacity:0;pointer-events:none;transition:.2s;z-index:120;
 }
 .toast.on{opacity:1;transform:translateX(-50%)}
+
+/* Picking a relation type and a target files the relation immediately and
+   clears both menus. That was silent: the row appeared in a list further down
+   and nothing pointed at it. A relation added while this sheet has been open
+   keeps a green edge and a NEW tag until the sheet closes, so on an item that
+   already had four you can see which one you just made. */
+#fRelList .rel{
+  display:flex;align-items:center;justify-content:space-between;gap:.5rem;
+  padding:.3rem 0 .3rem .8rem;border-radius:0 2px 2px 0;
+}
+#fRelList .rel.is-new{border-left-color:var(--good);border-left-width:2px}
+.rel-new{
+  font-family:var(--mono);font-size:8.5px;font-weight:400;letter-spacing:.08em;
+  text-transform:uppercase;font-style:normal;white-space:nowrap;
+  background:var(--good);color:var(--good-ink);
+  padding:.1rem .32rem;border-radius:2px;margin-left:.45rem;
+}
+#fRelList .rel.flash{animation:rel-in .9s cubic-bezier(.2,.8,.2,1)}
+@keyframes rel-in{
+  from{background:var(--good-dim);transform:translateX(-5px)}
+  to{background:transparent;transform:none}
+}
 
 @media (max-width:1100px){
   .live-grid{grid-template-columns:200px minmax(0,1fr) 280px}
@@ -581,7 +622,6 @@ kbd{
 
 .edge{stroke:var(--line);stroke-width:1}
 .edge.hot{stroke:var(--accent);stroke-width:1.6}
-.edge.dim{opacity:.22}
 /* Relations are directional and read both ways in the item list, so the map has
    to say which way round each one is. */
 #arrowEdge path{fill:var(--line)}
@@ -931,6 +971,8 @@ body.resizing .work,body.resizing .pane-resize{transition:none}
     </div>
     <input class="session-name" id="sessionName" value="Untitled walkthrough" aria-label="Session name">
     <div class="topbar-right">
+      <span class="storage-warn" id="storageWarn" hidden
+            title="The browser will not accept any more data. Download the session as JSON before you lose it.">not saving</span>
       <span class="live" id="liveBadge"><i></i>recording</span>
       <span class="clock" id="clock">00:00:00</span>
       <span class="divider-v"></span>
@@ -1072,6 +1114,7 @@ body.resizing .work,body.resizing .pane-resize{transition:none}
         <div>
           <span class="label">post-walkthrough</span>
           <h1 id="rvTitle">Review</h1>
+          <p class="rv-project">project <b id="rvProject"></b></p>
           <p>The capture is done. This is where the console asks you to think, before the PDD and IOE get written.</p>
         </div>
         <div class="row-inline">
@@ -1424,12 +1467,14 @@ const LEGACY_KEY = "tqa.discovery.console.v1";
 const DEFAULT_NAME = "Untitled walkthrough";
 
 let S = {
+  id:"",
   name:DEFAULT_NAME,
   active:"Systems",
   items:[],
   notes:[],
   marks:[],
   resolved:[],
+  shots:{},
   seconds:0,
   theme:"dark"
 };
@@ -1438,6 +1483,10 @@ let seed = null;
 let editingId = null;
 let draftTags = [];
 let draftRels = [];
+/* Which relations were made while the sheet has been open, so the ones that
+   were already on the item can be told apart from the ones you just added. */
+let freshRels = new Set();
+const relKey = r => r.type + "\u0000" + r.targetId;
 let sugIndex = 0;
 let sugList = [];
 
@@ -1445,12 +1494,82 @@ const $ = id => document.getElementById(id);
 const esc = v => String(v).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
 const now = () => new Date().toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+
+/* A project keeps this for life. Its name does not: it gets rewritten halfway
+   through a walkthrough, and anything filed under the name -- screenshots, most
+   of all -- would come loose the moment it changed. Short enough to read out
+   over a call, because that is how someone finds the right folder. */
+function newProjectId(){
+  let s = "";
+  while(s.length < 6) s += Math.random().toString(36).slice(2);
+  return "prj-" + s.slice(0, 6);
+}
+/* A screenshot never lives in the session, only its description does. Every
+   entry remembers whose folder holds the file, so a session merged in from
+   another walkthrough can still find images that belong to that one. */
+function shotEntry(prj, extra){
+  return Object.assign({w:0, h:0, bytes:0, type:"", at:"", ts:0, prj:prj}, extra || {});
+}
+
+function normaliseShots(raw, prj){
+  const out = {};
+  if(!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
+  Object.keys(raw).forEach(id => {
+    const s = raw[id];
+    if(!s || typeof s !== "object") return;
+    out[id] = shotEntry(typeof s.prj === "string" && s.prj ? s.prj : prj, {
+      w:Number(s.w) || 0, h:Number(s.h) || 0, bytes:Number(s.bytes) || 0,
+      type:typeof s.type === "string" ? s.type : "",
+      at:typeof s.at === "string" ? s.at : "",
+      ts:Number(s.ts) || 0
+    });
+  });
+  return out;
+}
+
+/* Anything that points at a screenshot the manifest has never heard of gets a
+   bare entry rather than being dropped: the id is still enough to go and look
+   for the file, and a blank where a screenshot should be is worth seeing. */
+function attachShots(list, manifest, prj){
+  let orphans = 0;
+  const keep = ids => {
+    if(!Array.isArray(ids)) return [];
+    return ids.filter(x => typeof x === "string").map(x => {
+      if(!manifest[x]){ manifest[x] = shotEntry(prj); orphans++; }
+      return x;
+    });
+  };
+  (list || []).forEach(e => {
+    e.shots = keep(e.shots);
+    (e.replies || []).forEach(r => { r.shots = keep(r.shots); });
+  });
+  return orphans;
+}
 const inSection = s => S.items.filter(i => i.section === s);
 const gapKey = (s,g) => s + "::" + g;
 
 /* ---------- storage ---------- */
+/* A full quota used to be swallowed here. The analyst kept capturing into a
+   session that had silently stopped being written, and lost the lot on the next
+   refresh. Nothing recovers from that after the fact, so it has to be said out
+   loud the moment it happens, and kept on screen until it is no longer true. */
+let storageDown = false;
+
 function save(){
-  try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){}
+  try{
+    localStorage.setItem(KEY, JSON.stringify(S));
+    if(storageDown){
+      storageDown = false;
+      $("storageWarn").hidden = true;
+      toast("Saving again");
+    }
+  }catch(e){
+    if(!storageDown){
+      storageDown = true;
+      $("storageWarn").hidden = false;
+      toast("Out of browser storage. This session is NOT being saved — download the JSON now.");
+    }
+  }
 }
 function load(){
   try{
@@ -1467,6 +1586,8 @@ function load(){
     }
     if(raw) S = Object.assign(S, JSON.parse(raw));
   }catch(e){}
+  if(!S.id) S.id = newProjectId();
+  S.shots = normaliseShots(S.shots, S.id);
   let seq = 0;
   [S.items, S.notes, S.marks].forEach(list => (list || []).forEach(e => {
     if(!e.id) e.id = uid();
@@ -1474,6 +1595,7 @@ function load(){
     if(!Array.isArray(e.replies)) e.replies = [];
     if(!Array.isArray(e.relations) && list === S.items) e.relations = [];
   }));
+  [S.items, S.notes, S.marks].forEach(list => attachShots(list, S.shots, S.id));
 }
 
 /* ---------- two-step destructive actions ---------- */
@@ -1528,10 +1650,15 @@ document.addEventListener("keydown", e => { if(e.key === "Escape") disarm(); });
    widths, the open inspector tab -- are deliberately kept. */
 function sessionIsEmpty(){
   return !S.items.length && !S.notes.length && !S.marks.length &&
-         !S.resolved.length && (S.name || "") === DEFAULT_NAME;
+         !S.resolved.length && !Object.keys(S.shots || {}).length &&
+         (S.name || "") === DEFAULT_NAME;
 }
 
 function resetSession(){
+  /* A new walkthrough is a new project, so it gets its own id and its own
+     folder. The old one keeps whatever was filed under it. */
+  S.id = newProjectId();
+  S.shots = {};
   S.name = DEFAULT_NAME;
   S.items = [];
   S.notes = [];
@@ -1722,7 +1849,8 @@ function commit(){
   if(!name){ toast("Pick a type or type a name first"); return; }
   S.items.push({
     id:uid(), section:S.active, name:name,
-    tags: seed ? [tagOf(S.active, seed)] : [], relations:[], replies:[], at:now(), ts:Date.now()
+    tags: seed ? [tagOf(S.active, seed)] : [], relations:[], replies:[], shots:[],
+    at:now(), ts:Date.now()
   });
   capture.value = "";
   closeSuggest();
@@ -1844,7 +1972,7 @@ function buildComposer(ent, id){
     const v = ta.value.trim();
     if(!v) return;
     ent.replies = ent.replies || [];
-    ent.replies.push({text:v, at:now(), ts:Date.now()});
+    ent.replies.push({text:v, at:now(), ts:Date.now(), shots:[]});
     focusComposer = id;
     save(); renderAll();
   };
@@ -2037,7 +2165,7 @@ function renderGaps(){
 function saveNoteFrom(text){
   const t = (text || "").trim();
   if(!t) return;
-  S.notes.push({id:uid(), text:t, replies:[], at:now(), ts:Date.now()});
+  S.notes.push({id:uid(), text:t, replies:[], shots:[], at:now(), ts:Date.now()});
   renderAll(); save(); toast("Note parked");
 }
 $("saveNoteBtn").addEventListener("click", () => { saveNoteFrom($("noteBox").value); $("noteBox").value = ""; });
@@ -2046,7 +2174,7 @@ $("noteBox").addEventListener("keydown", e => {
 });
 $("markBtn").addEventListener("click", markMoment);
 function markMoment(){
-  S.marks.push({id:uid(), at:now(), seconds:S.seconds, replies:[], ts:Date.now()});
+  S.marks.push({id:uid(), at:now(), seconds:S.seconds, replies:[], shots:[], ts:Date.now()});
   renderAll(); save(); toast("Moment marked at " + $("clock").textContent);
 }
 
@@ -2067,6 +2195,7 @@ function openSheet(id, prefillName){
   const sec = item ? item.section : S.active;
   draftTags = item ? item.tags.slice() : (seed ? [tagOf(sec, seed)] : []);
   draftRels = item ? item.relations.slice() : [];
+  freshRels = new Set();
 
   $("sheetLabel").textContent = sec.toLowerCase();
   $("sheetTitle").textContent = item ? "Edit item" : "New " + sec.toLowerCase() + " item";
@@ -2124,23 +2253,37 @@ $("fRelType").addEventListener("change", addDraftRel);
 function addDraftRel(){
   const type = $("fRelType").value, target = $("fRelTarget").value;
   if(!type || !target) return;
-  if(!draftRels.some(r => r.type === type && r.targetId === target)) draftRels.push({type:type, targetId:target});
+  const rel = {type:type, targetId:target};
+  const already = draftRels.some(r => relKey(r) === relKey(rel));
+  if(!already){
+    draftRels.push(rel);
+    freshRels.add(relKey(rel));
+  }
   $("fRelType").value = ""; $("fRelTarget").value = "";
-  renderDraftRels();
+  /* Flash the row either way. Picking one that is already there used to do
+     nothing at all, which read as the menus having failed. */
+  renderDraftRels(relKey(rel));
+  if(already) toast("That relation is already on this item");
 }
-function renderDraftRels(){
+
+function renderDraftRels(flashKey){
   const wrap = $("fRelList");
   wrap.innerHTML = "";
   draftRels.forEach((r,i) => {
     const t = S.items.find(x => x.id === r.targetId);
+    const key = relKey(r);
+    const fresh = freshRels.has(key);
     const d = document.createElement("div");
-    d.className = "rel";
-    d.style.display = "flex";
-    d.style.justifyContent = "space-between";
-    d.innerHTML = "<span><b>" + esc(r.type) + "</b> " + esc(t ? t.name : "missing item") + "</span>";
+    d.className = "rel" + (fresh ? " is-new" : "") + (key === flashKey ? " flash" : "");
+    d.innerHTML = "<span><b>" + esc(r.type) + "</b> " + esc(t ? t.name : "missing item") +
+                  (fresh ? '<em class="rel-new">new</em>' : "") + "</span>";
     const b = document.createElement("button");
     b.className = "icon-btn danger"; b.type = "button"; b.textContent = "Remove";
-    b.addEventListener("click", () => { draftRels.splice(i,1); renderDraftRels(); });
+    b.addEventListener("click", () => {
+      draftRels.splice(i,1);
+      freshRels.delete(key);
+      renderDraftRels();
+    });
     d.appendChild(b);
     wrap.appendChild(d);
   });
@@ -2153,7 +2296,8 @@ $("fSave").addEventListener("click", () => {
     it.name = name; it.tags = draftTags.slice(); it.relations = draftRels.slice();
     toast("Item updated");
   }else{
-    S.items.push({id:uid(), section:S.active, name:name, tags:draftTags.slice(), relations:draftRels.slice(), replies:[], at:now(), ts:Date.now()});
+    S.items.push({id:uid(), section:S.active, name:name, tags:draftTags.slice(),
+                  relations:draftRels.slice(), replies:[], shots:[], at:now(), ts:Date.now()});
   }
   capture.value = "";
   closeSheet(); renderAll(); save();
@@ -2172,6 +2316,10 @@ function renderReview(){
   const open = gaps.filter(g => !g.done);
   const touched = SECTIONS.filter(s => inSection(s).length);
   $("rvTitle").textContent = S.name || "Review";
+  /* The id, not the name, is what finds this project's screenshot folder. It is
+     shown here because this is the view you are on when you hand a session over. */
+  $("rvProject").textContent = S.id || "";
+  $("rvProject").parentNode.hidden = !S.id;
 
   $("rvStats").innerHTML = [
     [S.items.length, "items captured"],
@@ -2511,6 +2659,12 @@ function rebuildMap(reheat){
   }));
 
   M.nodes = nodes; M.links = links;
+  /* Positions are only ever needed to seed a node that is about to be drawn.
+     Keeping them for everything ever filtered out or deleted meant the map
+     carried a growing pile of coordinates nothing would read again. */
+  const live = {};
+  nodes.forEach(n => { live[n.id] = M.pos[n.id]; });
+  M.pos = live;
   layoutLanes();
   if(M.sel && !byId[M.sel]) M.sel = null;
 
@@ -2529,9 +2683,30 @@ function rebuildMap(reheat){
 const LABEL_MAX = 112, LABEL_LINE = 12, LABEL_CH = 5.6;
 const GAP_MIN = 52, GAP_MAX = 110, LABEL_PAD = 26, LANE_SWEEPS = 10;
 const MAP_FIT_PAD = 70;
+/* The band names are an overlay pinned to the left of the stage, so the graph
+   has to be kept clear of them. Wide enough for DEPENDENCIES and its count. */
+const LANE_GUTTER = 118;
+
+function laneGutter(){
+  return M.layout === "lanes" && M.lanes.length ? LANE_GUTTER : 0;
+}
 
 let measurer;
 const labelCache = new Map();
+
+/* Canvas measures against whatever face is loaded at that moment, and this app
+   fetches its own over the network with display=swap. Measure before it lands
+   and every label is sized to the fallback's metrics; when the real face swaps
+   in the labels grow and collide -- which is the one failure this layout exists
+   to prevent. So throw the measurements away when the face arrives and lay out
+   again. Resolves immediately when the font was already cached. */
+if(document.fonts && document.fonts.ready){
+  document.fonts.ready.then(() => {
+    labelCache.clear();
+    measurer = undefined;
+    if($("mapScrim").classList.contains("on")) rebuildMap(false);
+  });
+}
 
 function measureLabel(str){
   if(labelCache.has(str)) return labelCache.get(str);
@@ -2668,7 +2843,7 @@ function layoutLanes(){
      being held back by the height either way. */
   const tight = settle(GAP_MIN);
   const fit = M.H / (tight + MAP_FIT_PAD * 2);
-  const budget = Math.max(0, M.W / Math.max(.25, fit) - MAP_FIT_PAD * 2);
+  const budget = Math.max(0, (M.W - LANE_GUTTER) / Math.max(.25, fit) - MAP_FIT_PAD * 2);
   let steps = 0;
   bands.forEach(b => { steps = Math.max(steps, b.length - 1); });
   settle(steps ? Math.max(GAP_MIN, Math.min(GAP_MAX, budget / steps)) : GAP_MAX);
@@ -2768,8 +2943,11 @@ function buildLaneLabels(){
   const wrap = $("mapLaneLabels");
   wrap.innerHTML = "";
   if(M.layout !== "lanes" || !M.lanes.length) return;
+  /* Count what the row actually shows. Counting only the matches put a 0 next
+     to two visible dots whenever a filter pulled in linked items; which of them
+     are matches is already said by the dimming, and by the header. */
   const counts = {};
-  M.nodes.forEach(n => { if(!n.ghost) counts[n.item.section] = (counts[n.item.section]||0) + 1; });
+  M.nodes.forEach(n => { counts[n.item.section] = (counts[n.item.section]||0) + 1; });
   M.lanes.forEach(l => {
     const el = document.createElement("span");
     el.style.color = SEC_COLOR[l.sec];
@@ -2961,10 +3139,10 @@ function fitMap(){
     const last = M.lanes[M.lanes.length-1];
     y0 = Math.min(y0, 0); y1 = Math.max(y1, last.top + last.h);
   }
-  const pad = MAP_FIT_PAD;
+  const pad = MAP_FIT_PAD, gutter = laneGutter();
   const w = Math.max(80, x1-x0) + pad*2, h = Math.max(80, y1-y0) + pad*2;
-  M.k = Math.max(.25, Math.min(1.7, Math.min(M.W/w, M.H/h)));
-  M.tx = M.W/2 - ((x0+x1)/2) * M.k;
+  M.k = Math.max(.25, Math.min(1.7, Math.min((M.W - gutter)/w, M.H/h)));
+  M.tx = gutter + (M.W - gutter)/2 - ((x0+x1)/2) * M.k;
   M.ty = M.H/2 - ((y0+y1)/2) * M.k;
   applyTransform();
 }
@@ -3767,6 +3945,8 @@ function normalise(list, seq){
    session totals and then be unreachable everywhere else: no area rail, no
    review inventory, no PDD section. Park it in the first area instead and say
    so, rather than letting the item count lie. */
+const plural = (n, word) => n + " " + word + (n === 1 ? "" : "s");
+
 function placeItems(list){
   let stray = 0;
   list.forEach(i => {
@@ -3784,17 +3964,24 @@ function doReplace(){
   try{
     const o = parseSession($("importBox").value);
     const seq = {n:0};
+    /* The file's project id comes across with it: the screenshots it names live
+       in that project's folder, whatever this console called itself before. */
+    S.id = typeof o.id === "string" && o.id ? o.id : newProjectId();
     S.name = o.name || S.name;
     S.items = normalise(o.items, seq);
     const stray = placeItems(S.items);
     S.notes = normalise(o.notes, seq);
     S.marks = normalise(o.marks, seq);
     S.resolved = Array.isArray(o.resolved) ? o.resolved.filter(r => typeof r === "string") : [];
+    S.shots = normaliseShots(o.shots, S.id);
+    const loose = [S.items, S.notes, S.marks]
+      .reduce((n, list) => n + attachShots(list, S.shots, S.id), 0);
     if(typeof o.seconds === "number") S.seconds = o.seconds;
     $("sessionName").value = S.name;
     closeImport(); save(); renderAll(); setView("capture");
     toast("Session replaced, " + S.items.length + " items loaded" +
-          (stray ? ". " + stray + " moved to " + SECTIONS[0] + " from an unknown area" : ""));
+          (stray ? ". " + stray + " moved to " + SECTIONS[0] + " from an unknown area" : "") +
+          (loose ? ". " + plural(loose, "screenshot") + " named but not described" : ""));
   }catch(err){ $("importMsg").textContent = err.message; }
 }
 
@@ -3805,6 +3992,10 @@ $("importMerge").addEventListener("click", () => {
     const map = {};
     const incoming = normalise(o.items, seq);
     const stray = placeItems(incoming);
+    /* Merging keeps this project's id, so the incoming screenshots have to say
+       which folder they came from or they would be looked for in the wrong one. */
+    const fromPrj = typeof o.id === "string" && o.id ? o.id : S.id;
+    Object.assign(S.shots, normaliseShots(o.shots, fromPrj));
     incoming.forEach(i => { const old = i.id; i.id = uid(); map[old] = i.id; });
     /* Filter on the ORIGINAL target, then rewrite it. Rewriting first and then
        testing the new id against a map keyed by the old ones dropped every
@@ -3814,15 +4005,20 @@ $("importMerge").addEventListener("click", () => {
         .filter(r => map[r.targetId] || S.items.some(x => x.id === r.targetId))
         .map(r => ({type:r.type, targetId:map[r.targetId] || r.targetId}));
     });
+    const inNotes = normalise(o.notes, seq).map(n => Object.assign({}, n, {id:uid()}));
+    const inMarks = normalise(o.marks, seq).map(m => Object.assign({}, m, {id:uid()}));
+    const loose = [incoming, inNotes, inMarks]
+      .reduce((n, list) => n + attachShots(list, S.shots, fromPrj), 0);
     S.items = S.items.concat(incoming);
-    S.notes = S.notes.concat(normalise(o.notes, seq).map(n => Object.assign({}, n, {id:uid()})));
-    S.marks = S.marks.concat(normalise(o.marks, seq).map(m => Object.assign({}, m, {id:uid()})));
+    S.notes = S.notes.concat(inNotes);
+    S.marks = S.marks.concat(inMarks);
     (o.resolved || []).forEach(r => {
       if(typeof r === "string" && !S.resolved.includes(r)) S.resolved.push(r);
     });
     closeImport(); save(); renderAll(); setView("capture");
     toast(incoming.length + " items merged in" +
-          (stray ? ", " + stray + " moved to " + SECTIONS[0] + " from an unknown area" : ""));
+          (stray ? ", " + stray + " moved to " + SECTIONS[0] + " from an unknown area" : "") +
+          (loose ? ", " + plural(loose, "screenshot") + " named but not described" : ""));
   }catch(err){ $("importMsg").textContent = err.message; }
 });
 
@@ -3966,6 +4162,15 @@ document.addEventListener("keydown", e => {
    The single repaint orchestrator. Any module that changes the session calls
    renderAll(); nothing repaints the whole app on its own. */
 function renderAll(){
+  /* State first, painting second. These four read nothing but the session, and
+     leaving them until the end meant a view that failed to draw could strand
+     the toolbar -- New session and Undo stuck disabled with a full session open. */
+  $("cItems").textContent = S.items.length;
+  $("cNotes").textContent = S.notes.length;
+  $("cMarks").textContent = S.marks.length;
+  $("undoBtn").disabled = !S.items.length;
+  $("newBtn").disabled = sessionIsEmpty();
+
   renderChannels();
   renderTagBar();
   renderItems();
@@ -3976,11 +4181,6 @@ function renderAll(){
      above holds by construction rather than by nothing having reached them. */
   if($("reviewView").classList.contains("on")) renderReview();
   if($("pddView").classList.contains("on")) renderPDD();
-  $("cItems").textContent = S.items.length;
-  $("cNotes").textContent = S.notes.length;
-  $("cMarks").textContent = S.marks.length;
-  $("undoBtn").disabled = !S.items.length;
-  $("newBtn").disabled = sessionIsEmpty();
 }
 
 /* 19-boot.js

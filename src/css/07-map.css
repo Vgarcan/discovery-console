@@ -85,7 +85,6 @@
 
 .edge{stroke:var(--line);stroke-width:1}
 .edge.hot{stroke:var(--accent);stroke-width:1.6}
-.edge.dim{opacity:.22}
 /* Relations are directional and read both ways in the item list, so the map has
    to say which way round each one is. */
 #arrowEdge path{fill:var(--line)}

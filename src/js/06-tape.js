@@ -56,7 +56,7 @@ function buildComposer(ent, id){
     const v = ta.value.trim();
     if(!v) return;
     ent.replies = ent.replies || [];
-    ent.replies.push({text:v, at:now(), ts:Date.now()});
+    ent.replies.push({text:v, at:now(), ts:Date.now(), shots:[]});
     focusComposer = id;
     save(); renderAll();
   };

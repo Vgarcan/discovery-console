@@ -699,14 +699,28 @@ async function run(){
   dS.getElementById("importBtn2").click();
   aS.dropFile(stressJson, "stress.json");
   await wait(120);
-  ok("stress fixture summarised before import", aS.text("importSummary").includes("58 items"),
+  ok("stress fixture summarised before import", aS.text("importSummary").includes("59 items"),
      aS.text("importSummary"));
   dS.getElementById("importReplace").click();
   await wait(450);
   dS.getElementById("importReplace").click();
   await wait(90);
 
-  eq("all 58 items load", aS.text("cItems"), "58");
+  eq("all 59 items load", aS.text("cItems"), "59");
+  const stressSaved = () =>
+    JSON.parse(wS.localStorage.getItem("process.discovery.console.v1"));
+  eq("the file's project id comes across with it", stressSaved().id, "prj-w1r3ca");
+  ok("the two screenshots it describes are kept as metadata",
+     stressSaved().shots["shot-stress01"].w === 1400 &&
+     stressSaved().shots["shot-stress02"].bytes === 243881);
+  ok("each is filed under the project whose folder holds it",
+     stressSaved().shots["shot-stress01"].prj === "prj-w1r3ca");
+  ok("and a screenshot named but never described is reported, not passed over",
+     aS.text("toast").includes("1 screenshot named but not described"), aS.text("toast"));
+  ok("a reference to a screenshot the manifest never heard of is kept, not dropped",
+     !!stressSaved().shots["shot-orphan99"] &&
+     stressSaved().shots["shot-orphan99"].w === 0,
+     JSON.stringify(stressSaved().shots["shot-orphan99"]));
   ok("the unknown-area row is reported, not swallowed",
      aS.text("toast").includes("1 moved to Systems from an unknown area"), aS.text("toast"));
   eq("all nine areas populated",
@@ -785,7 +799,7 @@ async function run(){
   await wait(120);
   dS.getElementById("importMerge").click();
   await wait(90);
-  eq("PDD-04: merge doubles the session", aS.text("cItems"), "116");
+  eq("PDD-04: merge doubles the session", aS.text("cItems"), "118");
   dS.getElementById("dlJsonBtn").click();
   await wait(80);
   const merged = JSON.parse(wS.__saved[wS.__saved.length - 1].data);
@@ -798,6 +812,116 @@ async function run(){
      stillDangling === 1, String(stillDangling));
   eq("PDD-04: no duplicate ids after merge", allIds.size, merged.items.length);
   ok("no page errors on the stress fixture", ctxS.errs.length === 0, ctxS.errs.join(" | "));
+
+  group("Relations announce themselves");
+  /* Picking a type and a target files the relation there and then and clears
+     both menus. That was silent, and on an item that already had relations
+     there was no way to see which one you had just made. */
+  const ctxR = boot({ storage: stored }); const aR = api(ctxR); await wait(150);
+  const dR = ctxR.d, wR = ctxR.w;
+  const host = wR.S.items.find(i => i.relations.length >= 2);
+  wR.openSheet(host.id);
+  await wait(60);
+  eq("what was already on the item is listed",
+     dR.querySelectorAll("#fRelList .rel").length, host.relations.length);
+  eq("and none of it is marked new",
+     dR.querySelectorAll("#fRelList .rel.is-new").length, 0);
+
+  const pick = (type, targetId) => {
+    dR.getElementById("fRelType").value = type;
+    dR.getElementById("fRelTarget").value = targetId;
+    dR.getElementById("fRelTarget").dispatchEvent(new wR.Event("change", { bubbles:true }));
+  };
+  const other = wR.S.items.find(i => i.id !== host.id &&
+    !host.relations.some(r => r.targetId === i.id));
+
+  pick("depends on", other.id);
+  eq("the one just added is the only one marked new",
+     dR.querySelectorAll("#fRelList .rel.is-new").length, 1);
+  eq("the row carries a NEW tag",
+     dR.querySelector("#fRelList .rel.is-new .rel-new").textContent, "new");
+  ok("and flashes on the way in", !!dR.querySelector("#fRelList .rel.flash"));
+  eq("both menus clear for the next one", dR.getElementById("fRelType").value, "");
+
+  pick("depends on", other.id);
+  eq("picking the same pair again adds nothing",
+     dR.querySelectorAll("#fRelList .rel").length, host.relations.length + 1);
+  ok("and says why nothing happened", aR.text("toast").includes("already on this item"),
+     aR.text("toast"));
+
+  [...dR.querySelectorAll("#fRelList .rel")].pop().querySelector(".icon-btn").click();
+  eq("removing it takes the mark with it",
+     dR.querySelectorAll("#fRelList .rel.is-new").length, 0);
+  eq("and the row", dR.querySelectorAll("#fRelList .rel").length, host.relations.length);
+
+  wR.openSheet(host.id);
+  await wait(60);
+  eq("reopening the sheet starts counting new again from nothing",
+     dR.querySelectorAll("#fRelList .rel.is-new").length, 0);
+  ok("no page errors adding relations", ctxR.errs.length === 0, ctxR.errs.join(" | "));
+
+  group("Project identity");
+  /* Screenshots are filed by project id, never by name -- a walkthrough gets
+     renamed halfway through and every reference filed under the old name would
+     come loose. */
+  const ctxP = boot(); const aP = api(ctxP); await wait(120);
+  const idOf = c => JSON.parse(c.w.localStorage.getItem("process.discovery.console.v1")).id;
+  aP.capture(1, "Web UI", "Certitude 70");
+  const prj = idOf(ctxP);
+  ok("a session gets a project id", /^prj-[a-z0-9]{6}$/.test(String(prj)), String(prj));
+  eq("and shows it where you hand the session over",
+     (aP.view("review"), ctxP.d.getElementById("rvProject").textContent), prj);
+  ctxP.d.getElementById("sessionName").value = "Renamed halfway through";
+  ctxP.d.getElementById("sessionName").dispatchEvent(new ctxP.w.Event("input", { bubbles:true }));
+  eq("renaming the session does not touch it", idOf(ctxP), prj);
+
+  const legacyNoId = JSON.stringify({
+    name:"From before ids", active:"Systems", resolved:[], notes:[{text:"note", at:"09:00"}],
+    marks:[], items:[{ section:"Systems", name:"Old system", tags:["Web UI"], at:"09:01",
+                       replies:[{ text:"a reply", at:"09:02" }] }]
+  });
+  const ctxL = boot({ storage: legacyNoId });
+  await wait(150);
+  const migrated = JSON.parse(ctxL.w.localStorage.getItem("process.discovery.console.v1"));
+  ok("a session from before ids is given one", /^prj-[a-z0-9]{6}$/.test(String(migrated.id)),
+     String(migrated.id));
+  ok("and a screenshot manifest", migrated.shots && typeof migrated.shots === "object");
+  ok("every item, note and reply gets somewhere to hang screenshots",
+     Array.isArray(migrated.items[0].shots) &&
+     Array.isArray(migrated.notes[0].shots) &&
+     Array.isArray(migrated.items[0].replies[0].shots));
+  ok("no page errors migrating to the manifest", ctxL.errs.length === 0, ctxL.errs.join(" | "));
+
+  group("Storage quota");
+  /* A full quota was swallowed, so the console went on looking like it was
+     recording a session it had stopped writing. Nothing recovers from that
+     afterwards, so it has to show while it is still fixable. */
+  const ctxQ = boot(); const aQ = api(ctxQ); await wait(120);
+  const realSet = ctxQ.w.localStorage.setItem.bind(ctxQ.w.localStorage);
+  ok("nothing is wrong to begin with", ctxQ.d.getElementById("storageWarn").hidden);
+  /* The property being true is not the same as the element being gone: a class
+     that sets display beats the browser's own [hidden] rule, and this badge sat
+     on screen for two releases saying the session was not being saved. */
+  ok("and the hidden attribute actually hides",
+     [...ctxQ.d.styleSheets].some(sh => [...(sh.cssRules || [])]
+       .some(r => r.selectorText === "[hidden]")),
+     "no [hidden] rule in the bundle");
+
+  ctxQ.w.localStorage.setItem = () => { throw new Error("QuotaExceededError"); };
+  aQ.capture(1, "Web UI", "Certitude 70");
+  ok("a refused write raises the warning",
+     !ctxQ.d.getElementById("storageWarn").hidden);
+  ok("and says so out loud", aQ.text("toast").includes("NOT being saved"),
+     aQ.text("toast"));
+  eq("the capture itself still happened", aQ.text("cItems"), "1");
+
+  ctxQ.w.localStorage.setItem = realSet;
+  aQ.capture(2, null, "Daily extract");
+  ok("the warning clears once writes work again",
+     ctxQ.d.getElementById("storageWarn").hidden);
+  ok("and the recovered session is on disk",
+     JSON.parse(ctxQ.w.localStorage.getItem("process.discovery.console.v1")).items.length === 2);
+  ok("no page errors around a full quota", ctxQ.errs.length === 0, ctxQ.errs.join(" | "));
 
   group("Renamed storage key");
   /* The tool was renamed. A session left under the old key has to come across on

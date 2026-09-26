@@ -36,6 +36,12 @@
   animation:pulse 2.4s ease-in-out infinite;
 }
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+.storage-warn{
+  display:inline-flex;align-items:center;gap:.35rem;
+  font-family:var(--mono);font-size:10px;letter-spacing:.04em;text-transform:uppercase;
+  background:var(--alert);color:#ffffff;padding:.2rem .45rem;border-radius:2px;
+  animation:pulse 1.6s ease-in-out infinite;cursor:help;
+}
 .clock{font-family:var(--mono);font-size:.82rem;font-weight:500;letter-spacing:-.04em}
 
 .btn{

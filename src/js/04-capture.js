@@ -75,7 +75,8 @@ function commit(){
   if(!name){ toast("Pick a type or type a name first"); return; }
   S.items.push({
     id:uid(), section:S.active, name:name,
-    tags: seed ? [tagOf(S.active, seed)] : [], relations:[], replies:[], at:now(), ts:Date.now()
+    tags: seed ? [tagOf(S.active, seed)] : [], relations:[], replies:[], shots:[],
+    at:now(), ts:Date.now()
   });
   capture.value = "";
   closeSuggest();

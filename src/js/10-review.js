@@ -9,6 +9,10 @@ function renderReview(){
   const open = gaps.filter(g => !g.done);
   const touched = SECTIONS.filter(s => inSection(s).length);
   $("rvTitle").textContent = S.name || "Review";
+  /* The id, not the name, is what finds this project's screenshot folder. It is
+     shown here because this is the view you are on when you hand a session over. */
+  $("rvProject").textContent = S.id || "";
+  $("rvProject").parentNode.hidden = !S.id;
 
   $("rvStats").innerHTML = [
     [S.items.length, "items captured"],

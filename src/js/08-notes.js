@@ -4,7 +4,7 @@
 function saveNoteFrom(text){
   const t = (text || "").trim();
   if(!t) return;
-  S.notes.push({id:uid(), text:t, replies:[], at:now(), ts:Date.now()});
+  S.notes.push({id:uid(), text:t, replies:[], shots:[], at:now(), ts:Date.now()});
   renderAll(); save(); toast("Note parked");
 }
 $("saveNoteBtn").addEventListener("click", () => { saveNoteFrom($("noteBox").value); $("noteBox").value = ""; });
@@ -13,7 +13,7 @@ $("noteBox").addEventListener("keydown", e => {
 });
 $("markBtn").addEventListener("click", markMoment);
 function markMoment(){
-  S.marks.push({id:uid(), at:now(), seconds:S.seconds, replies:[], ts:Date.now()});
+  S.marks.push({id:uid(), at:now(), seconds:S.seconds, replies:[], shots:[], ts:Date.now()});
   renderAll(); save(); toast("Moment marked at " + $("clock").textContent);
 }
 

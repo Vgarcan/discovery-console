@@ -1,4 +1,23 @@
 {
+  "id": "prj-w1r3ca",
+  "shots": {
+    "shot-stress01": {
+      "w": 1400,
+      "h": 788,
+      "bytes": 191004,
+      "type": "image/webp",
+      "at": "09:41",
+      "ts": 1764596940000
+    },
+    "shot-stress02": {
+      "w": 1120,
+      "h": 1584,
+      "bytes": 243881,
+      "type": "image/webp",
+      "at": "10:12",
+      "ts": 1764598800000
+    }
+  },
   "name": "Northgate CU — outbound wire callback verification (stress fixture)",
   "active": "Exceptions",
   "seconds": 5280,
@@ -59,7 +78,10 @@
         }
       ],
       "at": "09:16",
-      "ts": 1764595320000
+      "ts": 1764595320000,
+      "shots": [
+        "shot-stress01"
+      ]
     },
     {
       "id": "s03",
@@ -1021,7 +1043,10 @@
         }
       ],
       "at": "10:50",
-      "ts": 1764598140000
+      "ts": 1764598140000,
+      "shots": [
+        "shot-stress02"
+      ]
     },
     {
       "id": "v03",
@@ -1141,6 +1166,21 @@
         "Manual review",
         "Internal"
       ]
+    },
+    {
+      "id": "x04",
+      "section": "Evidence",
+      "name": "PROBE: names a screenshot the manifest never heard of",
+      "tags": [
+        "Screenshot"
+      ],
+      "relations": [],
+      "replies": [],
+      "shots": [
+        "shot-orphan99"
+      ],
+      "at": "11:01",
+      "ts": 1764601280000
     }
   ],
   "notes": [

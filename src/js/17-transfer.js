@@ -40,6 +40,8 @@ function normalise(list, seq){
    session totals and then be unreachable everywhere else: no area rail, no
    review inventory, no PDD section. Park it in the first area instead and say
    so, rather than letting the item count lie. */
+const plural = (n, word) => n + " " + word + (n === 1 ? "" : "s");
+
 function placeItems(list){
   let stray = 0;
   list.forEach(i => {
@@ -57,17 +59,24 @@ function doReplace(){
   try{
     const o = parseSession($("importBox").value);
     const seq = {n:0};
+    /* The file's project id comes across with it: the screenshots it names live
+       in that project's folder, whatever this console called itself before. */
+    S.id = typeof o.id === "string" && o.id ? o.id : newProjectId();
     S.name = o.name || S.name;
     S.items = normalise(o.items, seq);
     const stray = placeItems(S.items);
     S.notes = normalise(o.notes, seq);
     S.marks = normalise(o.marks, seq);
     S.resolved = Array.isArray(o.resolved) ? o.resolved.filter(r => typeof r === "string") : [];
+    S.shots = normaliseShots(o.shots, S.id);
+    const loose = [S.items, S.notes, S.marks]
+      .reduce((n, list) => n + attachShots(list, S.shots, S.id), 0);
     if(typeof o.seconds === "number") S.seconds = o.seconds;
     $("sessionName").value = S.name;
     closeImport(); save(); renderAll(); setView("capture");
     toast("Session replaced, " + S.items.length + " items loaded" +
-          (stray ? ". " + stray + " moved to " + SECTIONS[0] + " from an unknown area" : ""));
+          (stray ? ". " + stray + " moved to " + SECTIONS[0] + " from an unknown area" : "") +
+          (loose ? ". " + plural(loose, "screenshot") + " named but not described" : ""));
   }catch(err){ $("importMsg").textContent = err.message; }
 }
 
@@ -78,6 +87,10 @@ $("importMerge").addEventListener("click", () => {
     const map = {};
     const incoming = normalise(o.items, seq);
     const stray = placeItems(incoming);
+    /* Merging keeps this project's id, so the incoming screenshots have to say
+       which folder they came from or they would be looked for in the wrong one. */
+    const fromPrj = typeof o.id === "string" && o.id ? o.id : S.id;
+    Object.assign(S.shots, normaliseShots(o.shots, fromPrj));
     incoming.forEach(i => { const old = i.id; i.id = uid(); map[old] = i.id; });
     /* Filter on the ORIGINAL target, then rewrite it. Rewriting first and then
        testing the new id against a map keyed by the old ones dropped every
@@ -87,15 +100,20 @@ $("importMerge").addEventListener("click", () => {
         .filter(r => map[r.targetId] || S.items.some(x => x.id === r.targetId))
         .map(r => ({type:r.type, targetId:map[r.targetId] || r.targetId}));
     });
+    const inNotes = normalise(o.notes, seq).map(n => Object.assign({}, n, {id:uid()}));
+    const inMarks = normalise(o.marks, seq).map(m => Object.assign({}, m, {id:uid()}));
+    const loose = [incoming, inNotes, inMarks]
+      .reduce((n, list) => n + attachShots(list, S.shots, fromPrj), 0);
     S.items = S.items.concat(incoming);
-    S.notes = S.notes.concat(normalise(o.notes, seq).map(n => Object.assign({}, n, {id:uid()})));
-    S.marks = S.marks.concat(normalise(o.marks, seq).map(m => Object.assign({}, m, {id:uid()})));
+    S.notes = S.notes.concat(inNotes);
+    S.marks = S.marks.concat(inMarks);
     (o.resolved || []).forEach(r => {
       if(typeof r === "string" && !S.resolved.includes(r)) S.resolved.push(r);
     });
     closeImport(); save(); renderAll(); setView("capture");
     toast(incoming.length + " items merged in" +
-          (stray ? ", " + stray + " moved to " + SECTIONS[0] + " from an unknown area" : ""));
+          (stray ? ", " + stray + " moved to " + SECTIONS[0] + " from an unknown area" : "") +
+          (loose ? ", " + plural(loose, "screenshot") + " named but not described" : ""));
   }catch(err){ $("importMsg").textContent = err.message; }
 });
 

@@ -618,10 +618,12 @@ footer{
 
     <h3>What was not run</h3>
     <p>This machine has no JavaScript runtime and no Playwright, so <code>tests/audit.test.js</code> —
-    now 130-odd functional checks, including new ones covering the two-step delete, the capture
-    vocabulary, the by-hand count and the resize handles — has not been executed, and nothing has been
-    exercised in a real browser. <code>python tools/build.py</code> and
-    <code>python tools/audit.py</code> both pass. Run the suite and open the app before publishing.</p>
+    now 250 functional checks, including ones covering the two-step delete, the capture
+    vocabulary, the by-hand count, the resize handles, the lane layout and the storage quota — has not
+    been executed. The app itself has since been driven in a real Chromium through
+    <code>tools/screenshots.py</code>, which is how the lane-label collision and the band counts were
+    caught. <code>python tools/build.py</code> and <code>python tools/audit.py</code> both pass. Run
+    the suite before publishing.</p>
 
     <h3>Not in scope</h3>
     <p>Whether the template mapping matches the current approved Velera PDD is a question for the

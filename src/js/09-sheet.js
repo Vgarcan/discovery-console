@@ -7,6 +7,7 @@ function openSheet(id, prefillName){
   const sec = item ? item.section : S.active;
   draftTags = item ? item.tags.slice() : (seed ? [tagOf(sec, seed)] : []);
   draftRels = item ? item.relations.slice() : [];
+  freshRels = new Set();
 
   $("sheetLabel").textContent = sec.toLowerCase();
   $("sheetTitle").textContent = item ? "Edit item" : "New " + sec.toLowerCase() + " item";
@@ -64,23 +65,37 @@ $("fRelType").addEventListener("change", addDraftRel);
 function addDraftRel(){
   const type = $("fRelType").value, target = $("fRelTarget").value;
   if(!type || !target) return;
-  if(!draftRels.some(r => r.type === type && r.targetId === target)) draftRels.push({type:type, targetId:target});
+  const rel = {type:type, targetId:target};
+  const already = draftRels.some(r => relKey(r) === relKey(rel));
+  if(!already){
+    draftRels.push(rel);
+    freshRels.add(relKey(rel));
+  }
   $("fRelType").value = ""; $("fRelTarget").value = "";
-  renderDraftRels();
+  /* Flash the row either way. Picking one that is already there used to do
+     nothing at all, which read as the menus having failed. */
+  renderDraftRels(relKey(rel));
+  if(already) toast("That relation is already on this item");
 }
-function renderDraftRels(){
+
+function renderDraftRels(flashKey){
   const wrap = $("fRelList");
   wrap.innerHTML = "";
   draftRels.forEach((r,i) => {
     const t = S.items.find(x => x.id === r.targetId);
+    const key = relKey(r);
+    const fresh = freshRels.has(key);
     const d = document.createElement("div");
-    d.className = "rel";
-    d.style.display = "flex";
-    d.style.justifyContent = "space-between";
-    d.innerHTML = "<span><b>" + esc(r.type) + "</b> " + esc(t ? t.name : "missing item") + "</span>";
+    d.className = "rel" + (fresh ? " is-new" : "") + (key === flashKey ? " flash" : "");
+    d.innerHTML = "<span><b>" + esc(r.type) + "</b> " + esc(t ? t.name : "missing item") +
+                  (fresh ? '<em class="rel-new">new</em>' : "") + "</span>";
     const b = document.createElement("button");
     b.className = "icon-btn danger"; b.type = "button"; b.textContent = "Remove";
-    b.addEventListener("click", () => { draftRels.splice(i,1); renderDraftRels(); });
+    b.addEventListener("click", () => {
+      draftRels.splice(i,1);
+      freshRels.delete(key);
+      renderDraftRels();
+    });
     d.appendChild(b);
     wrap.appendChild(d);
   });
@@ -93,7 +108,8 @@ $("fSave").addEventListener("click", () => {
     it.name = name; it.tags = draftTags.slice(); it.relations = draftRels.slice();
     toast("Item updated");
   }else{
-    S.items.push({id:uid(), section:S.active, name:name, tags:draftTags.slice(), relations:draftRels.slice(), replies:[], at:now(), ts:Date.now()});
+    S.items.push({id:uid(), section:S.active, name:name, tags:draftTags.slice(),
+                  relations:draftRels.slice(), replies:[], shots:[], at:now(), ts:Date.now()});
   }
   capture.value = "";
   closeSheet(); renderAll(); save();

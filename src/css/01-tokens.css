@@ -24,6 +24,11 @@
   --accent-dim:rgba(98,255,207,.14);
   --alert:#EF6461;
   --alert-dim:rgba(239,100,97,.14);
+  /* --accent is mint here but red in the light theme, so it cannot carry
+     "this went well". This one reads the same way in both. */
+  --good:#62FFCF;
+  --good-ink:#1b1b1b;
+  --good-dim:rgba(98,255,207,.16);
 
   --sans:"Instrument Sans","Helvetica Neue",Arial,sans-serif;
   --mono:"Martian Mono",ui-monospace,"SF Mono",Menlo,monospace;
@@ -41,6 +46,7 @@
     --ink:#222222; --ink-2:#4a4a45; --ink-3:#7d7d76;
     --accent:#EF6461; --accent-ink:#ffffff; --accent-dim:rgba(239,100,97,.12);
     --alert:#C9403D; --alert-dim:rgba(201,64,61,.12);
+    --good:#1B7A5A; --good-ink:#ffffff; --good-dim:rgba(27,122,90,.12);
     color-scheme:light;
   }
 }
@@ -50,10 +56,15 @@
   --ink:#222222; --ink-2:#4a4a45; --ink-3:#7d7d76;
   --accent:#EF6461; --accent-ink:#ffffff; --accent-dim:rgba(239,100,97,.12);
   --alert:#C9403D; --alert-dim:rgba(201,64,61,.12);
+  --good:#1B7A5A; --good-ink:#ffffff; --good-dim:rgba(27,122,90,.12);
   color-scheme:light;
 }
 
 *,*::before,*::after{box-sizing:inherit}
+/* The browser's own [hidden] rule is weaker than any class that sets display,
+   so an element with a display of its own stays on screen while the attribute
+   says it is gone. Anything toggled with .hidden needs this to mean it. */
+[hidden]{display:none!important}
 html,body{height:100%}
 body{
   margin:0;

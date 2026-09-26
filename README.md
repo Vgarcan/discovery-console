@@ -97,6 +97,12 @@ offers the exception types without you leaving.
 Press `Details` only when an item needs tags or relations right away. Usually it does not,
 and you do that after the call.
 
+In the detail sheet, picking a relation type and a target files the relation immediately —
+there is no Add button, and both menus clear ready for the next one. Because that is easy to
+miss, a relation made while the sheet has been open keeps a green edge and a **NEW** tag until
+you close it, so on an item that already had four you can see which one you just made. Picking
+a pair that is already there says so rather than doing nothing.
+
 ### Keyboard
 
 | Key | Does |
@@ -304,6 +310,10 @@ anything is touched.
 
 ![Importing a session file](docs/images/10-import-session.png)
 
+A session names screenshots it may not be carrying. Import says so rather than passing over
+it: *"3 screenshots named but not described"* means the file references images whose manifest
+entries are missing, and the ids are kept so the files can still be found.
+
 **Replace** swaps the open session, and asks once before it does. **Merge** adds the file on
 top of what you have, reassigning ids and rewriting relation targets inside the imported set,
 so two analysts' sessions can be joined without collisions. An item naming an area the console
@@ -474,6 +484,7 @@ next load, once, so the rename never reads as a cleared console.
 
 ```jsonc
 {
+  "id": "prj-8f3a2c",                  // stable for the life of the project
   "name": "Meridian CU — ACH return exception handling",
   "active": "Exceptions",
   "seconds": 4680,
@@ -491,11 +502,24 @@ next load, once, so the rename never reads as a cleared console.
   ],
   "notes": [{ "id": "n1", "text": "...", "replies": [], "at": "08:22", "ts": 0 }],
   "marks": [{ "id": "m1", "at": "08:47", "seconds": 1860, "replies": [], "ts": 0 }],
-  "resolved": ["Systems::Confirm the purpose of each system"]
+  "resolved": ["Systems::Confirm the purpose of each system"],
+  "shots": {                           // what screenshots exist, never the bytes
+    "shot-01k2f7": { "w": 1400, "h": 788, "bytes": 191004,
+                     "type": "image/webp", "at": "10:24", "ts": 0,
+                     "prj": "prj-8f3a2c" }
+  }
 }
 ```
 
-Three things worth knowing:
+Four things worth knowing:
+
+- `id` is what everything outside the session hangs off, and it never changes. The name does:
+  it gets rewritten halfway through a walkthrough, so anything filed under the name would come
+  loose. Review shows the id, because that is the view you are on when you hand a session over.
+- `shots` describes screenshots; it never carries them. Each entry remembers the project whose
+  folder holds the file, so a session merged in from another walkthrough can still find images
+  that belong to that one. A reference to a screenshot the manifest has not heard of is kept
+  rather than dropped — the id is still enough to go looking for the file.
 
 - `relations` are directional but read both ways. An item shows what it points at and what
   points at it, and the map draws one edge per relation.
@@ -505,8 +529,16 @@ Three things worth knowing:
 - `resolved` holds `"Area::gap text"` keys. These drive the coverage meters, so they are the
   closest thing to a completeness score.
 
-Older session files without ids, timestamps or reply arrays are migrated on load, so an
-export from an earlier version still opens.
+Older session files without ids, timestamps, reply arrays, a project id or a screenshot
+manifest are migrated on load, so an export from an earlier version still opens.
+
+### When the browser stops accepting data
+
+`localStorage` holds about 5 MB for the whole origin. Going over it used to be swallowed
+silently: the console carried on looking like it was recording a session it had stopped
+writing, and the lot went on the next refresh. A refused write now raises a red **NOT SAVING**
+marker in the top bar and says so out loud, and clears itself the moment a write succeeds
+again. Download the JSON while it is still up.
 
 ---
 
