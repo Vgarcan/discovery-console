@@ -13,6 +13,7 @@ function renderReview(){
      shown here because this is the view you are on when you hand a session over. */
   $("rvProject").textContent = S.id || "";
   $("rvProject").parentNode.hidden = !S.id;
+  renderShotSync();
 
   $("rvStats").innerHTML = [
     [S.items.length, "items captured"],

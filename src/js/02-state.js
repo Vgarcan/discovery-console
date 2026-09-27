@@ -28,6 +28,10 @@ let draftRels = [];
 /* Which relations were made while the sheet has been open, so the ones that
    were already on the item can be told apart from the ones you just added. */
 let freshRels = new Set();
+/* Screenshots pasted while a sheet is open, and ones pasted at the capture bar
+   that are waiting for the item they belong to to be created. */
+let draftShots = [];
+let pendingShots = [];
 const relKey = r => r.type + "\u0000" + r.targetId;
 let sugIndex = 0;
 let sugList = [];

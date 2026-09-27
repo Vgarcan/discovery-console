@@ -1,4 +1,4 @@
-/* 18-render.js
+/* 19-render.js
    The single repaint orchestrator. Any module that changes the session calls
    renderAll(); nothing repaints the whole app on its own. */
 function renderAll(){
@@ -21,4 +21,7 @@ function renderAll(){
      above holds by construction rather than by nothing having reached them. */
   if($("reviewView").classList.contains("on")) renderReview();
   if($("pddView").classList.contains("on")) renderPDD();
+  renderPending();
+  /* Thumbnails are drawn empty and filled from the store afterwards. */
+  hydrateShots();
 }

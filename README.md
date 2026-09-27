@@ -4,7 +4,7 @@ A live capture instrument for the business analyst running a client process walk
 
 Capture at conversation speed without breaking eye contact, see what is still missing while
 the client is still on the call, and leave with the evidence already arranged the way the
-Velera Process Definition Document asks for it.
+Process Definition Document asks for it.
 
 ## Live preview
 
@@ -96,6 +96,61 @@ offers the exception types without you leaving.
 
 Press `Details` only when an item needs tags or relations right away. Usually it does not,
 and you do that after the call.
+
+### Screenshots
+
+Take a screenshot the way you always do — `Win`+`Shift`+`S`, `Cmd`+`Shift`+`4` — and press
+`⌘/Ctrl + V`. It goes wherever you already are:
+
+| Where the focus is | Where the screenshot goes |
+| --- | --- |
+| The capture field | Waits on the bar and rides along with the item you type next |
+| The note box | Goes with that note |
+| An open detail sheet | Attaches to that item |
+| Nowhere in particular | Becomes an Evidence item of its own, tagged `Screenshot` |
+
+The detail sheet also has a **Paste screenshot** button, because the keystroke is not something
+you find on your own: you take the screenshot, open the item, and nothing tells you it can go
+there. The button reads the clipboard directly where the browser allows it, which today means
+Chromium; everywhere else it points you at the keystroke, which always works.
+
+One waiting on the capture bar shows as a thumbnail marked *goes with the next capture*, so it
+is never a thing you are holding without knowing. Click any thumbnail to see it full size.
+
+**Where the bytes go.** Not into the session. `localStorage` holds about 5 MB in total and a
+full-screen PNG is 1.8 MB, so two of them would fill it and the session would stop saving. Each
+screenshot is shrunk to 1600px on its long edge and re-encoded as WebP — around 190 KB, still
+readable — and the bytes go to IndexedDB. The session carries only a manifest: size, weight,
+when it was taken, and which project's folder holds the file.
+
+### The screenshot folder
+
+Review has a panel for it. **Connect folder** and pick `assets/shots/` once: from then on every
+screenshot is written through to `assets/shots/<project id>/<shot id>.webp` as you take it, and
+anything taken before you connected is caught up on the spot.
+
+```
+assets/shots/              <- in .gitignore, never committed
+  prj-8f3a2c/
+    shot-01k2f7.webp
+    shot-01k2g3.webp
+```
+
+The file name is the id from the manifest, so a folder and a JSON that were never zipped
+together still wire up when they meet. Hand someone the JSON alone and they get the session
+with labelled gaps where the screenshots were; hand them the folder too, they point the console
+at their own `assets/shots/`, drop the project folder in, and the images appear. The console
+reads the store first and the folder second, and keeps a local copy of anything it finds.
+
+Nothing is named after the session, only after its project id, because the name gets rewritten
+halfway through a walkthrough and every filename would come loose.
+
+**Where the browser will not allow it.** Writing into a folder needs the File System Access
+API: Chromium over https today, not Firefox, not Safari, not from `file://`. There the panel
+says so and hands you the same files as downloads, named the same way, to drop in yourself.
+Either path produces the same folder. Screenshots are never at risk in the meantime — they are
+in the browser's own store from the moment they are pasted, and the panel counts what has not
+reached the folder yet.
 
 In the detail sheet, picking a relation type and a target files the relation immediately —
 there is no Add button, and both menus clear ready for the next one. Because that is easy to
@@ -292,7 +347,7 @@ against it that are not reaching any field — usually a missing tag or a missin
 
 ### The PDD draft
 
-The **PDD** view arranges everything into the approved Velera template: sections 1.1 through
+The **PDD** view arranges everything into the approved PDD template: sections 1.1 through
 2.10, tables where the template has tables, lists where it has lists.
 
 ![The PDD draft](docs/images/08-pdd-draft.png)
@@ -318,6 +373,15 @@ continue process" and it lands in the Process/Business Action column. Reply to a
 it becomes the Description.
 
 ![Exceptions, with business actions filled from thread replies](docs/images/09-pdd-exceptions.png)
+
+**Screenshots land in the document.** Section 2.9 gathers every one in the session, wherever it
+was captured — against a system, a note, a marked moment, a reply — captioned with the thing it
+belongs to. Section 2.2 shows the ones filed as evidence. They print: **Print / Save as PDF**
+waits for the images before opening the dialog, so the PDF never comes out with empty frames.
+
+In the Markdown they come out as `![caption](assets/shots/prj-8f3a2c/shot-01k2f7.webp)` —
+relative to the project root, so an exported `.md` dropped there resolves them, and anywhere
+else still says which file goes with which caption.
 
 ### Filling in the rest
 
@@ -446,7 +510,7 @@ the rendered layout.
 
 For JS the numbering is execution order. The modules share a global scope on purpose rather
 than using ES modules, so the whole thing still runs from `file://` with no tooling.
-`19-boot.js` is the only module that calls anything at load time; every other module defines
+`20-boot.js` is the only module that calls anything at load time; every other module defines
 functions and attaches listeners.
 
 Three rules keep the boundaries honest, and `tools/audit.py` fails if any of them breaks:
@@ -457,7 +521,7 @@ Three rules keep the boundaries honest, and `tools/audit.py` fails if any of the
   or `[label, description, tag]` when the button's label is not the tag to store — `Average
   volume` stores `Volume`. The PDD looks tags up, so a label that is not a declared tag renders
   the field `TBC` on a live capture while the sample session fills it.
-- Anything that changes the session calls `renderAll()` from `18-render.js`. No module
+- Anything that changes the session calls `renderAll()` from `19-render.js`. No module
   repaints the whole app itself, so a change to one view cannot silently skip another.
 
 ### Styles
@@ -497,8 +561,9 @@ Three rules keep the boundaries honest, and `tools/audit.py` fails if any of the
 | `15-shell.js` | View switching, collapsible and resizable panels, inspector tabs |
 | `16-pdd.js` | Maps captured evidence onto the approved PDD template and exports it |
 | `17-transfer.js` | JSON import, file saving via the downloads capability, starting a new session |
-| `18-render.js` | The single repaint orchestrator |
-| `19-boot.js` | Start-up only: restore, apply saved shell state, draw the first frame |
+| `18-shots.js` | Screenshots: the clipboard, shrinking, the IndexedDB store, thumbnails |
+| `19-render.js` | The single repaint orchestrator |
+| `20-boot.js` | Start-up only: restore, apply saved shell state, draw the first frame |
 
 ### Where to make a change
 

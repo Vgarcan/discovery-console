@@ -140,6 +140,18 @@ function slug(s){
     .replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,60) || "discovery-session";
 }
 
+/* Images cannot go through saveFile, which turns its argument into text. */
+function saveBlob(filename, blob){
+  try{
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 500);
+    return true;
+  }catch(e){ return false; }
+}
+
 function browserSave(filename, text, okMsg){
   try{
     const blob = new Blob([text], {type:"application/octet-stream"});
@@ -185,9 +197,14 @@ function loadIntoImport(file){
     try{
       const o = parseSession(r.result);
       $("importSummary").classList.add("on");
+      /* A session file never carries the images, so say how many it expects to
+         find and where, before anything is replaced. */
+      const shotCount = (o.shots && typeof o.shots === "object") ? Object.keys(o.shots).length : 0;
       $("importSummary").innerHTML = '<span class="label">' + esc(file.name) + "</span>" +
         "<b>" + (o.items.length) + "</b> items, <b>" + o.notes.length + "</b> notes, <b>" +
-        o.marks.length + "</b> marks" + (o.name ? " — " + esc(o.name) : "");
+        o.marks.length + "</b> marks" +
+        (shotCount ? ", <b>" + shotCount + "</b> screenshots it does not carry" : "") +
+        (o.name ? " — " + esc(o.name) : "");
     }catch(err){
       $("importSummary").classList.remove("on");
       $("importMsg").textContent = err.message;

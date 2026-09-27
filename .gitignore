@@ -1,0 +1,8 @@
+# Screenshots live here, one folder per project id. They are the analyst's
+# own capture of a client's screen: shared by hand with whoever needs them,
+# never committed.
+
+
+# assets/shots/*
+
+tools/__pycache__/

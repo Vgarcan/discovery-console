@@ -133,6 +133,8 @@
               <div class="suggest" id="suggest"></div>
             </div>
 
+            <div id="capturePending"></div>
+
             <div class="types" id="types"></div>
 
             <div class="tagbar" id="tagBar"></div>
@@ -198,6 +200,16 @@
         </div>
       </div>
 
+      <section class="shotsync" id="shotSync">
+        <span class="label">screenshot folder</span>
+        <p id="shotSyncState">Checking.</p>
+        <div class="row-inline">
+          <button class="btn" type="button" id="shotConnect">Connect folder</button>
+          <button class="btn" type="button" id="shotFlush" hidden>Write to the folder</button>
+          <button class="btn btn-ghost" type="button" id="shotForget" hidden>Disconnect</button>
+        </div>
+      </section>
+
       <div class="rv-stats" id="rvStats"></div>
 
       <div class="rv-cols">
@@ -247,7 +259,7 @@
             <div>
               <span class="label">output</span>
               <h1 id="pddTitle">Process Definition Document</h1>
-              <p>Your capture, arranged into the approved Velera PDD structure. Every unanswered field is marked TBC rather than guessed.</p>
+              <p>Your capture, arranged into the approved PDD structure. Every unanswered field is marked TBC rather than guessed.</p>
             </div>
             <div class="row-inline no-print">
               <button class="btn" id="importBtn">Import JSON</button>
@@ -298,6 +310,16 @@
           <select class="inp" id="fRelTarget"><option value="">Pick an item</option></select>
         </div>
         <div id="fRelList" style="margin-top:.6rem"></div>
+      </div>
+
+      <div class="field">
+        <label>Screenshots</label>
+        <div class="row-inline">
+          <button class="btn" type="button" id="fPasteShot"
+                  title="Paste the image on your clipboard">Paste screenshot</button>
+          <span class="field-hint" id="fShotHint">or press ⌘/Ctrl + V</span>
+        </div>
+        <div id="fShots"></div>
       </div>
     </div>
     <footer>
@@ -380,6 +402,16 @@
   </div>
 </div>
 
+<div class="scrim shotscrim" id="shotScrim">
+  <div class="shotwin" role="dialog" aria-modal="true" aria-label="Screenshot">
+    <div class="shothead">
+      <span class="label" id="shotMeta"></span>
+      <button class="btn" type="button" id="shotClose">Close</button>
+    </div>
+    <img id="shotFull" alt="Captured screenshot">
+  </div>
+</div>
+
 <div class="scrim" id="newScrim">
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="newTitle">
     <header>
@@ -451,8 +483,9 @@
 <script src="src/js/15-shell.js"></script>
 <script src="src/js/16-pdd.js"></script>
 <script src="src/js/17-transfer.js"></script>
-<script src="src/js/18-render.js"></script>
-<script src="src/js/19-boot.js"></script>
+<script src="src/js/18-shots.js"></script>
+<script src="src/js/19-render.js"></script>
+<script src="src/js/20-boot.js"></script>
 <!-- endbuild -->
 </body>
 </html>

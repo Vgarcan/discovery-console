@@ -37,6 +37,7 @@ function renderItems(){
         '<button class="icon-btn danger" data-del="' + item.id + '" title="Delete">Delete</button>' +
       "</span>";
     const mainEl = el.querySelector(".item-main");
+    if((item.shots || []).length) mainEl.appendChild(shotThumbs(item.shots));
     mainEl.appendChild(threadBlock(item, item.id));
     mainEl.appendChild(replyButton(item, item.id));
     el.querySelector("[data-map]").addEventListener("click", () => { M.sel = item.id; M.tags = []; M.q = ""; M.hidden = []; $("mapSearch").value = ""; openMap(); });

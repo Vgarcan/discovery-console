@@ -150,6 +150,16 @@ kbd{
 .item-time{font-family:var(--mono);font-size:9.5px;color:var(--ink-3);flex:0 0 auto;padding-top:.25rem}
 .item-acts{display:flex;gap:.15rem;flex:0 0 auto;opacity:0;transition:opacity .12s}
 .item:hover .item-acts,.item:focus-within .item-acts{opacity:1}
+/* A screenshot pasted at the capture bar rides along with whatever you type
+   next. It has to be visible while it waits, or it is a thing you no longer
+   know you are holding. */
+#capturePending:not(:empty){margin:.6rem 0 0}
+#capturePending .shots::before{
+  content:"goes with the next capture";
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.04em;
+  color:var(--accent);align-self:center;margin-right:.2rem;
+}
+
 .icon-btn{
   background:none;border:0;cursor:pointer;color:var(--ink-3);
   padding:.25rem .35rem;border-radius:2px;font-size:.75rem;

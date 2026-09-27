@@ -8,6 +8,9 @@ function openSheet(id, prefillName){
   draftTags = item ? item.tags.slice() : (seed ? [tagOf(sec, seed)] : []);
   draftRels = item ? item.relations.slice() : [];
   freshRels = new Set();
+  /* Anything pasted at the capture bar before Details was pressed comes with. */
+  draftShots = (item ? (item.shots || []).slice() : []).concat(pendingShots);
+  pendingShots = [];
 
   $("sheetLabel").textContent = sec.toLowerCase();
   $("sheetTitle").textContent = item ? "Edit item" : "New " + sec.toLowerCase() + " item";
@@ -17,6 +20,7 @@ function openSheet(id, prefillName){
   $("fRelType").value = "";
 
   renderTagPick(sec);
+  renderDraftShots();
   renderRelTargets(id);
   renderDraftRels();
   $("scrim").classList.add("on");
@@ -106,13 +110,43 @@ $("fSave").addEventListener("click", () => {
   if(editingId){
     const it = S.items.find(i => i.id === editingId);
     it.name = name; it.tags = draftTags.slice(); it.relations = draftRels.slice();
+    it.shots = draftShots.slice();
     toast("Item updated");
   }else{
     S.items.push({id:uid(), section:S.active, name:name, tags:draftTags.slice(),
-                  relations:draftRels.slice(), replies:[], shots:[], at:now(), ts:Date.now()});
+                  relations:draftRels.slice(), replies:[], shots:draftShots.slice(),
+                  at:now(), ts:Date.now()});
   }
   capture.value = "";
-  closeSheet(); renderAll(); save();
+  draftShots = [];
+  closeSheet(); renderAll(); save(); pruneShots();
 });
-$("fCancel").addEventListener("click", closeSheet);
-$("scrim").addEventListener("mousedown", e => { if(e.target === $("scrim")) closeSheet(); });
+function renderDraftShots(){
+  const wrap = $("fShots");
+  wrap.innerHTML = "";
+  wrap.appendChild(shotThumbs(draftShots, id => {
+    draftShots = draftShots.filter(x => x !== id);
+    renderDraftShots();
+  }));
+  hydrateShots();
+}
+
+/* The button exists because the keystroke was not discoverable: you take a
+   screenshot, open the item and there is nothing telling you it can go here.
+   Reading the clipboard directly needs a permission the browser only grants
+   Chromium, so the keystroke stays as the path that always works. */
+$("fPasteShot").addEventListener("click", () => {
+  clipboardImageFile().then(file => {
+    if(!file){ $("fShotHint").textContent = "Nothing to paste. Try ⌘/Ctrl + V instead."; return; }
+    takeShot(file).then(id => {
+      if(!id) return;
+      draftShots.push(id);
+      renderDraftShots();
+    });
+  });
+});
+
+$("fCancel").addEventListener("click", () => { draftShots = []; closeSheet(); pruneShots(); });
+$("scrim").addEventListener("mousedown", e => {
+  if(e.target === $("scrim")){ draftShots = []; closeSheet(); pruneShots(); }
+});

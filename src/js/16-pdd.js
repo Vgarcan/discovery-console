@@ -1,5 +1,5 @@
 /* 16-pdd.js
-   PDD draft: maps captured evidence onto the approved Velera template, renders it and exports Markdown. */
+   PDD draft: maps captured evidence onto the approved PDD template, renders it and exports Markdown. */
 /* =================== PDD DRAFT =================== */
 /* Two ways a field can be empty, and the difference matters to whoever reads
    the draft. TBC: the question belongs to the walkthrough and has not been
@@ -28,6 +28,28 @@ function joinNames(items){
 function today(){
   const d = new Date();
   return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+}
+
+/* Screenshots hang off whatever they were captured against -- a system, a
+   note, a marked moment, a reply in a thread -- and 2.9 is where the template
+   asks for all of them, so it collects from everywhere rather than only from
+   the Evidence area. */
+function shotOwners(){
+  const out = [];
+  const add = (label, e) => {
+    const ids = (e.shots || []).slice();
+    (e.replies || []).forEach(r => (r.shots || []).forEach(id => ids.push(id)));
+    if(ids.length) out.push({name:label, note:firstReply(e), shots:ids});
+  };
+  S.items.forEach(i => add(i.name + " — " + i.section.toLowerCase(), i));
+  S.notes.forEach(n => add("Parked note", n));
+  S.marks.forEach((m, i) => add((m.label || "").trim() || "Moment " + (i + 1), m));
+  return out;
+}
+
+function shotsOf(items){
+  return items.filter(i => (i.shots || []).length)
+              .map(i => ({name:i.name, note:firstReply(i), shots:(i.shots || []).slice()}));
 }
 
 function pddModel(){
@@ -109,6 +131,7 @@ function pddModel(){
    {no:"2.2", title:"Process Map(s)", blocks:[
      {type:"list", label:"Available references",
       items:byTag("Evidence","Recording","URL","SOP","Screenshot").map(e => e.name + (firstReply(e) ? " — " + firstReply(e) : ""))},
+     {type:"gallery", items:shotsOf(byTag("Evidence","Recording","URL","SOP","Screenshot"))},
      {type:"hint", text:"Insert the authoritative As-Is map only when the real current-project file exists. Never fabricate a link."}
    ]},
 
@@ -159,7 +182,10 @@ function pddModel(){
    ]},
 
    {no:"2.9", title:"Screenshots/Video", blocks:[
-     {type:"list", label:"", items:ev.map(e => e.name + (e.tags.length ? " [" + e.tags.join(", ") + "]" : ""))}
+     {type:"gallery", items:shotOwners(),
+      note:"Captured during the walkthrough. Each one is filed under the project id, " +
+           "not the process name, so a renamed session keeps its evidence."},
+     {type:"list", label:"Other references", items:ev.map(e => e.name + (e.tags.length ? " [" + e.tags.join(", ") + "]" : ""))}
    ]},
 
    {no:"2.10", title:"Sign Off", blocks:[
@@ -191,6 +217,7 @@ function pddStats(model){
     (s.blocks||[]).forEach(b => {
       if(b.type === "field"){ score(b.value); return; }
       if(b.type === "list" || b.type === "numbered"){ score(b.items && b.items.length ? true : TBC); return; }
+      if(b.type === "gallery") return;   /* pictures, not a field to answer */
       if(b.type === "table") b.rows.forEach(r => r.forEach(c => score(c)));
     });
   });
@@ -311,6 +338,19 @@ function renderPDD(){
             : '<div class="pdd-val"><span class="tbc">TBC</span></div>'));
         return;
       }
+      if(b.type === "gallery"){
+        if(!b.items.length) return;
+        const figs = [];
+        b.items.forEach(g => g.shots.forEach(id => {
+          figs.push('<figure class="pdd-fig"><img class="shot-img" data-shot="' + esc(id) +
+            '" alt="' + esc(g.name) + '"><figcaption>' + esc(g.name) +
+            (g.note ? " — " + esc(g.note) : "") + "</figcaption></figure>");
+        }));
+        s.insertAdjacentHTML("beforeend",
+          '<div class="pdd-gallery">' + figs.join("") + "</div>" +
+          (b.note ? '<p class="pdd-note">' + esc(b.note) + "</p>" : ""));
+        return;
+      }
       if(b.type === "table"){
         s.insertAdjacentHTML("beforeend",
           (b.label ? '<div class="pdd-key pdd-sublabel">' + esc(b.label) + "</div>" : "") +
@@ -323,6 +363,7 @@ function renderPDD(){
     });
     wrap.appendChild(s);
   });
+  hydrateShots();
 }
 
 /* ----- markdown ----- */
@@ -354,6 +395,16 @@ function pddMarkdown(){
         L.push("");
         return;
       }
+      if(b.type === "gallery"){
+        if(!b.items.length) return;
+        /* Relative to the project root, which is where the folder lives. Drop
+           the exported file there and the pictures resolve; anywhere else it
+           still says which file belongs to which caption. */
+        b.items.forEach(g => g.shots.forEach(id =>
+          L.push("![" + flat(g.name) + "](assets/shots/" + shotPrj(id) + "/" + id + shotExt(id) + ")")));
+        L.push("");
+        return;
+      }
       if(b.type === "table"){
         if(b.label) L.push("", "**" + b.label + "**", "");
         L.push("| " + b.columns.join(" | ") + " |");
@@ -374,4 +425,23 @@ function pddMarkdown(){
 }
 
 $("copyPddBtn").addEventListener("click", () => copyText(pddMarkdown(), "PDD draft copied as Markdown"));
-$("printPddBtn").addEventListener("click", () => window.print());
+/* Thumbnails are filled in from the store after the draft is drawn, so print
+   without waiting and the PDF comes out with empty frames where the evidence
+   should be. */
+function shotsDrawn(root){
+  const imgs = [...root.querySelectorAll("img.shot-img")];
+  if(!imgs.length) return Promise.resolve();
+  return Promise.all(imgs.map(img => img.complete && img.naturalWidth
+    ? null
+    : new Promise(resolve => {
+        const done = () => resolve();
+        img.addEventListener("load", done, {once:true});
+        img.addEventListener("error", done, {once:true});
+        setTimeout(done, 2500);
+      })));
+}
+
+$("printPddBtn").addEventListener("click", () => {
+  hydrateShots();
+  shotsDrawn($("pddDoc")).then(() => window.print());
+});

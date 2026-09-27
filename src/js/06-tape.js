@@ -229,6 +229,7 @@ function renderTape(){
       esc(r.kind) + "</span>" +
       (editingEntry === r.id ? "" : '<span class="ttext">' + esc(r.text) + "</span>");
     if(editingEntry === r.id) body.appendChild(entryEditor(r));
+    if((r.ent.shots || []).length) body.appendChild(shotThumbs(r.ent.shots));
     body.appendChild(threadBlock(r.ent, r.id));
     const foot = document.createElement("div");
     foot.className = "tape-foot";

@@ -65,6 +65,21 @@
 }
 .pdd-input:focus{outline:0}
 .pdd-meta .byhand-count{margin-left:1.1rem}
+.pdd-gallery{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
+  gap:.9rem;margin:.6rem 0 0;
+  /* Without this the figures are stretched to the row height, which is worked
+     out from the image alone, and every caption spills out of its own box and
+     lands on whatever follows the gallery. */
+  align-items:start;
+}
+.pdd-fig{margin:0}
+.pdd-fig img{
+  width:100%;display:block;cursor:zoom-in;
+  border:1px solid var(--line);border-radius:3px;background:var(--raise);
+}
+.pdd-fig figcaption{font-size:.74rem;color:var(--ink-3);margin-top:.3rem;line-height:1.35}
+
 #importBox{font-family:var(--mono);font-size:.74rem;line-height:1.5;resize:vertical}
 
 @media print{
@@ -83,4 +98,9 @@
   .tbc{border-color:#888888}
   .tbc.byhand{color:#444444}
   .pdd-hand{border-bottom-color:#999999}
+  /* Two to a row on paper, and never split across a page break. */
+  .pdd-gallery{grid-template-columns:repeat(2,1fr);gap:.6rem}
+  .pdd-fig{break-inside:avoid;page-break-inside:avoid}
+  .pdd-fig img{border-color:#999999;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pdd-fig figcaption{color:#444444}
 }

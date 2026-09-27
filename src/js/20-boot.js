@@ -1,4 +1,4 @@
-/* 19-boot.js
+/* 20-boot.js
    Start-up only: restore the saved session, apply the saved shell state, draw
    the first frame. The only module that calls anything at load time. */
 /* ---------- boot ---------- */
@@ -13,3 +13,6 @@ startClock();
 $("sessionName").value = S.name || "Untitled walkthrough";
 selectSection(S.active && DEF[S.active] ? S.active : "Systems", true);
 renderAll();
+restoreShotDir().then(() => {
+  if($("reviewView").classList.contains("on")) renderShotSync();
+});

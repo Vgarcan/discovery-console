@@ -817,6 +817,162 @@ async function run(){
   eq("PDD-04: no duplicate ids after merge", allIds.size, merged.items.length);
   ok("no page errors on the stress fixture", ctxS.errs.length === 0, ctxS.errs.join(" | "));
 
+  group("Screenshots");
+  /* jsdom has no IndexedDB and no canvas encoder, so what a screenshot does to
+     an image is checked in a real Chromium instead. What is checked here is the
+     part that has to be true whatever the browser: the session never carries
+     image bytes, and nothing is thrown away that someone is still holding. */
+  const ctxSh = boot({ storage: stored }); const aSh = api(ctxSh); await wait(150);
+  const dSh = ctxSh.d, wSh = ctxSh.w;
+
+  wSh.openSheet(wSh.S.items[0].id);
+  await wait(60);
+  ok("the sheet offers to paste one", !!dSh.getElementById("fPasteShot"));
+  ok("and says which keystroke does it too",
+     aSh.text("fShotHint").includes("Ctrl + V"), aSh.text("fShotHint"));
+  ok("with somewhere to show them", !!dSh.getElementById("fShots"));
+  dSh.getElementById("fPasteShot").click();
+  await wait(60);
+  ok("a clipboard it cannot read says so rather than failing silently",
+     aSh.text("fShotHint").includes("Nothing to paste"), aSh.text("fShotHint"));
+  dSh.getElementById("fCancel").click();
+
+  /* the manifest describes; it never carries */
+  wSh.S.shots["shot-a"] = wSh.shotEntry(wSh.S.id, {w:1600, h:900, bytes:190000,
+                                                   type:"image/webp", at:"10:01", ts:1});
+  wSh.S.shots["shot-loose"] = wSh.shotEntry(wSh.S.id, {w:800, h:600, bytes:40000,
+                                                       type:"image/webp", at:"10:02", ts:2});
+  wSh.S.items[0].shots = ["shot-a"];
+  wSh.pendingShots = ["shot-held"];
+  wSh.S.shots["shot-held"] = wSh.shotEntry(wSh.S.id, {w:10, h:10, bytes:1, type:"image/webp"});
+  wSh.save();
+  const raw = wSh.localStorage.getItem("process.discovery.console.v1");
+  ok("no image data reaches the session", raw.indexOf("data:image") === -1 &&
+     raw.indexOf("base64") === -1);
+  ok("but the description of one does", JSON.parse(raw).shots["shot-a"].bytes === 190000);
+
+  eq("pruning drops what nothing points at", wSh.pruneShots(), 1);
+  ok("the referenced one stays", !!wSh.S.shots["shot-a"]);
+  ok("and so does one still waiting for its item", !!wSh.S.shots["shot-held"],
+     JSON.stringify(Object.keys(wSh.S.shots)));
+  ok("the loose one is gone", !wSh.S.shots["shot-loose"]);
+
+  const strip = wSh.shotThumbs(["shot-a", "shot-held"]);
+  eq("a thumbnail is drawn per screenshot", strip.querySelectorAll(".shot").length, 2);
+  eq("each one knows which it is",
+     strip.querySelector("img").getAttribute("data-shot"), "shot-a");
+  ok("and carries a description for a screen reader",
+     strip.querySelector("img").getAttribute("alt").includes("1600"));
+
+  wSh.pendingShots = [];
+  wSh.renderPending();
+  eq("nothing waiting means nothing shown", aSh.text("capturePending"), "");
+
+  dSh.dispatchEvent(new wSh.Event("paste", { bubbles:true }));
+  ok("a paste carrying no image is left alone", ctxSh.errs.length === 0,
+     ctxSh.errs.join(" | "));
+  ok("no page errors around screenshots", ctxSh.errs.length === 0, ctxSh.errs.join(" | "));
+
+  group("Screenshots in the draft");
+  /* The template asks for them in 2.9, so a screenshot taken against a system
+     has to reach the document, not only the console. */
+  const ctxG = boot({ storage: stored }); const aG = api(ctxG); await wait(150);
+  const dG = ctxG.d, wG = ctxG.w;
+  const sysItem = wG.S.items.find(i => i.section === "Systems");
+  const evItem = wG.S.items.find(i => i.section === "Evidence" &&
+                                      i.tags.indexOf("Screenshot") > -1);
+  wG.S.shots["shot-g1"] = wG.shotEntry(wG.S.id, {w:1200, h:760, bytes:90000,
+                                                 type:"image/webp", at:"10:03", ts:3});
+  wG.S.shots["shot-g2"] = wG.shotEntry(wG.S.id, {w:900, h:600, bytes:50000,
+                                                 type:"image/jpeg", at:"10:04", ts:4});
+  sysItem.shots = ["shot-g1"];
+  evItem.shots = ["shot-g2"];
+  aG.view("pdd");
+  await wait(80);
+
+  eq("2.9 gathers every screenshot, wherever it hangs",
+     dG.querySelectorAll("#pddDoc .pdd-gallery")[1].querySelectorAll(".pdd-fig").length, 2);
+  ok("each caption says what it was captured against",
+     [...dG.querySelectorAll("#pddDoc .pdd-fig figcaption")]
+       .some(c => c.textContent.indexOf(sysItem.name) === 0 &&
+                  c.textContent.indexOf("systems") > -1),
+     [...dG.querySelectorAll("#pddDoc .pdd-fig figcaption")].map(c => c.textContent));
+  eq("2.2 shows only the ones filed as evidence",
+     dG.querySelectorAll("#pddDoc .pdd-gallery")[0].querySelectorAll(".pdd-fig").length, 1);
+  ok("pictures are not scored as answered fields",
+     aG.text("pddMeta").indexOf("93 of 94") === 0, aG.text("pddMeta"));
+
+  const gmd = wG.pddMarkdown();
+  ok("the markdown points at the folder, not at a blob",
+     gmd.indexOf("](assets/shots/" + wG.S.id + "/shot-g1.webp)") > -1,
+     gmd.split("\n").filter(l => l.indexOf("assets/shots") > -1)[0]);
+  ok("and uses the extension each file actually has",
+     gmd.indexOf("shot-g2.jpg)") > -1);
+  ok("with the caption as the alt text",
+     gmd.indexOf("![" + sysItem.name) > -1);
+
+  sysItem.shots = []; evItem.shots = [];
+  wG.renderPDD();
+  eq("a session with none of them draws no gallery",
+     dG.querySelectorAll("#pddDoc .pdd-gallery").length, 0);
+  ok("no page errors drawing the gallery", ctxG.errs.length === 0, ctxG.errs.join(" | "));
+
+  group("Screenshot folder");
+  /* jsdom has no File System Access API, which is also the case in Firefox,
+     Safari and from file://, so this is the path most people will be on. What
+     it must do is say so plainly and offer the downloads instead. The writing
+     itself is driven against a stand-in handle in a real Chromium. */
+  const ctxF = boot({ storage: stored }); const aF = api(ctxF); await wait(150);
+  const dF = ctxF.d, wF = ctxF.w;
+  wF.S.shots["shot-p1"] = wF.shotEntry(wF.S.id, {w:1600, h:900, bytes:190000,
+                                                 type:"image/webp", at:"10:01", ts:1});
+  wF.S.shots["shot-p2"] = wF.shotEntry(wF.S.id, {w:900, h:600, bytes:70000,
+                                                 type:"image/jpeg", at:"10:02", ts:2});
+  wF.S.items[0].shots = ["shot-p1", "shot-p2"];
+  aF.view("review");
+  await wait(80);
+
+  ok("Review carries a panel for the folder", !!dF.getElementById("shotSync"));
+  ok("with nothing connected, everything is outstanding",
+     wF.shotsOutstanding().length === 2, wF.shotsOutstanding());
+  ok("it says this browser cannot write to a folder",
+     aF.text("shotSyncState").includes("cannot write to a folder"),
+     aF.text("shotSyncState"));
+  ok("and names the folder the files belong in",
+     aF.text("shotSyncState").includes("assets/shots/" + wF.S.id),
+     aF.text("shotSyncState"));
+  ok("so it hides a Connect button that could not work",
+     dF.getElementById("shotConnect").hidden);
+  ok("and offers the files as downloads instead",
+     aF.text("shotFlush").indexOf("Download 2") === 0, aF.text("shotFlush"));
+  ok("it does not claim to be linked",
+     !dF.getElementById("shotSync").classList.contains("linked"));
+
+  /* the file name is what wires a shared folder back up, so it follows the id */
+  eq("a webp keeps its extension", wF.shotExt("shot-p1"), ".webp");
+  eq("and a jpeg keeps its own", wF.shotExt("shot-p2"), ".jpg");
+  eq("a screenshot is looked for in the folder of the project that took it",
+     wF.shotPrj("shot-p1"), wF.S.id);
+  wF.S.shots["shot-p3"] = wF.shotEntry("prj-other", {w:10, h:10, bytes:1, type:"image/webp"});
+  eq("even when that is not this one", wF.shotPrj("shot-p3"), "prj-other");
+
+  wF.S.shots = {};
+  wF.S.items[0].shots = [];
+  wF.renderShotSync();
+  ok("with none taken it says where the first will go",
+     aF.text("shotSyncState").includes("No screenshots yet"), aF.text("shotSyncState"));
+  ok("and offers nothing to write", dF.getElementById("shotFlush").hidden);
+  /* A session arrives as a manifest; whether its files arrived too is the
+     first thing the person opening it needs to know. */
+  wF.S.shots["shot-gone"] = wF.shotEntry("prj-elsewhere", {w:10, h:10, bytes:1,
+                                                           type:"image/webp"});
+  wF.S.items[0].shots = ["shot-gone"];
+  const absent = await wF.shotsAbsent();
+  eq("a screenshot with no bytes anywhere is reported absent", absent.length, 1);
+  eq("and remembers whose folder should hold it", wF.shotPrj("shot-gone"), "prj-elsewhere");
+
+  ok("no page errors without a folder API", ctxF.errs.length === 0, ctxF.errs.join(" | "));
+
   group("Notes and marks can be corrected");
   /* A mark arrived as "Moment 3" and stayed that way, and neither a mark nor a
      note could be renamed, edited or removed from anywhere in the console. */

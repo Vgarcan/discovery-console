@@ -4,7 +4,8 @@
 function saveNoteFrom(text){
   const t = (text || "").trim();
   if(!t) return;
-  S.notes.push({id:uid(), text:t, replies:[], shots:[], at:now(), ts:Date.now()});
+  S.notes.push({id:uid(), text:t, replies:[], shots:pendingShots.splice(0),
+                at:now(), ts:Date.now()});
   renderAll(); save(); toast("Note parked");
 }
 $("saveNoteBtn").addEventListener("click", () => { saveNoteFrom($("noteBox").value); $("noteBox").value = ""; });

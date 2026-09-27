@@ -343,6 +343,16 @@ kbd{
 .item-time{font-family:var(--mono);font-size:9.5px;color:var(--ink-3);flex:0 0 auto;padding-top:.25rem}
 .item-acts{display:flex;gap:.15rem;flex:0 0 auto;opacity:0;transition:opacity .12s}
 .item:hover .item-acts,.item:focus-within .item-acts{opacity:1}
+/* A screenshot pasted at the capture bar rides along with whatever you type
+   next. It has to be visible while it waits, or it is a thing you no longer
+   know you are holding. */
+#capturePending:not(:empty){margin:.6rem 0 0}
+#capturePending .shots::before{
+  content:"goes with the next capture";
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.04em;
+  color:var(--accent);align-self:center;margin-right:.2rem;
+}
+
 .icon-btn{
   background:none;border:0;cursor:pointer;color:var(--ink-3);
   padding:.25rem .35rem;border-radius:2px;font-size:.75rem;
@@ -435,6 +445,18 @@ kbd{
 .rv-sec h2{font-size:1.05rem;font-weight:600;margin:.3rem 0 .2rem;letter-spacing:-.02em}
 .rv-sec > p{margin:0 0 1rem;color:var(--ink-3);font-size:.82rem;max-width:50ch}
 
+.shotsync{
+  border:1px solid var(--line);border-radius:4px;background:var(--rail);
+  padding:.9rem 1rem;margin:0 0 1.6rem;
+}
+.shotsync p{margin:.35rem 0 .7rem;font-size:.84rem;color:var(--ink-2);max-width:66ch}
+.shotsync code{
+  font-family:var(--mono);font-size:.78em;background:var(--raise);
+  border:1px solid var(--line-soft);border-radius:2px;padding:.05em .3em;
+}
+.shotsync.linked{border-left:2px solid var(--good)}
+.shotsync.behind{border-left:2px solid var(--tqa-sun,var(--alert))}
+
 .rv-project{margin:.2rem 0 0;font-size:.74rem;color:var(--ink-3)}
 .rv-project b{font-family:var(--mono);font-weight:400;color:var(--ink-2);user-select:all}
 .cov{display:grid;grid-template-columns:minmax(120px,1.4fr) 1fr auto;gap:.9rem;align-items:center;padding:.6rem 0;border-bottom:1px solid var(--line-soft);font-size:.82rem}
@@ -499,6 +521,39 @@ kbd{
   opacity:0;pointer-events:none;transition:.2s;z-index:120;
 }
 .toast.on{opacity:1;transform:translateX(-50%)}
+
+.field-hint{font-size:.74rem;color:var(--ink-3)}
+.shots{display:flex;flex-wrap:wrap;gap:.45rem;margin-top:.5rem}
+.shots:empty{display:none}
+.shot{
+  position:relative;margin:0;width:112px;height:72px;overflow:hidden;
+  border:1px solid var(--line);border-radius:3px;background:var(--raise);
+}
+.shot-img{width:100%;height:100%;object-fit:cover;display:block;cursor:zoom-in}
+.shot.missing{border-style:dashed}
+.shot.missing::after{
+  content:"not on this machine";position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;text-align:center;
+  font-family:var(--mono);font-size:8.5px;color:var(--ink-3);padding:.4rem;
+}
+.shot-x{
+  position:absolute;top:2px;right:2px;width:17px;height:17px;line-height:1;
+  border:0;border-radius:2px;cursor:pointer;
+  background:rgba(0,0,0,.62);color:#fff;font-size:12px;
+  opacity:0;transition:opacity .12s;
+}
+.shot:hover .shot-x{opacity:1}
+
+.shotscrim{z-index:110}
+.shotwin{
+  background:var(--surface);border:1px solid var(--line);border-radius:6px;
+  max-width:min(1200px,94vw);max-height:92vh;display:flex;flex-direction:column;overflow:hidden;
+}
+.shothead{
+  display:flex;align-items:center;gap:1rem;justify-content:space-between;
+  padding:.6rem .8rem;border-bottom:1px solid var(--line);
+}
+#shotFull{max-width:100%;max-height:82vh;object-fit:contain;display:block;background:var(--canvas)}
 
 /* Picking a relation type and a target files the relation immediately and
    clears both menus. That was silent: the row appeared in a list further down
@@ -984,6 +1039,21 @@ body.resizing .work,body.resizing .pane-resize{transition:none}
 }
 .pdd-input:focus{outline:0}
 .pdd-meta .byhand-count{margin-left:1.1rem}
+.pdd-gallery{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
+  gap:.9rem;margin:.6rem 0 0;
+  /* Without this the figures are stretched to the row height, which is worked
+     out from the image alone, and every caption spills out of its own box and
+     lands on whatever follows the gallery. */
+  align-items:start;
+}
+.pdd-fig{margin:0}
+.pdd-fig img{
+  width:100%;display:block;cursor:zoom-in;
+  border:1px solid var(--line);border-radius:3px;background:var(--raise);
+}
+.pdd-fig figcaption{font-size:.74rem;color:var(--ink-3);margin-top:.3rem;line-height:1.35}
+
 #importBox{font-family:var(--mono);font-size:.74rem;line-height:1.5;resize:vertical}
 
 @media print{
@@ -1002,6 +1072,11 @@ body.resizing .work,body.resizing .pane-resize{transition:none}
   .tbc{border-color:#888888}
   .tbc.byhand{color:#444444}
   .pdd-hand{border-bottom-color:#999999}
+  /* Two to a row on paper, and never split across a page break. */
+  .pdd-gallery{grid-template-columns:repeat(2,1fr);gap:.6rem}
+  .pdd-fig{break-inside:avoid;page-break-inside:avoid}
+  .pdd-fig img{border-color:#999999;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pdd-fig figcaption{color:#444444}
 }
 
 /* 11-transfer.css
@@ -1142,6 +1217,8 @@ body.resizing .work,body.resizing .pane-resize{transition:none}
               <div class="suggest" id="suggest"></div>
             </div>
 
+            <div id="capturePending"></div>
+
             <div class="types" id="types"></div>
 
             <div class="tagbar" id="tagBar"></div>
@@ -1207,6 +1284,16 @@ body.resizing .work,body.resizing .pane-resize{transition:none}
         </div>
       </div>
 
+      <section class="shotsync" id="shotSync">
+        <span class="label">screenshot folder</span>
+        <p id="shotSyncState">Checking.</p>
+        <div class="row-inline">
+          <button class="btn" type="button" id="shotConnect">Connect folder</button>
+          <button class="btn" type="button" id="shotFlush" hidden>Write to the folder</button>
+          <button class="btn btn-ghost" type="button" id="shotForget" hidden>Disconnect</button>
+        </div>
+      </section>
+
       <div class="rv-stats" id="rvStats"></div>
 
       <div class="rv-cols">
@@ -1256,7 +1343,7 @@ body.resizing .work,body.resizing .pane-resize{transition:none}
             <div>
               <span class="label">output</span>
               <h1 id="pddTitle">Process Definition Document</h1>
-              <p>Your capture, arranged into the approved Velera PDD structure. Every unanswered field is marked TBC rather than guessed.</p>
+              <p>Your capture, arranged into the approved PDD structure. Every unanswered field is marked TBC rather than guessed.</p>
             </div>
             <div class="row-inline no-print">
               <button class="btn" id="importBtn">Import JSON</button>
@@ -1307,6 +1394,16 @@ body.resizing .work,body.resizing .pane-resize{transition:none}
           <select class="inp" id="fRelTarget"><option value="">Pick an item</option></select>
         </div>
         <div id="fRelList" style="margin-top:.6rem"></div>
+      </div>
+
+      <div class="field">
+        <label>Screenshots</label>
+        <div class="row-inline">
+          <button class="btn" type="button" id="fPasteShot"
+                  title="Paste the image on your clipboard">Paste screenshot</button>
+          <span class="field-hint" id="fShotHint">or press ⌘/Ctrl + V</span>
+        </div>
+        <div id="fShots"></div>
       </div>
     </div>
     <footer>
@@ -1386,6 +1483,16 @@ body.resizing .work,body.resizing .pane-resize{transition:none}
            aria-valuemin="220" aria-valuemax="620" aria-valuenow="300"
            title="Drag to resize. Double-click to reset."></div>
     </div>
+  </div>
+</div>
+
+<div class="scrim shotscrim" id="shotScrim">
+  <div class="shotwin" role="dialog" aria-modal="true" aria-label="Screenshot">
+    <div class="shothead">
+      <span class="label" id="shotMeta"></span>
+      <button class="btn" type="button" id="shotClose">Close</button>
+    </div>
+    <img id="shotFull" alt="Captured screenshot">
   </div>
 </div>
 
@@ -1570,6 +1677,10 @@ let draftRels = [];
 /* Which relations were made while the sheet has been open, so the ones that
    were already on the item can be told apart from the ones you just added. */
 let freshRels = new Set();
+/* Screenshots pasted while a sheet is open, and ones pasted at the capture bar
+   that are waiting for the item they belong to to be created. */
+let draftShots = [];
+let pendingShots = [];
 const relKey = r => r.type + "\u0000" + r.targetId;
 let sugIndex = 0;
 let sugList = [];
@@ -1949,8 +2060,8 @@ function commit(){
   if(!name){ toast("Pick a type or type a name first"); return; }
   S.items.push({
     id:uid(), section:S.active, name:name,
-    tags: seed ? [tagOf(S.active, seed)] : [], relations:[], replies:[], shots:[],
-    at:now(), ts:Date.now()
+    tags: seed ? [tagOf(S.active, seed)] : [], relations:[], replies:[],
+    shots: pendingShots.splice(0), at:now(), ts:Date.now()
   });
   capture.value = "";
   closeSuggest();
@@ -2000,6 +2111,7 @@ function renderItems(){
         '<button class="icon-btn danger" data-del="' + item.id + '" title="Delete">Delete</button>' +
       "</span>";
     const mainEl = el.querySelector(".item-main");
+    if((item.shots || []).length) mainEl.appendChild(shotThumbs(item.shots));
     mainEl.appendChild(threadBlock(item, item.id));
     mainEl.appendChild(replyButton(item, item.id));
     el.querySelector("[data-map]").addEventListener("click", () => { M.sel = item.id; M.tags = []; M.q = ""; M.hidden = []; $("mapSearch").value = ""; openMap(); });
@@ -2245,6 +2357,7 @@ function renderTape(){
       esc(r.kind) + "</span>" +
       (editingEntry === r.id ? "" : '<span class="ttext">' + esc(r.text) + "</span>");
     if(editingEntry === r.id) body.appendChild(entryEditor(r));
+    if((r.ent.shots || []).length) body.appendChild(shotThumbs(r.ent.shots));
     body.appendChild(threadBlock(r.ent, r.id));
     const foot = document.createElement("div");
     foot.className = "tape-foot";
@@ -2332,7 +2445,8 @@ function renderGaps(){
 function saveNoteFrom(text){
   const t = (text || "").trim();
   if(!t) return;
-  S.notes.push({id:uid(), text:t, replies:[], shots:[], at:now(), ts:Date.now()});
+  S.notes.push({id:uid(), text:t, replies:[], shots:pendingShots.splice(0),
+                at:now(), ts:Date.now()});
   renderAll(); save(); toast("Note parked");
 }
 $("saveNoteBtn").addEventListener("click", () => { saveNoteFrom($("noteBox").value); $("noteBox").value = ""; });
@@ -2366,6 +2480,9 @@ function openSheet(id, prefillName){
   draftTags = item ? item.tags.slice() : (seed ? [tagOf(sec, seed)] : []);
   draftRels = item ? item.relations.slice() : [];
   freshRels = new Set();
+  /* Anything pasted at the capture bar before Details was pressed comes with. */
+  draftShots = (item ? (item.shots || []).slice() : []).concat(pendingShots);
+  pendingShots = [];
 
   $("sheetLabel").textContent = sec.toLowerCase();
   $("sheetTitle").textContent = item ? "Edit item" : "New " + sec.toLowerCase() + " item";
@@ -2375,6 +2492,7 @@ function openSheet(id, prefillName){
   $("fRelType").value = "";
 
   renderTagPick(sec);
+  renderDraftShots();
   renderRelTargets(id);
   renderDraftRels();
   $("scrim").classList.add("on");
@@ -2464,16 +2582,46 @@ $("fSave").addEventListener("click", () => {
   if(editingId){
     const it = S.items.find(i => i.id === editingId);
     it.name = name; it.tags = draftTags.slice(); it.relations = draftRels.slice();
+    it.shots = draftShots.slice();
     toast("Item updated");
   }else{
     S.items.push({id:uid(), section:S.active, name:name, tags:draftTags.slice(),
-                  relations:draftRels.slice(), replies:[], shots:[], at:now(), ts:Date.now()});
+                  relations:draftRels.slice(), replies:[], shots:draftShots.slice(),
+                  at:now(), ts:Date.now()});
   }
   capture.value = "";
-  closeSheet(); renderAll(); save();
+  draftShots = [];
+  closeSheet(); renderAll(); save(); pruneShots();
 });
-$("fCancel").addEventListener("click", closeSheet);
-$("scrim").addEventListener("mousedown", e => { if(e.target === $("scrim")) closeSheet(); });
+function renderDraftShots(){
+  const wrap = $("fShots");
+  wrap.innerHTML = "";
+  wrap.appendChild(shotThumbs(draftShots, id => {
+    draftShots = draftShots.filter(x => x !== id);
+    renderDraftShots();
+  }));
+  hydrateShots();
+}
+
+/* The button exists because the keystroke was not discoverable: you take a
+   screenshot, open the item and there is nothing telling you it can go here.
+   Reading the clipboard directly needs a permission the browser only grants
+   Chromium, so the keystroke stays as the path that always works. */
+$("fPasteShot").addEventListener("click", () => {
+  clipboardImageFile().then(file => {
+    if(!file){ $("fShotHint").textContent = "Nothing to paste. Try ⌘/Ctrl + V instead."; return; }
+    takeShot(file).then(id => {
+      if(!id) return;
+      draftShots.push(id);
+      renderDraftShots();
+    });
+  });
+});
+
+$("fCancel").addEventListener("click", () => { draftShots = []; closeSheet(); pruneShots(); });
+$("scrim").addEventListener("mousedown", e => {
+  if(e.target === $("scrim")){ draftShots = []; closeSheet(); pruneShots(); }
+});
 
 /* 10-review.js
    Post-walkthrough review: stats, open questions, coverage and inventory. */
@@ -2490,6 +2638,7 @@ function renderReview(){
      shown here because this is the view you are on when you hand a session over. */
   $("rvProject").textContent = S.id || "";
   $("rvProject").parentNode.hidden = !S.id;
+  renderShotSync();
 
   $("rvStats").innerHTML = [
     [S.items.length, "items captured"],
@@ -3836,7 +3985,7 @@ window.addEventListener("resize", () => {
 });
 
 /* 16-pdd.js
-   PDD draft: maps captured evidence onto the approved Velera template, renders it and exports Markdown. */
+   PDD draft: maps captured evidence onto the approved PDD template, renders it and exports Markdown. */
 /* =================== PDD DRAFT =================== */
 /* Two ways a field can be empty, and the difference matters to whoever reads
    the draft. TBC: the question belongs to the walkthrough and has not been
@@ -3865,6 +4014,28 @@ function joinNames(items){
 function today(){
   const d = new Date();
   return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+}
+
+/* Screenshots hang off whatever they were captured against -- a system, a
+   note, a marked moment, a reply in a thread -- and 2.9 is where the template
+   asks for all of them, so it collects from everywhere rather than only from
+   the Evidence area. */
+function shotOwners(){
+  const out = [];
+  const add = (label, e) => {
+    const ids = (e.shots || []).slice();
+    (e.replies || []).forEach(r => (r.shots || []).forEach(id => ids.push(id)));
+    if(ids.length) out.push({name:label, note:firstReply(e), shots:ids});
+  };
+  S.items.forEach(i => add(i.name + " — " + i.section.toLowerCase(), i));
+  S.notes.forEach(n => add("Parked note", n));
+  S.marks.forEach((m, i) => add((m.label || "").trim() || "Moment " + (i + 1), m));
+  return out;
+}
+
+function shotsOf(items){
+  return items.filter(i => (i.shots || []).length)
+              .map(i => ({name:i.name, note:firstReply(i), shots:(i.shots || []).slice()}));
 }
 
 function pddModel(){
@@ -3946,6 +4117,7 @@ function pddModel(){
    {no:"2.2", title:"Process Map(s)", blocks:[
      {type:"list", label:"Available references",
       items:byTag("Evidence","Recording","URL","SOP","Screenshot").map(e => e.name + (firstReply(e) ? " — " + firstReply(e) : ""))},
+     {type:"gallery", items:shotsOf(byTag("Evidence","Recording","URL","SOP","Screenshot"))},
      {type:"hint", text:"Insert the authoritative As-Is map only when the real current-project file exists. Never fabricate a link."}
    ]},
 
@@ -3996,7 +4168,10 @@ function pddModel(){
    ]},
 
    {no:"2.9", title:"Screenshots/Video", blocks:[
-     {type:"list", label:"", items:ev.map(e => e.name + (e.tags.length ? " [" + e.tags.join(", ") + "]" : ""))}
+     {type:"gallery", items:shotOwners(),
+      note:"Captured during the walkthrough. Each one is filed under the project id, " +
+           "not the process name, so a renamed session keeps its evidence."},
+     {type:"list", label:"Other references", items:ev.map(e => e.name + (e.tags.length ? " [" + e.tags.join(", ") + "]" : ""))}
    ]},
 
    {no:"2.10", title:"Sign Off", blocks:[
@@ -4028,6 +4203,7 @@ function pddStats(model){
     (s.blocks||[]).forEach(b => {
       if(b.type === "field"){ score(b.value); return; }
       if(b.type === "list" || b.type === "numbered"){ score(b.items && b.items.length ? true : TBC); return; }
+      if(b.type === "gallery") return;   /* pictures, not a field to answer */
       if(b.type === "table") b.rows.forEach(r => r.forEach(c => score(c)));
     });
   });
@@ -4148,6 +4324,19 @@ function renderPDD(){
             : '<div class="pdd-val"><span class="tbc">TBC</span></div>'));
         return;
       }
+      if(b.type === "gallery"){
+        if(!b.items.length) return;
+        const figs = [];
+        b.items.forEach(g => g.shots.forEach(id => {
+          figs.push('<figure class="pdd-fig"><img class="shot-img" data-shot="' + esc(id) +
+            '" alt="' + esc(g.name) + '"><figcaption>' + esc(g.name) +
+            (g.note ? " — " + esc(g.note) : "") + "</figcaption></figure>");
+        }));
+        s.insertAdjacentHTML("beforeend",
+          '<div class="pdd-gallery">' + figs.join("") + "</div>" +
+          (b.note ? '<p class="pdd-note">' + esc(b.note) + "</p>" : ""));
+        return;
+      }
       if(b.type === "table"){
         s.insertAdjacentHTML("beforeend",
           (b.label ? '<div class="pdd-key pdd-sublabel">' + esc(b.label) + "</div>" : "") +
@@ -4160,6 +4349,7 @@ function renderPDD(){
     });
     wrap.appendChild(s);
   });
+  hydrateShots();
 }
 
 /* ----- markdown ----- */
@@ -4191,6 +4381,16 @@ function pddMarkdown(){
         L.push("");
         return;
       }
+      if(b.type === "gallery"){
+        if(!b.items.length) return;
+        /* Relative to the project root, which is where the folder lives. Drop
+           the exported file there and the pictures resolve; anywhere else it
+           still says which file belongs to which caption. */
+        b.items.forEach(g => g.shots.forEach(id =>
+          L.push("![" + flat(g.name) + "](assets/shots/" + shotPrj(id) + "/" + id + shotExt(id) + ")")));
+        L.push("");
+        return;
+      }
       if(b.type === "table"){
         if(b.label) L.push("", "**" + b.label + "**", "");
         L.push("| " + b.columns.join(" | ") + " |");
@@ -4211,7 +4411,26 @@ function pddMarkdown(){
 }
 
 $("copyPddBtn").addEventListener("click", () => copyText(pddMarkdown(), "PDD draft copied as Markdown"));
-$("printPddBtn").addEventListener("click", () => window.print());
+/* Thumbnails are filled in from the store after the draft is drawn, so print
+   without waiting and the PDF comes out with empty frames where the evidence
+   should be. */
+function shotsDrawn(root){
+  const imgs = [...root.querySelectorAll("img.shot-img")];
+  if(!imgs.length) return Promise.resolve();
+  return Promise.all(imgs.map(img => img.complete && img.naturalWidth
+    ? null
+    : new Promise(resolve => {
+        const done = () => resolve();
+        img.addEventListener("load", done, {once:true});
+        img.addEventListener("error", done, {once:true});
+        setTimeout(done, 2500);
+      })));
+}
+
+$("printPddBtn").addEventListener("click", () => {
+  hydrateShots();
+  shotsDrawn($("pddDoc")).then(() => window.print());
+});
 
 /* 17-transfer.js
    Session lifecycle: JSON import by file or paste, saving files through the artifact
@@ -4355,6 +4574,18 @@ function slug(s){
     .replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,60) || "discovery-session";
 }
 
+/* Images cannot go through saveFile, which turns its argument into text. */
+function saveBlob(filename, blob){
+  try{
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 500);
+    return true;
+  }catch(e){ return false; }
+}
+
 function browserSave(filename, text, okMsg){
   try{
     const blob = new Blob([text], {type:"application/octet-stream"});
@@ -4400,9 +4631,14 @@ function loadIntoImport(file){
     try{
       const o = parseSession(r.result);
       $("importSummary").classList.add("on");
+      /* A session file never carries the images, so say how many it expects to
+         find and where, before anything is replaced. */
+      const shotCount = (o.shots && typeof o.shots === "object") ? Object.keys(o.shots).length : 0;
       $("importSummary").innerHTML = '<span class="label">' + esc(file.name) + "</span>" +
         "<b>" + (o.items.length) + "</b> items, <b>" + o.notes.length + "</b> notes, <b>" +
-        o.marks.length + "</b> marks" + (o.name ? " — " + esc(o.name) : "");
+        o.marks.length + "</b> marks" +
+        (shotCount ? ", <b>" + shotCount + "</b> screenshots it does not carry" : "") +
+        (o.name ? " — " + esc(o.name) : "");
     }catch(err){
       $("importSummary").classList.remove("on");
       $("importMsg").textContent = err.message;
@@ -4474,7 +4710,494 @@ document.addEventListener("keydown", e => {
   if($("importScrim").classList.contains("on")) closeImport();
 });
 
-/* 18-render.js
+/* 18-shots.js
+   Screenshots: reading one off the clipboard, shrinking it, keeping the bytes in
+   IndexedDB and drawing the thumbnails. The session only ever holds the
+   manifest; nothing here writes image data into localStorage, which holds about
+   5 MB in total and would be full after two full-screen PNGs. */
+/* =================== SCREENSHOTS =================== */
+const SHOT_DB = "process.discovery.shots";
+const SHOT_STORE = "shots";
+const SHOT_META = "meta";
+const SHOT_MAX = 1600;      /* longest edge, enough to read a document */
+const SHOT_QUALITY = 0.82;  /* WebP holds screenshot text far better than JPEG */
+
+let shotDbPromise = null;
+const shotUrls = new Map();
+
+/* ---------- the store ---------- */
+function shotDb(){
+  if(shotDbPromise) return shotDbPromise;
+  shotDbPromise = new Promise(resolve => {
+    if(!window.indexedDB){ resolve(null); return; }
+    let req;
+    try{ req = indexedDB.open(SHOT_DB, 2); }catch(e){ resolve(null); return; }
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if(!db.objectStoreNames.contains(SHOT_STORE)) db.createObjectStore(SHOT_STORE);
+      if(!db.objectStoreNames.contains(SHOT_META)) db.createObjectStore(SHOT_META);
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => resolve(null);
+    req.onblocked = () => resolve(null);
+  });
+  return shotDbPromise;
+}
+
+function shotTx(mode, run, store){
+  return shotDb().then(db => {
+    if(!db) return null;
+    return new Promise(resolve => {
+      /* A refused write -- out of quota, or a value the browser will not clone
+         -- throws from inside here. Rejecting would hand a promise nobody
+         catches to the page; a miss is the honest answer instead. */
+      try{
+        const tx = db.transaction(store || SHOT_STORE, mode);
+        let out = null;
+        const req = run(tx.objectStore(store || SHOT_STORE));
+        if(req) req.onsuccess = () => { out = req.result; };
+        tx.oncomplete = () => resolve(out);
+        tx.onerror = () => resolve(null);
+        tx.onabort = () => resolve(null);
+      }catch(e){ resolve(null); }
+    });
+  });
+}
+
+const putShotBlob = (id, blob) => shotTx("readwrite", st => st.put(blob, id));
+const getShotBlob = id => shotTx("readonly", st => st.get(id));
+const delShotBlob = id => shotTx("readwrite", st => st.delete(id));
+const storeIds = () => shotTx("readonly", st => st.getAllKeys())
+  .then(keys => new Set(keys || []));
+const putMeta = (k, v) => shotTx("readwrite", st => st.put(v, k), SHOT_META);
+const getMeta = k => shotTx("readonly", st => st.get(k), SHOT_META);
+const delMeta = k => shotTx("readwrite", st => st.delete(k), SHOT_META);
+
+/* ---------- the folder ----------
+   The session travels as ids; the images travel as files in a folder you share
+   alongside it. A browser can only write into a folder through the File System
+   Access API, which today means Chromium over https -- everywhere else the same
+   files come out as downloads and go in by hand. Either way the layout is the
+   same, so a folder written one way reads the other. */
+let shotDir = null;          /* the chosen assets/shots/ handle, once permitted */
+let folderHave = new Set();  /* which ids are in this project's subfolder */
+
+const folderSupported = () => typeof window.showDirectoryPicker === "function";
+const shotExt = id => ((S.shots[id] || {}).type === "image/jpeg") ? ".jpg" : ".webp";
+const shotPrj = id => (S.shots[id] || {}).prj || S.id;
+
+function dirPermission(handle, ask){
+  if(!handle || !handle.queryPermission) return Promise.resolve("granted");
+  const opts = {mode:"readwrite"};
+  return handle.queryPermission(opts).then(state =>
+    state === "granted" || !ask ? state : handle.requestPermission(opts));
+}
+
+/* Remembered between sessions, but a browser will not hand the permission back
+   without a gesture, so a reload starts disconnected until Reconnect is used. */
+function restoreShotDir(){
+  if(!folderSupported()) return Promise.resolve(null);
+  return getMeta("dir").then(handle => {
+    if(!handle) return null;
+    return dirPermission(handle, false).then(state => {
+      shotDir = state === "granted" ? handle : null;
+      return shotDir ? scanFolder() : null;
+    });
+  }).catch(() => null);
+}
+
+function chooseShotDir(){
+  if(!folderSupported()) return Promise.resolve(null);
+  return window.showDirectoryPicker({id:"discovery-shots", mode:"readwrite"})
+    .then(handle => dirPermission(handle, true).then(state => {
+      if(state !== "granted") return null;
+      shotDir = handle;
+      /* Remembering it is a convenience; not remembering it must not stop the
+         folder working for the rest of this session. */
+      return putMeta("dir", handle).then(scanFolder, scanFolder);
+    }))
+    .catch(() => null);
+}
+
+function projectDir(prj, create){
+  if(!shotDir) return Promise.resolve(null);
+  return shotDir.getDirectoryHandle(prj || S.id, {create:!!create}).catch(() => null);
+}
+
+/* What the folder already holds for this project, so nothing has to be written
+   twice and the count of what is still missing is read rather than remembered. */
+function scanFolder(){
+  folderHave = new Set();
+  if(!shotDir) return Promise.resolve(folderHave);
+  return projectDir(S.id, false).then(dir => {
+    if(!dir || !dir.values) return folderHave;
+    const walk = async () => {
+      for await (const entry of dir.values()){
+        if(entry.kind === "file") folderHave.add(entry.name.replace(/\.[a-z]+$/i, ""));
+      }
+      return folderHave;
+    };
+    return walk().catch(() => folderHave);
+  });
+}
+
+function writeToFolder(id){
+  if(!shotDir) return Promise.resolve(false);
+  return getShotBlob(id).then(blob => {
+    if(!blob) return false;
+    return projectDir(shotPrj(id), true)
+      .then(dir => dir && dir.getFileHandle(id + shotExt(id), {create:true}))
+      .then(fh => fh && fh.createWritable())
+      .then(w => w && w.write(blob).then(() => w.close()).then(() => {
+        folderHave.add(id);
+        return true;
+      }))
+      .catch(() => false);
+  });
+}
+
+/* A session received from someone else has an empty store and a full folder. */
+function readFromFolder(id){
+  if(!shotDir) return Promise.resolve(null);
+  return projectDir(shotPrj(id), false)
+    .then(dir => dir && dir.getFileHandle(id + shotExt(id)))
+    .then(fh => fh && fh.getFile())
+    .then(file => {
+      if(!file) return null;
+      /* Keep a local copy so the second look does not go back to disk. */
+      putShotBlob(id, file);
+      return file;
+    })
+    .catch(() => null);
+}
+
+function shotsOutstanding(){
+  return Object.keys(S.shots).filter(id => !folderHave.has(id));
+}
+
+/* A session arrives as a manifest and its files arrive, or do not, as a folder
+   somebody remembered to send. Which of the two happened is worth saying. */
+function shotsAbsent(){
+  return storeIds().then(have =>
+    Object.keys(S.shots).filter(id => !have.has(id) && !folderHave.has(id)));
+}
+
+function flushShots(){
+  const todo = shotsOutstanding();
+  if(!todo.length){ toast("The folder already has every screenshot"); return Promise.resolve(0); }
+  if(shotDir){
+    return todo.reduce((chain, id) => chain.then(n =>
+      writeToFolder(id).then(done => n + (done ? 1 : 0))), Promise.resolve(0))
+      .then(n => {
+        renderShotSync();
+        toast(n + " written to the folder");
+        return n;
+      });
+  }
+  /* No folder to write into, so hand the files over instead. They carry the
+     name the manifest expects, so dropping them in wires everything up. */
+  return todo.reduce((chain, id) => chain.then(n =>
+    getShotBlob(id).then(blob => {
+      if(!blob) return n;
+      saveBlob(id + shotExt(id), blob);
+      return n + 1;
+    })), Promise.resolve(0))
+    .then(n => {
+      toast(n + " downloaded. Put them in assets/shots/" + S.id + "/");
+      return n;
+    });
+}
+
+function forgetShotDir(){
+  shotDir = null;
+  folderHave = new Set();
+  return delMeta("dir").then(renderShotSync);
+}
+
+/* ---------- what Review says about it ---------- */
+function renderShotSync(){
+  /* What is absent needs the store, which answers later. Draw what is known
+     now and let the shortfall land on top when it comes back. */
+  shotsAbsent().then(absent => {
+    if(!absent.length) return;
+    const total = Object.keys(S.shots).length;
+    const prjs = [...new Set(absent.map(shotPrj))];
+    $("shotSyncState").innerHTML =
+      "<b>" + absent.length + "</b> of " + total + " screenshot" + (total === 1 ? "" : "s") +
+      " named by this session are not on this machine. Ask for " +
+      prjs.map(p => "<code>assets/shots/" + esc(p) + "/</code>").join(" and ") +
+      " and connect the folder, or drop it in yourself.";
+    $("shotSync").classList.remove("linked");
+    $("shotSync").classList.add("behind");
+  });
+
+  const box = $("shotSync"), state = $("shotSyncState");
+  const total = Object.keys(S.shots).length;
+  const missing = shotsOutstanding().length;
+  box.classList.toggle("linked", !!shotDir && !missing);
+  box.classList.toggle("behind", !!shotDir && !!missing);
+  $("shotForget").hidden = !shotDir;
+  $("shotConnect").textContent = shotDir ? "Change folder" : "Connect folder";
+  $("shotFlush").hidden = !total || !missing;
+  $("shotFlush").textContent = shotDir
+    ? "Write " + missing + " to the folder"
+    : "Download " + missing + " screenshot" + (missing === 1 ? "" : "s");
+
+  if(!total){
+    state.innerHTML = "No screenshots yet. Paste one and it will be filed under " +
+      "<code>assets/shots/" + esc(S.id) + "/</code>.";
+  }else if(shotDir && !missing){
+    state.innerHTML = "<b>" + total + "</b> screenshot" + (total === 1 ? "" : "s") +
+      ", all of them in <code>assets/shots/" + esc(S.id) + "/</code>. " +
+      "Share that folder with the JSON and they travel together.";
+  }else if(shotDir){
+    state.innerHTML = "<b>" + missing + "</b> of " + total +
+      " not written yet. They are safe in this browser either way.";
+  }else if(folderSupported()){
+    state.innerHTML = "<b>" + total + "</b> screenshot" + (total === 1 ? "" : "s") +
+      " in this browser only. Connect <code>assets/shots/</code> and they get written " +
+      "to <code>" + esc(S.id) + "/</code> inside it as you go.";
+  }else{
+    state.innerHTML = "<b>" + total + "</b> screenshot" + (total === 1 ? "" : "s") +
+      " in this browser only. This browser cannot write to a folder, so download them " +
+      "and put them in <code>assets/shots/" + esc(S.id) + "/</code> yourself.";
+  }
+  if(!folderSupported()) $("shotConnect").hidden = true;
+}
+
+$("shotConnect").addEventListener("click", () =>
+  chooseShotDir().then(dir => {
+    renderShotSync();
+    if(!dir){ toast("No folder connected"); return; }
+    /* Catch the folder up with whatever was pasted before it was connected. */
+    if(shotsOutstanding().length) flushShots();
+  }));
+$("shotFlush").addEventListener("click", () => flushShots());
+$("shotForget").addEventListener("click", () =>
+  confirmAction($("shotForget"), "Confirm", () => {
+    forgetShotDir();
+    toast("Folder disconnected. The screenshots stay in this browser.");
+  }));
+
+/* ---------- getting one in ---------- */
+/* A full-screen PNG is about 1.8 MB. At 1600px on the long edge in WebP it is
+   nearer 200 KB and still reads, which is the difference between a session
+   that holds a walkthrough's worth of evidence and one that does not. */
+function encodeShot(file){
+  const draw = src => new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+  const url = URL.createObjectURL(file);
+  return draw(url).then(img => {
+    URL.revokeObjectURL(url);
+    const scale = Math.min(1, SHOT_MAX / Math.max(img.naturalWidth, img.naturalHeight, 1));
+    const w = Math.max(1, Math.round(img.naturalWidth * scale));
+    const h = Math.max(1, Math.round(img.naturalHeight * scale));
+    const c = document.createElement("canvas");
+    c.width = w; c.height = h;
+    c.getContext("2d").drawImage(img, 0, 0, w, h);
+    return new Promise(resolve => {
+      c.toBlob(blob => {
+        /* A browser with no WebP encoder quietly hands back a PNG instead, so
+           check what actually came out rather than what was asked for. */
+        if(blob && blob.type === "image/webp") resolve({blob:blob, w:w, h:h});
+        else c.toBlob(jpg => resolve({blob:jpg || blob, w:w, h:h}), "image/jpeg", SHOT_QUALITY);
+      }, "image/webp", SHOT_QUALITY);
+    });
+  });
+}
+
+/* Everything that takes a screenshot goes through here: it lands in the store
+   and in the manifest before anything else happens, so a capture can never be
+   lost to a cancelled sheet or a closed tab. */
+function takeShot(file){
+  if(!file) return Promise.resolve(null);
+  return encodeShot(file).then(out => {
+    if(!out || !out.blob){ toast("That image could not be read"); return null; }
+    const id = "shot-" + uid();
+    return putShotBlob(id, out.blob).then(written => {
+      /* A refused store -- private browsing, no quota -- would otherwise put a
+         screenshot on the manifest whose bytes went nowhere, and the analyst
+         would find out when the thumbnail came back empty. */
+      if(!written){ toast("This browser will not store the screenshot"); return null; }
+      S.shots[id] = shotEntry(S.id, {
+        w:out.w, h:out.h, bytes:out.blob.size, type:out.blob.type,
+        at:now(), ts:Date.now()
+      });
+      save();
+      /* Straight through to the folder when there is one, so the only copy is
+         never the one inside a browser profile. */
+      writeToFolder(id).then(() => { if($("reviewView").classList.contains("on")) renderShotSync(); });
+      return id;
+    });
+  }).catch(() => { toast("That image could not be read"); return null; });
+}
+
+function clipboardImageFile(){
+  if(!navigator.clipboard || !navigator.clipboard.read) return Promise.resolve(null);
+  return navigator.clipboard.read().then(items => {
+    for(let i = 0; i < items.length; i++){
+      const type = items[i].types.find(t => t.indexOf("image/") === 0);
+      if(type) return items[i].getType(type);
+    }
+    return null;
+  }).catch(() => null);
+}
+
+function imageFromPaste(e){
+  const items = (e.clipboardData && e.clipboardData.items) || [];
+  for(let i = 0; i < items.length; i++){
+    if(items[i].type && items[i].type.indexOf("image/") === 0) return items[i].getAsFile();
+  }
+  return null;
+}
+
+/* The store first, the folder second: my own session is in the store, and a
+   session handed to me is in the folder somebody shared. */
+function shotBytes(id){
+  return getShotBlob(id).then(blob => blob || readFromFolder(id));
+}
+
+/* ---------- drawing them ---------- */
+/* Thumbnails are rendered empty and filled in afterwards, because the bytes
+   come out of IndexedDB asynchronously and every render in this app is not. */
+function shotThumbs(ids, onRemove){
+  const wrap = document.createElement("div");
+  wrap.className = "shots";
+  (ids || []).forEach(id => {
+    const meta = S.shots[id];
+    const fig = document.createElement("figure");
+    fig.className = "shot";
+    const img = document.createElement("img");
+    img.className = "shot-img";
+    img.dataset.shot = id;
+    img.alt = meta && meta.w ? meta.w + " by " + meta.h + " screenshot" : "screenshot";
+    img.addEventListener("click", () => openShot(id));
+    fig.appendChild(img);
+    if(onRemove){
+      const rm = document.createElement("button");
+      rm.className = "shot-x"; rm.type = "button"; rm.title = "Remove this screenshot";
+      rm.textContent = "×";
+      rm.addEventListener("click", e => { e.stopPropagation(); onRemove(id); });
+      fig.appendChild(rm);
+    }
+    wrap.appendChild(fig);
+  });
+  return wrap;
+}
+
+function hydrateShots(){
+  document.querySelectorAll("img.shot-img:not([src])").forEach(img => {
+    const id = img.dataset.shot;
+    const cached = shotUrls.get(id);
+    if(cached){ img.src = cached; return; }
+    shotBytes(id).then(blob => {
+      if(!blob){ img.closest(".shot").classList.add("missing"); return; }
+      const url = URL.createObjectURL(blob);
+      shotUrls.set(id, url);
+      img.src = url;
+    });
+  });
+}
+
+/* ---------- full size ---------- */
+function openShot(id){
+  const meta = S.shots[id] || {};
+  $("shotMeta").textContent = (meta.w ? meta.w + " × " + meta.h : "unknown size") +
+    (meta.at ? " · captured " + meta.at : "") +
+    (meta.bytes ? " · " + Math.round(meta.bytes / 1024) + " KB" : "");
+  const big = $("shotFull");
+  big.removeAttribute("src");
+  $("shotScrim").classList.add("on");
+  const cached = shotUrls.get(id);
+  if(cached){ big.src = cached; return; }
+  shotBytes(id).then(blob => {
+    if(!blob){
+      $("shotMeta").textContent = "Not on this machine \u2014 " + id +
+        " should be at assets/shots/" + shotPrj(id) + "/";
+      return;
+    }
+    const url = URL.createObjectURL(blob);
+    shotUrls.set(id, url);
+    big.src = url;
+  });
+}
+function closeShot(){ $("shotScrim").classList.remove("on"); }
+$("shotClose").addEventListener("click", closeShot);
+$("shotScrim").addEventListener("mousedown", e => { if(e.target === $("shotScrim")) closeShot(); });
+document.addEventListener("keydown", e => {
+  if(e.key === "Escape" && $("shotScrim").classList.contains("on")) closeShot();
+});
+
+/* ---------- the keystroke ----------
+   One rule: a pasted image goes wherever the focus already is. Nothing else in
+   the app has to know about clipboards, and there is no case where the analyst
+   has to stop and decide where the screenshot belongs. */
+document.addEventListener("paste", e => {
+  const file = imageFromPaste(e);
+  if(!file) return;
+  e.preventDefault();
+  const sheetOpen = $("scrim").classList.contains("on");
+  const onNote = document.activeElement === $("noteBox");
+  takeShot(file).then(id => {
+    if(!id) return;   /* takeShot has already said which way it failed */
+    if(sheetOpen){ draftShots.push(id); renderDraftShots(); toast("Screenshot attached"); return; }
+    if(onNote){ pendingShots.push(id); toast("Screenshot will go with this note"); return; }
+    if(document.activeElement === $("captureInput")){
+      pendingShots.push(id);
+      renderPending();
+      toast("Screenshot will go with the next capture");
+      return;
+    }
+    /* Nowhere in particular, so it becomes evidence in its own right rather
+       than being guessed onto whatever was captured last. */
+    S.items.push({
+      id:uid(), section:"Evidence", name:"Screenshot " + now(),
+      tags:["Screenshot"], relations:[], replies:[], shots:[id],
+      at:now(), ts:Date.now()
+    });
+    renderAll(); save();
+    toast("Screenshot filed under Evidence");
+  });
+});
+
+function renderPending(){
+  const wrap = $("capturePending");
+  wrap.innerHTML = "";
+  if(!pendingShots.length) return;
+  wrap.appendChild(shotThumbs(pendingShots, id => {
+    pendingShots = pendingShots.filter(x => x !== id);
+    renderPending(); pruneShots();
+  }));
+  hydrateShots();
+}
+
+/* ---------- housekeeping ---------- */
+/* A screenshot pasted into a sheet that was then cancelled leaves an entry
+   nothing points at. Drop those rather than carrying them into the export. */
+function pruneShots(){
+  const used = new Set();
+  const walk = list => (list || []).forEach(e => {
+    (e.shots || []).forEach(id => used.add(id));
+    (e.replies || []).forEach(r => (r.shots || []).forEach(id => used.add(id)));
+  });
+  walk(S.items); walk(S.notes); walk(S.marks);
+  /* Held on purpose rather than orphaned: one is waiting for the item it will
+     belong to, the other for the sheet to be saved. */
+  pendingShots.forEach(id => used.add(id));
+  draftShots.forEach(id => used.add(id));
+  let dropped = 0;
+  Object.keys(S.shots).forEach(id => {
+    if(!used.has(id)){ delete S.shots[id]; delShotBlob(id); dropped++; }
+  });
+  if(dropped) save();
+  return dropped;
+}
+
+/* 19-render.js
    The single repaint orchestrator. Any module that changes the session calls
    renderAll(); nothing repaints the whole app on its own. */
 function renderAll(){
@@ -4497,9 +5220,12 @@ function renderAll(){
      above holds by construction rather than by nothing having reached them. */
   if($("reviewView").classList.contains("on")) renderReview();
   if($("pddView").classList.contains("on")) renderPDD();
+  renderPending();
+  /* Thumbnails are drawn empty and filled from the store afterwards. */
+  hydrateShots();
 }
 
-/* 19-boot.js
+/* 20-boot.js
    Start-up only: restore the saved session, apply the saved shell state, draw
    the first frame. The only module that calls anything at load time. */
 /* ---------- boot ---------- */
@@ -4514,6 +5240,9 @@ startClock();
 $("sessionName").value = S.name || "Untitled walkthrough";
 selectSection(S.active && DEF[S.active] ? S.active : "Systems", true);
 renderAll();
+restoreShotDir().then(() => {
+  if($("reviewView").classList.contains("on")) renderShotSync();
+});
 
 </script>
 </body>

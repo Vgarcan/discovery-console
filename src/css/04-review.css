@@ -22,6 +22,18 @@
 .rv-sec h2{font-size:1.05rem;font-weight:600;margin:.3rem 0 .2rem;letter-spacing:-.02em}
 .rv-sec > p{margin:0 0 1rem;color:var(--ink-3);font-size:.82rem;max-width:50ch}
 
+.shotsync{
+  border:1px solid var(--line);border-radius:4px;background:var(--rail);
+  padding:.9rem 1rem;margin:0 0 1.6rem;
+}
+.shotsync p{margin:.35rem 0 .7rem;font-size:.84rem;color:var(--ink-2);max-width:66ch}
+.shotsync code{
+  font-family:var(--mono);font-size:.78em;background:var(--raise);
+  border:1px solid var(--line-soft);border-radius:2px;padding:.05em .3em;
+}
+.shotsync.linked{border-left:2px solid var(--good)}
+.shotsync.behind{border-left:2px solid var(--tqa-sun,var(--alert))}
+
 .rv-project{margin:.2rem 0 0;font-size:.74rem;color:var(--ink-3)}
 .rv-project b{font-family:var(--mono);font-weight:400;color:var(--ink-2);user-select:all}
 .cov{display:grid;grid-template-columns:minmax(120px,1.4fr) 1fr auto;gap:.9rem;align-items:center;padding:.6rem 0;border-bottom:1px solid var(--line-soft);font-size:.82rem}
