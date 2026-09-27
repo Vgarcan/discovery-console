@@ -105,7 +105,19 @@
 .node.sel circle{stroke:var(--accent);stroke-width:2.5}
 .node.sel text{fill:var(--ink);font-weight:700}
 .node.ghost{opacity:.32}
-.node.faded{opacity:.12}
+/* A selection is a question about one node, and the answer is that node plus
+   what it is wired to. Everything else loses its light rather than being
+   hidden, so the shape of the graph is still readable behind the answer. */
+.node,.edge{transition:opacity .16s,stroke-opacity .16s}
+.node.faded{opacity:var(--dim)}
+.node.ghost.faded{opacity:var(--dim-ghost)}
+.edge.faded{stroke-opacity:var(--dim-edge)}
+/* Hovering something that has been dimmed brings it back for as long as the
+   pointer is on it. Without this, holding a selection would make the rest of
+   the map unreadable instead of merely quiet. Same specificity as .faded and
+   declared after it, so it wins. */
+.node.peek,.node.ghost.peek{opacity:1}
+.edge.peek{stroke-opacity:1}
 .mapempty{
   position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
   color:var(--ink-3);font-size:.85rem;text-align:center;padding:2rem;pointer-events:none;
@@ -118,13 +130,26 @@
 }
 .mapbody:not(.detail) .mapdetail{display:none}
 .mapdetail h3{margin:.3rem 0 .1rem;font-size:1rem;font-weight:600;letter-spacing:-.02em}
+/* The panel is a stack of blocks an item may or may not have, so the spacing
+   belongs to the panel and not to each block -- whichever ones turn up should
+   sit apart the same way. */
+.mapdetail > .label{display:block;margin:1rem 0 .3rem}
+.mapdetail > .label:first-child{margin:0}
+.mapdetail .dmeta{font-family:var(--mono);font-size:9.5px;color:var(--ink-3);margin-top:.25rem}
+.mapdetail .taglist{margin-top:.55rem}
 .linkrow{
   display:flex;align-items:flex-start;gap:.4rem;padding:.38rem 0;
   border-bottom:1px solid var(--line-soft);font-size:.79rem;
 }
 .linkrow span{flex:1 1 auto}
 .linkrow em{font-style:italic;color:var(--ink-2)}
-.dir{font-family:var(--mono);font-size:9px;color:var(--ink-3);flex:0 0 auto;padding-top:.15rem}
+/* Scoped to .linkrow so it outweighs `.linkrow span`, which otherwise also
+   matched this span and let the arrow column grow -- every row started its
+   text at a different place depending on whether the name wrapped. */
+.linkrow .dir{
+  font-family:var(--mono);font-size:9px;color:var(--ink-3);
+  flex:0 0 11px;padding-top:.15rem;
+}
 .picker{
   max-height:190px;overflow-y:auto;border:1px solid var(--line);
   border-radius:3px;background:var(--raise);margin-top:.4rem;

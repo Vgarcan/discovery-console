@@ -153,6 +153,12 @@ function load(){
     if(!e.ts) e.ts = ++seq;
     if(!Array.isArray(e.replies)) e.replies = [];
     if(!Array.isArray(e.relations) && list === S.items) e.relations = [];
+    /* A tag list that arrived as a bare string is one tag, not a broken
+       field, so it is wrapped rather than dropped. Everything downstream --
+       the rail, the map, the PDD -- calls .forEach on this. */
+    if(list === S.items && !Array.isArray(e.tags)){
+      e.tags = typeof e.tags === "string" && e.tags ? [e.tags] : [];
+    }
   }));
   [S.items, S.notes, S.marks].forEach(list => attachShots(list, S.shots, S.id));
 }

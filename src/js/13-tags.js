@@ -6,6 +6,10 @@ const SEC_COLOR = {
   Rules:"#8B6CF0", People:"#DBDBD2", Exceptions:"#EF6461",
   Dependencies:"#2E9BB5", Evidence:"#9A9A93"
 };
+/* A session can name an area this build has never heard of -- renamed
+   upstream, hand edited, written by a later version. It still has to be
+   drawable, so it gets the neutral ink rather than `undefined`. */
+function secColor(sec){ return SEC_COLOR[sec] || "var(--ink-3)"; }
 
 let stageTags = [];
 

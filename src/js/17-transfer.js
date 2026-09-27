@@ -32,6 +32,12 @@ function normalise(list, seq){
     if(!c.id) c.id = uid();
     if(!c.ts) c.ts = ++seq.n;
     if(!Array.isArray(c.replies)) c.replies = [];
+    /* A tag list that arrived as a bare string is one tag, not a broken
+       field, so it is wrapped rather than dropped. Everything downstream --
+       the rail, the map, the PDD -- calls .forEach on this. */
+    if(c.tags !== undefined && !Array.isArray(c.tags)){
+      c.tags = typeof c.tags === "string" && c.tags ? [c.tags] : [];
+    }
     return c;
   });
 }

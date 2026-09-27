@@ -196,7 +196,18 @@ function layoutLanes(){
     return;
   }
 
-  const present = SECTIONS.filter(sec => M.nodes.some(n => n.item.section === sec));
+  /* An area the model does not declare still needs a band. Until this was
+     here, one item carrying a section from another build left its node with
+     no lane, and the first read of that lane's midpoint threw -- taking the
+     whole map down, not just the one node. A stress fixture with a single
+     "Sistemas" item drew nothing at all. */
+  const extra = [];
+  M.nodes.forEach(n => {
+    const sec = n.item.section;
+    if(SECTIONS.indexOf(sec) < 0 && extra.indexOf(sec) < 0) extra.push(sec);
+  });
+  const present = SECTIONS.filter(sec => M.nodes.some(n => n.item.section === sec))
+                          .concat(extra.sort());
   const index = {};
   present.forEach((sec, i) => index[sec] = i);
   M.nodes.forEach(n => { n.lane = index[n.item.section]; });
@@ -322,7 +333,7 @@ function paintMapChrome(){
     const b = document.createElement("button");
     b.type = "button";
     b.className = M.hidden.includes(sec) ? "off" : "";
-    b.innerHTML = '<i style="background:' + SEC_COLOR[sec] + '"></i>' + esc(sec) +
+    b.innerHTML = '<i style="background:' + secColor(sec) + '"></i>' + esc(sec) +
                   "<u>" + inSection(sec).length + "</u>";
     b.addEventListener("click", () => {
       M.hidden = M.hidden.includes(sec) ? M.hidden.filter(x => x !== sec) : M.hidden.concat(sec);
@@ -378,7 +389,7 @@ function buildLaneLabels(){
   M.nodes.forEach(n => { counts[n.item.section] = (counts[n.item.section]||0) + 1; });
   M.lanes.forEach(l => {
     const el = document.createElement("span");
-    el.style.color = SEC_COLOR[l.sec];
+    el.style.color = secColor(l.sec);
     el.innerHTML = esc(l.sec.toLowerCase()) + "<u>" + (counts[l.sec] || 0) + "</u>";
     wrap.appendChild(el);
     l.el = el;
@@ -420,7 +431,7 @@ function drawMap(){
 
     const c = document.createElementNS(NS,"circle");
     c.setAttribute("r", n.r);
-    c.setAttribute("fill", SEC_COLOR[n.item.section]);
+    c.setAttribute("fill", secColor(n.item.section));
     g.appendChild(c);
 
     /* Alternate rows put every other label under its dot, which is the whole
@@ -444,8 +455,30 @@ function drawMap(){
     ng.appendChild(g);
     n.el = g;
   });
+  /* A filter change rebuilds every element, so the dimming has to be applied
+     again here rather than only when the selection is made. */
+  paintFocus();
   applyTransform();
   tickOnce();
+}
+
+/* Every relation type sits at the middle of its own line, which is fine until
+   six of them fan out of the node you just selected and land on top of each
+   other. Sliding each one to a different point along its line pulls them
+   apart without moving anything that carries meaning. */
+function spreadLabels(id){
+  M.links.forEach(l => { l.lt = .5; });
+  if(!id) return;
+  const mine = M.links.filter(l => l.s.id === id || l.t.id === id);
+  if(mine.length < 2) return;
+  /* Ordered by bearing, so neighbouring lines get neighbouring offsets and the
+     labels step round the fan rather than alternating across it. */
+  mine.sort((a, b) => {
+    const ang = l => Math.atan2((l.s.id === id ? l.t : l.s).y - (l.s.id === id ? l.s : l.t).y,
+                                (l.s.id === id ? l.t : l.s).x - (l.s.id === id ? l.s : l.t).x);
+    return ang(a) - ang(b);
+  });
+  mine.forEach((l, i) => { l.lt = .34 + (i / (mine.length - 1)) * .32; });
 }
 
 function markEdge(l, hot){
@@ -455,15 +488,57 @@ function markEdge(l, hot){
 }
 
 function hotEdges(id, on){
+  /* Peeking is what keeps a selection from making the rest of the map
+     illegible: the pointer lifts the node it is over, and its neighbours,
+     back out of the dim for as long as it stays there. */
+  const near = new Set([id]);
   M.links.forEach(l => {
     if(l.s.id !== id && l.t.id !== id) return;
+    near.add(l.s.id); near.add(l.t.id);
+    l.el.classList.toggle("peek", on);
     markEdge(l, on || M.sel === l.s.id || M.sel === l.t.id);
   });
+  M.nodes.forEach(n => { if(near.has(n.id)) n.el.classList.toggle("peek", on); });
+  /* The labels now on show belong to whatever the pointer is over; when it
+     leaves they go back to belonging to the selection. */
+  spreadLabels(on ? id : M.sel);
+  tickOnce();
 }
 
 function applyTransform(){
   $("mapG").setAttribute("transform","translate(" + M.tx + "," + M.ty + ") scale(" + M.k + ")");
   paintLaneLabels();
+}
+
+/* .elabel is 8px monospace, so a character is a fixed advance and the width
+   of a label is arithmetic rather than a layout read -- which matters because
+   this runs on every animation frame. */
+const ELABEL_CH = 4.9, ELABEL_H = 11;
+
+/* Sliding labels along their own lines pulls most of a fan apart, but two
+   relations that cross near their midpoints still land on each other. Those
+   get stepped down here, where this frame's positions are already settled.
+   Only the ones actually on show are considered, which is at most the handful
+   belonging to one node. */
+function unstackLabels(){
+  const shown = M.links.filter(l => l.lab.style.opacity === "1");
+  if(shown.length < 2) return;
+  const box = shown.map(l => ({
+    lab:l.lab,
+    x:+l.lab.getAttribute("x"),
+    y:+l.lab.getAttribute("y"),
+    w:l.type.length * ELABEL_CH
+  })).sort((a, b) => a.y - b.y);
+  for(let i = 1; i < box.length; i++){
+    const b = box[i];
+    for(let j = 0; j < i; j++){
+      const a = box[j];
+      if(Math.abs(a.x - b.x) > (a.w + b.w) / 2 + 2) continue;
+      if(b.y - a.y >= ELABEL_H) continue;
+      b.y = a.y + ELABEL_H;
+    }
+    b.lab.setAttribute("y", b.y);
+  }
 }
 
 function tickOnce(){
@@ -480,13 +555,15 @@ function tickOnce(){
     const x2 = room ? l.t.x - ux*gt : l.t.x, y2 = room ? l.t.y - uy*gt : l.t.y;
     l.el.setAttribute("x1", x1); l.el.setAttribute("y1", y1);
     l.el.setAttribute("x2", x2); l.el.setAttribute("y2", y2);
-    l.lab.setAttribute("x", (x1 + x2)/2);
-    l.lab.setAttribute("y", (y1 + y2)/2 - 3);
+    const f = l.lt == null ? .5 : l.lt;
+    l.lab.setAttribute("x", x1 + (x2 - x1) * f);
+    l.lab.setAttribute("y", y1 + (y2 - y1) * f - 3);
   });
   M.nodes.forEach(n => {
     n.el.setAttribute("transform","translate(" + n.x + "," + n.y + ")");
     M.pos[n.id] = {x:n.x, y:n.y};
   });
+  unstackLabels();
 }
 
 function physics(){
@@ -729,10 +806,37 @@ $("modeAny").addEventListener("click", () => { M.mode = "any"; rebuildMap(true);
 $("modeAll").addEventListener("click", () => { M.mode = "all"; rebuildMap(true); });
 $("mapLinked").addEventListener("change", e => { M.linked = e.target.checked; rebuildMap(true); });
 
+/* The selection and its immediate neighbours. Nothing else is lit, which is
+   the whole point -- one hop is what a person can hold in their head, and two
+   hops on a busy session lights most of the map again. */
+function focusSet(){
+  if(!M.sel) return null;
+  const keep = new Set([M.sel]);
+  M.links.forEach(l => {
+    if(l.s.id === M.sel) keep.add(l.t.id);
+    if(l.t.id === M.sel) keep.add(l.s.id);
+  });
+  return keep;
+}
+
+function paintFocus(){
+  const keep = focusSet();
+  spreadLabels(M.sel);
+  M.nodes.forEach(n => {
+    n.el.classList.toggle("sel", n.id === M.sel);
+    n.el.classList.toggle("faded", !!keep && !keep.has(n.id));
+  });
+  M.links.forEach(l => {
+    const on = !!M.sel && (l.s.id === M.sel || l.t.id === M.sel);
+    l.el.classList.toggle("faded", !!keep && !on);
+    markEdge(l, on);
+  });
+  tickOnce();
+}
+
 function selectNode(id){
   M.sel = M.sel === id ? null : id;
-  M.nodes.forEach(n => n.el.classList.toggle("sel", n.id === M.sel));
-  M.links.forEach(l => markEdge(l, M.sel && (l.s.id === M.sel || l.t.id === M.sel)));
+  paintFocus();
   renderMapDetail();
 }
 
@@ -747,14 +851,32 @@ function renderMapDetail(){
   const out = item.relations.map(r => ({dir:"out", type:r.type, other:S.items.find(i => i.id === r.targetId)})).filter(r => r.other);
   const inc = incoming(item.id).map(r => ({dir:"in", type:r.type, other:r.from}));
 
+  /* Every block here is optional except the header and the linker. An item
+     that was captured in two seconds and never touched again should read as
+     one line and a name, not as five headings each announcing that it has
+     nothing under it. */
+  const shots = (item.shots || []).filter(id => S.shots[id]);
+  const notes = item.replies || [];
+  const rels = out.concat(inc);
+  const block = (cond, html) => cond ? html : "";
+
   panel.innerHTML =
     '<span class="label">' + esc(item.section.toLowerCase()) + "</span>" +
     "<h3>" + esc(item.name) + "</h3>" +
-    '<div class="taglist" id="dTags" style="margin:.5rem 0 1rem"></div>' +
-    '<span class="label">relations (' + (out.length + inc.length) + ")</span>" +
-    '<div id="dLinks" style="margin-bottom:1rem"></div>' +
+    block(item.at, '<div class="dmeta">captured ' + esc(item.at || "") + "</div>") +
+    block(item.tags.length, '<div class="taglist" id="dTags"></div>') +
+    block(notes.length,
+      '<span class="label">' + notes.length + (notes.length === 1 ? " note" : " notes") + "</span>" +
+      threadHtml(item)) +
+    block(shots.length,
+      '<span class="label">' + shots.length +
+      (shots.length === 1 ? " screenshot" : " screenshots") + "</span>" +
+      '<div id="dShots"></div>') +
+    block(rels.length,
+      '<span class="label">relations (' + rels.length + ")</span>" +
+      '<div id="dLinks"></div>') +
     '<span class="label">link to other items</span>' +
-    '<select class="inp" id="dType" style="margin-top:.4rem">' +
+    '<select class="inp" id="dType">' +
       '<option value="">Pick a relation type</option>' +
       ["reads from","writes to","connects to","sends to","receives from","depends on","owned by","triggered by","used by","relates to"]
         .map(o => "<option>" + o + "</option>").join("") +
@@ -764,8 +886,7 @@ function renderMapDetail(){
     '<button class="btn btn-solid" id="dLink" style="width:100%;margin-top:.5rem">Create links</button>';
 
   const dt = $("dTags");
-  if(!item.tags.length) dt.innerHTML = '<span class="label">untagged</span>';
-  item.tags.forEach(t => {
+  if(dt) item.tags.forEach(t => {
     const b = document.createElement("button");
     b.type = "button";
     b.className = "tagf" + (M.tags.includes(t) ? " on" : "");
@@ -778,9 +899,13 @@ function renderMapDetail(){
     dt.appendChild(b);
   });
 
+  if(shots.length){
+    $("dShots").appendChild(shotThumbs(shots));
+    hydrateShots();
+  }
+
   const dl = $("dLinks");
-  if(!out.length && !inc.length) dl.innerHTML = '<div class="empty" style="padding:.5rem 0;font-size:.79rem">No relations yet.</div>';
-  out.concat(inc).forEach(r => {
+  if(dl) rels.forEach(r => {
     const row = document.createElement("div");
     row.className = "linkrow";
     row.innerHTML = '<span class="dir">' + (r.dir === "out" ? "→" : "←") + "</span>" +

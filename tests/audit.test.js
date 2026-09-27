@@ -571,12 +571,59 @@ async function run(){
      }));
 
   const relType = wM.M.links[0].type;
-  aM.clickNode(wM.M.nodes.indexOf(wM.M.links[0].s));
+  const pivot = wM.M.links[0].s;
+  aM.clickNode(wM.M.nodes.indexOf(pivot));
   await wait(60);
   ok("selecting a node turns its relations hot and names them",
      wM.M.links.filter(l => l.el.getAttribute("marker-end") === "url(#arrowHot)").length > 0 &&
      wM.M.links.some(l => l.lab.style.opacity === "1" && l.lab.textContent === relType),
      relType);
+
+  /* A selection is a question about one node. The answer is that node and what
+     it is wired to; everything else loses its light so the answer can be read
+     without losing the shape of the graph behind it. */
+  const lit = new Set([pivot.id]);
+  wM.M.links.forEach(l => {
+    if(l.s.id === pivot.id) lit.add(l.t.id);
+    if(l.t.id === pivot.id) lit.add(l.s.id);
+  });
+  ok("the selected node and its neighbours keep their light",
+     wM.M.nodes.filter(n => lit.has(n.id)).every(n => !n.el.classList.contains("faded")));
+  ok("everything else is dimmed",
+     wM.M.nodes.filter(n => !lit.has(n.id)).every(n => n.el.classList.contains("faded")));
+  ok("dimmed, not removed -- the graph is still drawn",
+     dM.querySelectorAll("#mapNodes .node").length === wM.M.nodes.length);
+  ok("the edges that are not the answer are dimmed too",
+     wM.M.links.every(l => l.el.classList.contains("faded") ===
+       !(l.s.id === pivot.id || l.t.id === pivot.id)));
+
+  /* Without this, holding a selection would make the rest of the map
+     unreadable instead of merely quiet. */
+  const far = wM.M.nodes.find(n => !lit.has(n.id));
+  wM.hotEdges(far.id, true);
+  ok("hovering something dimmed brings it back", far.el.classList.contains("peek"));
+  wM.hotEdges(far.id, false);
+  ok("and it drops away again when the pointer leaves",
+     !far.el.classList.contains("peek"));
+
+  /* Six relations converging on one node used to stack their type labels on
+     the same few pixels. */
+  const shown = wM.M.links.filter(l => l.lab.style.opacity === "1")
+    .map(l => ({x:Number(l.lab.getAttribute("x")), y:Number(l.lab.getAttribute("y")),
+                w:l.type.length * 4.9}));
+  let stacked = 0;
+  for(let i = 0; i < shown.length; i++)
+    for(let j = i + 1; j < shown.length; j++){
+      const a = shown[i], b2 = shown[j];
+      if(Math.abs(a.x - b2.x) < (a.w + b2.w)/2 && Math.abs(a.y - b2.y) < 11) stacked++;
+    }
+  eq("no two relation labels are drawn on top of each other", stacked, 0);
+
+  aM.clickNode(wM.M.nodes.indexOf(pivot));
+  await wait(60);
+  ok("clearing the selection lights the whole map again",
+     wM.M.nodes.every(n => !n.el.classList.contains("faded")) &&
+     wM.M.links.every(l => !l.el.classList.contains("faded")));
 
   /* Pointer behaviour. A press only becomes a drag once it has travelled, so a
      click that wobbles still selects; anything that travels moves the node and
@@ -633,6 +680,38 @@ async function run(){
   eq("and lanes come back", dM.querySelectorAll("#mapLanes rect.lane").length, populated.length);
   dM.getElementById("mapClose").click();
   ok("no page errors laying out the map", ctxM.errs.length === 0, ctxM.errs.join(" | "));
+
+  group("An area this build does not declare");
+  /* A session can name an area the model has never heard of -- renamed
+     upstream, hand edited, written by a later version. It used to leave the
+     node with no band, and the first read of that band's midpoint threw,
+     taking the whole map down rather than the one item. */
+  const strayStore = JSON.parse(stored);
+  strayStore.items = strayStore.items.concat([{
+    id:"stray1", section:"Sistemas", name:"An area from another build",
+    tags:"Input", relations:[], replies:[], shots:[], at:"09:00", ts:99999
+  }]);
+  const ctxX = boot({ storage: JSON.stringify(strayStore) });
+  const aX = api(ctxX); await wait(150);
+  const dX = ctxX.d, wX = ctxX.w;
+
+  eq("a tag list that arrived as a bare string becomes one tag",
+     JSON.stringify(wX.S.items.find(i => i.id === "stray1").tags), '["Input"]');
+
+  aX.view("map");
+  await wait(120);
+  eq("every item is drawn, including the one from the unknown area",
+     dX.querySelectorAll("#mapNodes .node").length, wX.M.nodes.length);
+  ok("the unknown area gets a band of its own",
+     wX.M.lanes.some(l => l.sec === "Sistemas"), wX.M.lanes.map(l => l.sec));
+  ok("it sits after the declared ones rather than among them",
+     wX.M.lanes[wX.M.lanes.length - 1].sec === "Sistemas");
+  ok("every node still resolves to a band",
+     wX.M.nodes.every(n => wX.M.lanes[n.lane] && typeof n.ly === "number"));
+  ok("and its dot gets a colour rather than `undefined`",
+     [...dX.querySelectorAll("#mapNodes .node circle:not(.hit)")]
+       .every(c => !!c.getAttribute("fill") && c.getAttribute("fill") !== "undefined"));
+  ok("no page errors drawing it", ctxX.errs.length === 0, ctxX.errs.join(" | "));
 
   group("New session");
   const ctxN = boot(); const aN = api(ctxN); await wait(120);

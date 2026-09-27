@@ -383,7 +383,13 @@ function hydrateShots(){
     const cached = shotUrls.get(id);
     if(cached){ img.src = cached; return; }
     shotBytes(id).then(blob => {
-      if(!blob){ img.closest(".shot").classList.add("missing"); return; }
+      if(!blob){
+        /* The tile says "not on this machine" through ::after. Leave the alt
+           text in place as well and the two print on top of each other. */
+        img.alt = "";
+        img.closest(".shot").classList.add("missing");
+        return;
+      }
       const url = URL.createObjectURL(blob);
       shotUrls.set(id, url);
       img.src = url;

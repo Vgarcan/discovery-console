@@ -30,6 +30,13 @@
   --good-ink:#1b1b1b;
   --good-dim:rgba(98,255,207,.16);
 
+  /* How far the map drops what a selection is not about. Ink at 15% reads as
+     "quiet" on this near-black ground; the same figure on the light theme's
+     white reads as "gone", so both themes carry their own. */
+  --dim:.15;
+  --dim-ghost:.09;
+  --dim-edge:.13;
+
   --sans:"Instrument Sans","Helvetica Neue",Arial,sans-serif;
   --mono:"Martian Mono",ui-monospace,"SF Mono",Menlo,monospace;
 
@@ -47,6 +54,7 @@
     --accent:#EF6461; --accent-ink:#ffffff; --accent-dim:rgba(239,100,97,.12);
     --alert:#C9403D; --alert-dim:rgba(201,64,61,.12);
     --good:#1B7A5A; --good-ink:#ffffff; --good-dim:rgba(27,122,90,.12);
+  --dim:.3; --dim-ghost:.2; --dim-edge:.28;
     color-scheme:light;
   }
 }
@@ -57,6 +65,7 @@
   --accent:#EF6461; --accent-ink:#ffffff; --accent-dim:rgba(239,100,97,.12);
   --alert:#C9403D; --alert-dim:rgba(201,64,61,.12);
   --good:#1B7A5A; --good-ink:#ffffff; --good-dim:rgba(27,122,90,.12);
+  --dim:.3; --dim-ghost:.2; --dim-edge:.28;
   color-scheme:light;
 }
 

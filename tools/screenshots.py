@@ -117,6 +117,20 @@ def main():
         pg.click("#mapFit")
         pg.wait_for_timeout(400)
         shot(pg, "06-map-tag-filter")
+
+        # 12. one node selected: everything it is not wired to drops back, and
+        #     the panel opens on whatever the session holds about it
+        pg.click("#mapClear")
+        pg.wait_for_timeout(2600)
+        pg.click("#mapFit")
+        pg.wait_for_timeout(400)
+        pg.evaluate("""() => {
+          const c = {};
+          M.links.forEach(l => { c[l.s.id]=(c[l.s.id]||0)+1; c[l.t.id]=(c[l.t.id]||0)+1; });
+          selectNode(Object.entries(c).sort((a,b)=>b[1]-a[1])[0][0]);
+        }""")
+        pg.wait_for_timeout(700)
+        shot(pg, "12-map-selection")
         ctx.close()
 
         # 7. review

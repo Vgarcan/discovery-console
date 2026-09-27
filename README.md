@@ -287,6 +287,26 @@ Every edge carries an arrowhead and stops short of the dot it points at, so a re
 the right way round without having to hover it. Hovering an item, or selecting it, turns its
 relations red and shows what each one is — `reads from`, `owned by`, `triggered by`.
 
+Where several relations converge on one node their type labels would land on the same few
+pixels, so each is slid to a different point along its own line, ordered by bearing; any pair
+still touching after that is stepped apart vertically. On the busiest node of either sample
+session — six relations — nothing overlaps.
+
+### Selecting one node
+
+Clicking a node asks a question about it, and the answer is that node and what it is wired to.
+Everything else drops to a fraction of its light: dimmed, not hidden, so the shape of the graph
+is still there behind the answer. One hop, not two — two hops on a busy session lights most of
+the map again and answers nothing.
+
+Hovering something that has been dimmed brings it back for as long as the pointer is on it, so
+holding a selection never makes the rest of the map unreadable. Clicking the canvas clears it.
+
+How far the dim goes is a theme token rather than a number in the map: ink at 15% reads as
+*quiet* on the dark ground and as *gone* on the light one, so the light theme uses 30%.
+
+![One node selected, with everything it is not wired to dropped back](docs/images/12-map-selection.png)
+
 ![The relationship map](docs/images/05-relationship-map.png)
 
 The left panel filters. Pick `#sme` and only the SMEs remain. Pick two tags and choose
@@ -298,6 +318,24 @@ layers off.
 off them, which in the sample session is two exceptions and the system they arrive through.
 
 ![The map filtered by tag, with linked items kept](docs/images/06-map-tag-filter.png)
+
+### The panel on the right
+
+Selecting a node opens everything the session holds about it: when it was captured, its tags
+(clickable, they filter the map), its notes with their times, its screenshots, and its
+relations in both directions with an `×` on each.
+
+Every one of those blocks is omitted when the item has nothing in it. An item that was captured
+in two seconds and never touched again reads as its area, its name and the time — not as five
+headings each announcing that there is nothing underneath. The only thing always present is the
+linker at the bottom, because that is an action rather than a fact.
+
+### An area this build does not declare
+
+A session can arrive naming an area the model has never heard of — renamed upstream, hand
+edited, written by a later version. Imported through **Replace** or **Merge** it is parked in
+the first area and the summary says so. Loaded straight from storage it keeps its own name and
+gets a band of its own after the declared ones, drawn in neutral ink. Either way the map draws.
 
 Select a node and the right panel opens. From there you pick a relation type, tick several
 items at once and create all those links in one go. Relations read in both directions: each

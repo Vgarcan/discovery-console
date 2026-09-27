@@ -32,7 +32,7 @@
   border:1px solid var(--line-soft);border-radius:2px;padding:.05em .3em;
 }
 .shotsync.linked{border-left:2px solid var(--good)}
-.shotsync.behind{border-left:2px solid var(--tqa-sun,var(--alert))}
+.shotsync.behind{border-left:2px solid var(--alert)}
 
 .rv-project{margin:.2rem 0 0;font-size:.74rem;color:var(--ink-3)}
 .rv-project b{font-family:var(--mono);font-weight:400;color:var(--ink-2);user-select:all}
