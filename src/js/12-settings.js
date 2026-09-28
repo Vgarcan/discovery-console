@@ -11,7 +11,11 @@ $("themeBtn").addEventListener("click", () => {
 document.addEventListener("keydown", e => {
   const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
   if((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "m"){ e.preventDefault(); markMoment(); return; }
-  if(e.key === "Escape" && $("scrim").classList.contains("on")){ closeSheet(); return; }
+  /* Marking it handled is what stops the map underneath from closing too.
+     These listeners share one document and all of them see the key. */
+  if(e.key === "Escape" && $("scrim").classList.contains("on")){
+    e.preventDefault(); closeSheet(); return;
+  }
   if(typing && document.activeElement !== document.body) return;
   if(/^[1-9]$/.test(e.key)){
     const sec = SECTIONS[Number(e.key)-1];
@@ -67,6 +71,30 @@ function startClock(){
   runningSince = S.paused ? 0 : Date.now();
   paintClock();
 }
+
+/* Opened by the gear and closed by anything that means "I am done here":
+   the gear again, Escape, or a click anywhere outside it. */
+function setClockMenu(on){
+  $("clockMenu").hidden = !on;
+  $("clockGear").setAttribute("aria-expanded", on ? "true" : "false");
+  /* Reset arms on the first press. Leaving it armed behind a closed menu
+     would put a live confirm one blind click away the next time it opens. */
+  if(!on) disarm();
+}
+
+$("clockGear").addEventListener("click", e => {
+  e.stopPropagation();
+  setClockMenu($("clockMenu").hidden);
+});
+document.addEventListener("click", e => {
+  if(!$("clockMenu").hidden && !$("clockWrap").contains(e.target)) setClockMenu(false);
+});
+document.addEventListener("keydown", e => {
+  if(e.key === "Escape" && !$("clockMenu").hidden){
+    setClockMenu(false);
+    $("clockGear").focus();
+  }
+});
 
 $("clockToggle").addEventListener("click", () => {
   if(runningSince){ S.seconds = elapsed(); runningSince = 0; S.paused = true; }

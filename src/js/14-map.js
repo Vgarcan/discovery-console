@@ -840,8 +840,30 @@ function selectNode(id){
   renderMapDetail();
 }
 
-/* ----- detail panel and many-to-many linking ----- */
-let linkPicks = [];
+/* ----- detail panel ----- */
+/* Reading happens here, changing happens in the sheet. The panel used to
+   carry a relation builder of its own, which meant two places to learn and
+   two places to keep right; Edit opens the same sheet the rest of the app
+   uses, and that one manages relations already. */
+
+/* threadHtml is shared with the review and the record, and neither of those
+   wants a strip of thumbnails in the middle of a quote. The map panel does:
+   a screenshot attached to a follow-up is part of what is known about this
+   node, and dropping it was the one thing the panel silently lost. */
+function detailThread(item){
+  const box = document.createElement("div");
+  box.className = "thread";
+  (item.replies || []).forEach(r => {
+    const d = document.createElement("div");
+    d.className = "reply";
+    d.innerHTML = "<time>" + esc(r.at) + "</time><span>" + esc(r.text) + "</span>";
+    const shots = (r.shots || []).filter(id => S.shots[id]);
+    if(shots.length) d.querySelector("span").appendChild(shotThumbs(shots));
+    box.appendChild(d);
+  });
+  return box;
+}
+
 function renderMapDetail(){
   const body = $("mapBody"), panel = $("mapDetail");
   const item = M.sel ? S.items.find(i => i.id === M.sel) : null;
@@ -851,39 +873,41 @@ function renderMapDetail(){
   const out = item.relations.map(r => ({dir:"out", type:r.type, other:S.items.find(i => i.id === r.targetId)})).filter(r => r.other);
   const inc = incoming(item.id).map(r => ({dir:"in", type:r.type, other:r.from}));
 
-  /* Every block here is optional except the header and the linker. An item
-     that was captured in two seconds and never touched again should read as
-     one line and a name, not as five headings each announcing that it has
-     nothing under it. */
+  /* Every block is optional. An item captured in two seconds and never touched
+     again should read as its area, its name and the time -- not as five
+     headings each announcing that it has nothing under it. */
   const shots = (item.shots || []).filter(id => S.shots[id]);
   const notes = item.replies || [];
   const rels = out.concat(inc);
+  const node = M.nodes.find(n => n.id === item.id);
   const block = (cond, html) => cond ? html : "";
+  const plural = (n, word) => n + " " + word + (n === 1 ? "" : "s");
 
   panel.innerHTML =
-    '<span class="label">' + esc(item.section.toLowerCase()) + "</span>" +
+    '<div class="dhead">' +
+      '<span class="label">' + esc(item.section.toLowerCase()) + "</span>" +
+      '<button class="btn" type="button" id="dEdit" title="Open this item for editing">Edit</button>' +
+    "</div>" +
     "<h3>" + esc(item.name) + "</h3>" +
     block(item.at, '<div class="dmeta">captured ' + esc(item.at || "") + "</div>") +
+    /* A ghost is on screen because something it is wired to matched, not
+       because it matched. Without saying so the filter looks broken. */
+    block(node && node.ghost,
+      '<div class="dnote">Shown because it is linked to a match, not because it ' +
+      "matches the filter itself.</div>") +
     block(item.tags.length, '<div class="taglist" id="dTags"></div>') +
     block(notes.length,
-      '<span class="label">' + notes.length + (notes.length === 1 ? " note" : " notes") + "</span>" +
-      threadHtml(item)) +
+      '<span class="label">' + plural(notes.length, "note") + "</span>" +
+      '<div id="dThread"></div>') +
     block(shots.length,
-      '<span class="label">' + shots.length +
-      (shots.length === 1 ? " screenshot" : " screenshots") + "</span>" +
+      '<span class="label">' + plural(shots.length, "screenshot") + "</span>" +
       '<div id="dShots"></div>') +
     block(rels.length,
-      '<span class="label">relations (' + rels.length + ")</span>" +
-      '<div id="dLinks"></div>') +
-    '<span class="label">link to other items</span>' +
-    '<select class="inp" id="dType">' +
-      '<option value="">Pick a relation type</option>' +
-      ["reads from","writes to","connects to","sends to","receives from","depends on","owned by","triggered by","used by","relates to"]
-        .map(o => "<option>" + o + "</option>").join("") +
-    "</select>" +
-    '<input class="mapsearch" id="dFind" placeholder="Filter the list" style="margin-top:.4rem">' +
-    '<div class="picker" id="dPicker"></div>' +
-    '<button class="btn btn-solid" id="dLink" style="width:100%;margin-top:.5rem">Create links</button>';
+      '<span class="label">' + plural(rels.length, "relation") + "</span>" +
+      '<div id="dLinks"></div>' +
+      '<div class="dhint">Pick one to follow it. Edit to add or remove.</div>');
+
+  $("dEdit").addEventListener("click", () => openSheet(item.id));
 
   const dt = $("dTags");
   if(dt) item.tags.forEach(t => {
@@ -899,62 +923,35 @@ function renderMapDetail(){
     dt.appendChild(b);
   });
 
+  if(notes.length) $("dThread").appendChild(detailThread(item));
+
   if(shots.length){
     $("dShots").appendChild(shotThumbs(shots));
-    hydrateShots();
   }
+  if(notes.length || shots.length) hydrateShots();
 
+  /* A relation names another node, so it is also the way to it. Following one
+     is what the panel is for; the sheet is where they are changed. */
   const dl = $("dLinks");
   if(dl) rels.forEach(r => {
-    const row = document.createElement("div");
+    const row = document.createElement("button");
+    row.type = "button";
     row.className = "linkrow";
+    row.title = "Select " + r.other.name;
     row.innerHTML = '<span class="dir">' + (r.dir === "out" ? "→" : "←") + "</span>" +
-                    "<span><em>" + esc(r.type) + "</em> " + esc(r.other.name) + "</span>";
-    const rm = document.createElement("button");
-    rm.className = "icon-btn danger"; rm.type = "button"; rm.textContent = "×";
-    rm.title = "Remove this relation";
-    rm.addEventListener("click", () => confirmAction(rm, "Confirm", () => {
-      const src = r.dir === "out" ? item : r.other;
-      const tgt = r.dir === "out" ? r.other : item;
-      src.relations = src.relations.filter(x => !(x.targetId === tgt.id && x.type === r.type));
-      save(); renderAll(); rebuildMap(false);
-    }));
-    row.appendChild(rm);
+                    "<span><em>" + esc(r.type) + "</em> " + esc(r.other.name) + "</span>" +
+                    '<span class="dsec" style="color:' + secColor(r.other.section) + '">' +
+                    esc(r.other.section.toLowerCase()) + "</span>";
+    row.addEventListener("click", () => {
+      M.sel = null;                       /* selectNode toggles, so clear first */
+      selectNode(r.other.id);
+      if(!M.nodes.some(n => n.id === r.other.id)){
+        toast(r.other.name + " is filtered off the map");
+      }
+      panel.scrollTop = 0;
+    });
     dl.appendChild(row);
   });
-
-  linkPicks = [];
-  paintPicker("");
-  $("dFind").addEventListener("input", e => paintPicker(e.target.value.trim().toLowerCase()));
-  $("dLink").addEventListener("click", () => {
-    const type = $("dType").value;
-    if(!type){ toast("Pick a relation type first"); return; }
-    if(!linkPicks.length){ toast("Tick at least one item"); return; }
-    linkPicks.forEach(id => {
-      if(id === item.id) return;
-      if(!item.relations.some(r => r.targetId === id && r.type === type)) item.relations.push({type:type, targetId:id});
-    });
-    toast(linkPicks.length + (linkPicks.length === 1 ? " link created" : " links created"));
-    linkPicks = [];
-    save(); renderAll(); rebuildMap(false);
-  });
-
-  function paintPicker(q){
-    const p = $("dPicker");
-    p.innerHTML = "";
-    const list = S.items.filter(i => i.id !== item.id &&
-      (!q || (i.name + " " + i.tags.join(" ")).toLowerCase().includes(q)));
-    if(!list.length){ p.innerHTML = '<div class="empty" style="padding:.5rem;font-size:.78rem">Nothing to link to.</div>'; return; }
-    list.forEach(i => {
-      const l = document.createElement("label");
-      l.innerHTML = '<input type="checkbox"' + (linkPicks.includes(i.id) ? " checked" : "") + ">" +
-                    "<span>" + esc(i.name) + "</span><em>" + esc(i.section.toLowerCase()) + "</em>";
-      l.querySelector("input").addEventListener("change", e => {
-        linkPicks = e.target.checked ? linkPicks.concat(i.id) : linkPicks.filter(x => x !== i.id);
-      });
-      p.appendChild(l);
-    });
-  }
 }
 
 window.addEventListener("resize", () => {
@@ -963,8 +960,19 @@ window.addEventListener("resize", () => {
 });
 document.addEventListener("keydown", e => {
   /* Escape gets you out of whatever you are in the middle of: a drag first,
-     and only then the map itself. */
-  if(e.key === "Escape" && $("mapScrim").classList.contains("on") && !cancelDrag()) closeMap();
+     then the map itself -- but never through something stacked on top of it.
+     Edit opens the sheet over the map, and one press should close the sheet
+     and leave the map where it was.
+
+     Two tests, because every one of these listeners is on the same document
+     and the order they run in is the order the modules loaded. An overlay
+     registered earlier (the sheet) has already closed itself by now, so it
+     leaves defaultPrevented behind; one registered later (the screenshot
+     viewer) has not run yet, so it is still open to look at. */
+  const stacked = $("scrim").classList.contains("on") ||
+                  $("shotScrim").classList.contains("on");
+  if(e.key === "Escape" && $("mapScrim").classList.contains("on") &&
+     !stacked && !e.defaultPrevented && !cancelDrag()) closeMap();
   if((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "g"){
     e.preventDefault();
     $("mapScrim").classList.contains("on") ? closeMap() : openMap();

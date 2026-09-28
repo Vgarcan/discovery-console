@@ -423,7 +423,9 @@ function closeShot(){ $("shotScrim").classList.remove("on"); }
 $("shotClose").addEventListener("click", closeShot);
 $("shotScrim").addEventListener("mousedown", e => { if(e.target === $("shotScrim")) closeShot(); });
 document.addEventListener("keydown", e => {
-  if(e.key === "Escape" && $("shotScrim").classList.contains("on")) closeShot();
+  if(e.key === "Escape" && $("shotScrim").classList.contains("on")){
+    e.preventDefault(); closeShot();
+  }
 });
 
 /* ---------- the keystroke ----------

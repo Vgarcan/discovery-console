@@ -18,6 +18,61 @@
 .rv-stat b{display:block;font-family:var(--mono);font-size:2rem;font-weight:400;letter-spacing:-.06em;line-height:1}
 .rv-stat span{font-size:.78rem;color:var(--ink-3)}
 .rv-cols{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:3rem}
+
+/* ----- tabs ----- */
+.rv-tabs{
+  display:flex;gap:.1rem;
+  border-bottom:1px solid var(--line);margin-bottom:2rem;
+  /* Five tabs do not wrap gracefully -- a second row under a bottom border
+     reads as a broken box. On a narrow phone they scroll sideways instead,
+     which keeps the underline meaning one thing. */
+  overflow-x:auto;scrollbar-width:none;
+}
+.rv-tabs::-webkit-scrollbar{display:none}
+.rv-tab{
+  appearance:none;background:none;border:0;border-bottom:2px solid transparent;
+  color:var(--ink-3);font:inherit;font-size:.86rem;cursor:pointer;
+  padding:.55rem .85rem;margin-bottom:-1px;white-space:nowrap;
+}
+.rv-tab:hover{color:var(--ink)}
+.rv-tab.on{color:var(--ink);border-bottom-color:var(--accent)}
+.rv-tab u{
+  font-family:var(--mono);font-size:9.5px;text-decoration:none;
+  color:var(--ink-3);margin-left:.4rem;
+}
+.rv-tab.on u{color:var(--accent)}
+.rv-panel{display:none}
+.rv-panel.on{display:block}
+
+/* ----- session record ----- */
+.rec-count{font-family:var(--mono);font-size:.7rem;color:var(--ink-3);margin-left:.6rem;font-weight:400}
+.rec-tools{display:flex;flex-wrap:wrap;gap:.45rem;margin:0 0 1rem}
+#rvRecSearch{flex:1 1 220px;min-width:0}
+#rvRecKind,#rvRecSort{flex:0 0 auto;width:auto;padding-right:1.6rem}
+.rec-row{
+  display:grid;grid-template-columns:auto minmax(0,1fr);gap:.7rem;
+  padding:.5rem 0 .5rem .6rem;border-bottom:1px solid var(--line-soft);
+  border-left:2px solid var(--kind,var(--line));
+}
+.rec-row:last-of-type{border-bottom:0}
+.rec-row > time{
+  font-family:var(--mono);font-size:.72rem;color:var(--ink-3);
+  padding-top:.1rem;font-variant-numeric:tabular-nums;
+}
+.rec-body{min-width:0;position:relative;padding-right:3.2rem}
+.rec-body .k{display:flex;align-items:center;font-size:.68rem;color:var(--ink-3);text-transform:uppercase;letter-spacing:.04em}
+.rec-body .ttext{display:block;color:var(--ink);font-size:.86rem;overflow-wrap:anywhere;margin-top:.1rem}
+.rec-open{position:absolute;top:0;right:0;opacity:0;font-size:.72rem;padding:.1rem .35rem}
+.rec-row:hover .rec-open,.rec-open:focus{opacity:1}
+.rec-more{width:100%;margin-top:1rem}
+
+/* The tape says how many it is not showing, and offers the way to all of them. */
+.tape-more{display:flex;flex-direction:column;gap:.15rem;padding-top:.7rem}
+.tape-more-btn{
+  align-self:flex-start;padding:.1rem 0;font-size:.76rem;color:var(--ink-2);
+}
+.tape-more-btn:hover{color:var(--ink)}
+.tape-more-btn u{font-family:var(--mono);text-decoration:none;color:var(--accent)}
 .rv-sec{margin-bottom:2.6rem}
 .rv-sec h2{font-size:1.05rem;font-weight:600;margin:.3rem 0 .2rem;letter-spacing:-.02em}
 .rv-sec > p{margin:0 0 1rem;color:var(--ink-3);font-size:.82rem;max-width:50ch}

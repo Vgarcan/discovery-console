@@ -131,6 +131,17 @@ def main():
         }""")
         pg.wait_for_timeout(700)
         shot(pg, "12-map-selection")
+        # 14. the panel alone: everything the session holds about one node
+        shot(pg, "14-map-panel", "#mapDetail", 620)
+        ctx.close()
+
+        # 13. the session record: every entry, in order
+        ctx, pg = page()
+        pg.click('.ico[data-view="review"]')
+        pg.wait_for_timeout(500)
+        pg.click("#rvTabRecord")
+        pg.wait_for_timeout(400)
+        shot(pg, "13-session-record")
         ctx.close()
 
         # 7. review

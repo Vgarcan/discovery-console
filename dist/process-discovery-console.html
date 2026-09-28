@@ -154,26 +154,32 @@ button,input,textarea,select{font:inherit;color:inherit}
   background:var(--alert);color:#ffffff;padding:.2rem .45rem;border-radius:2px;
   animation:pulse 1.6s ease-in-out infinite;cursor:help;
 }
-.clock-wrap{position:relative;display:inline-flex}
+.clock-wrap{position:relative;display:inline-flex;align-items:center;gap:.1rem}
 .clock{
   font-family:var(--mono);font-size:.82rem;font-weight:500;letter-spacing:-.04em;
   font-variant-numeric:tabular-nums;
-  background:none;border:0;color:var(--ink);cursor:default;
-  padding:.18rem .34rem;border-radius:3px;
+  color:var(--ink);padding:.18rem .34rem;
 }
-.clock-wrap:hover .clock,.clock-wrap:focus-within .clock{background:var(--raise)}
 /* Stopped and hidden both read as "not counting", and say so in the colour. */
 .clock[data-state="paused"],.clock[data-state="hidden"]{color:var(--ink-3)}
 
+/* The controls used to appear whenever the pointer crossed the digits, which
+   put a menu on screen while you were only reading the time. They have a
+   handle of their own now, and the digits are just digits. */
+.clock-gear{
+  background:none;border:0;cursor:pointer;color:var(--ink-3);
+  padding:.28rem .2rem;line-height:0;border-radius:3px;
+}
+.clock-gear svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.2;stroke-linecap:round}
+.clock-gear:hover,.clock-gear:focus-visible{color:var(--ink);background:var(--raise)}
+.clock-gear[aria-expanded="true"]{color:var(--accent);background:var(--raise)}
+
 .clock-menu{
   position:absolute;top:calc(100% + 5px);right:0;z-index:90;
-  display:none;flex-direction:column;min-width:112px;
+  display:flex;flex-direction:column;min-width:112px;
   background:var(--raise);border:1px solid var(--line);border-radius:4px;
   box-shadow:0 10px 26px rgba(0,0,0,.35);overflow:hidden;
 }
-/* A transparent bridge over the gap, or the menu closes on the way to it. */
-.clock-menu::before{content:"";position:absolute;left:0;right:0;top:-7px;height:7px}
-.clock-wrap:hover .clock-menu,.clock-wrap:focus-within .clock-menu{display:flex}
 .clock-act{
   background:none;border:0;text-align:left;cursor:pointer;
   padding:.42rem .62rem;font-size:.78rem;color:var(--ink-2);
@@ -450,6 +456,61 @@ kbd{
 .rv-stat b{display:block;font-family:var(--mono);font-size:2rem;font-weight:400;letter-spacing:-.06em;line-height:1}
 .rv-stat span{font-size:.78rem;color:var(--ink-3)}
 .rv-cols{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:3rem}
+
+/* ----- tabs ----- */
+.rv-tabs{
+  display:flex;gap:.1rem;
+  border-bottom:1px solid var(--line);margin-bottom:2rem;
+  /* Five tabs do not wrap gracefully -- a second row under a bottom border
+     reads as a broken box. On a narrow phone they scroll sideways instead,
+     which keeps the underline meaning one thing. */
+  overflow-x:auto;scrollbar-width:none;
+}
+.rv-tabs::-webkit-scrollbar{display:none}
+.rv-tab{
+  appearance:none;background:none;border:0;border-bottom:2px solid transparent;
+  color:var(--ink-3);font:inherit;font-size:.86rem;cursor:pointer;
+  padding:.55rem .85rem;margin-bottom:-1px;white-space:nowrap;
+}
+.rv-tab:hover{color:var(--ink)}
+.rv-tab.on{color:var(--ink);border-bottom-color:var(--accent)}
+.rv-tab u{
+  font-family:var(--mono);font-size:9.5px;text-decoration:none;
+  color:var(--ink-3);margin-left:.4rem;
+}
+.rv-tab.on u{color:var(--accent)}
+.rv-panel{display:none}
+.rv-panel.on{display:block}
+
+/* ----- session record ----- */
+.rec-count{font-family:var(--mono);font-size:.7rem;color:var(--ink-3);margin-left:.6rem;font-weight:400}
+.rec-tools{display:flex;flex-wrap:wrap;gap:.45rem;margin:0 0 1rem}
+#rvRecSearch{flex:1 1 220px;min-width:0}
+#rvRecKind,#rvRecSort{flex:0 0 auto;width:auto;padding-right:1.6rem}
+.rec-row{
+  display:grid;grid-template-columns:auto minmax(0,1fr);gap:.7rem;
+  padding:.5rem 0 .5rem .6rem;border-bottom:1px solid var(--line-soft);
+  border-left:2px solid var(--kind,var(--line));
+}
+.rec-row:last-of-type{border-bottom:0}
+.rec-row > time{
+  font-family:var(--mono);font-size:.72rem;color:var(--ink-3);
+  padding-top:.1rem;font-variant-numeric:tabular-nums;
+}
+.rec-body{min-width:0;position:relative;padding-right:3.2rem}
+.rec-body .k{display:flex;align-items:center;font-size:.68rem;color:var(--ink-3);text-transform:uppercase;letter-spacing:.04em}
+.rec-body .ttext{display:block;color:var(--ink);font-size:.86rem;overflow-wrap:anywhere;margin-top:.1rem}
+.rec-open{position:absolute;top:0;right:0;opacity:0;font-size:.72rem;padding:.1rem .35rem}
+.rec-row:hover .rec-open,.rec-open:focus{opacity:1}
+.rec-more{width:100%;margin-top:1rem}
+
+/* The tape says how many it is not showing, and offers the way to all of them. */
+.tape-more{display:flex;flex-direction:column;gap:.15rem;padding-top:.7rem}
+.tape-more-btn{
+  align-self:flex-start;padding:.1rem 0;font-size:.76rem;color:var(--ink-2);
+}
+.tape-more-btn:hover{color:var(--ink)}
+.tape-more-btn u{font-family:var(--mono);text-decoration:none;color:var(--accent)}
 .rv-sec{margin-bottom:2.6rem}
 .rv-sec h2{font-size:1.05rem;font-weight:600;margin:.3rem 0 .2rem;letter-spacing:-.02em}
 .rv-sec > p{margin:0 0 1rem;color:var(--ink-3);font-size:.82rem;max-width:50ch}
@@ -494,7 +555,10 @@ kbd{
 /* ---------- sheet ---------- */
 .scrim{
   position:fixed;inset:0;background:rgba(0,0,0,.55);
-  display:none;z-index:80;align-items:center;justify-content:center;padding:1rem;
+  display:none;align-items:center;justify-content:center;padding:1rem;
+  /* Above the map (100), because Edit on a map node opens this sheet over it.
+     The full-size screenshot viewer (110) still sits above both. */
+  z-index:105;
 }
 .scrim.on{display:flex}
 .sheet{
@@ -785,14 +849,30 @@ kbd{
    belongs to the panel and not to each block -- whichever ones turn up should
    sit apart the same way. */
 .mapdetail > .label{display:block;margin:1rem 0 .3rem}
-.mapdetail > .label:first-child{margin:0}
+.dhead{display:flex;align-items:center;justify-content:space-between;gap:.6rem}
+.dhead .label{margin:0}
+.dhead .btn{padding:.2rem .55rem;font-size:.76rem;flex:0 0 auto}
+.dnote{
+  font-size:.76rem;color:var(--ink-3);line-height:1.4;margin-top:.5rem;
+  padding-left:.5rem;border-left:2px solid var(--line);
+}
+.dhint{font-size:.72rem;color:var(--ink-3);margin-top:.4rem}
 .mapdetail .dmeta{font-family:var(--mono);font-size:9.5px;color:var(--ink-3);margin-top:.25rem}
 .mapdetail .taglist{margin-top:.55rem}
+/* A relation names another node, so the row is the way to it. */
 .linkrow{
-  display:flex;align-items:flex-start;gap:.4rem;padding:.38rem 0;
+  display:flex;align-items:flex-start;gap:.4rem;padding:.38rem .3rem .38rem 0;
   border-bottom:1px solid var(--line-soft);font-size:.79rem;
+  width:100%;background:none;border-top:0;border-left:0;border-right:0;
+  color:inherit;font-family:inherit;text-align:left;cursor:pointer;
 }
+.linkrow:hover{background:var(--raise)}
+.linkrow:last-child{border-bottom:0}
 .linkrow span{flex:1 1 auto}
+.linkrow .dsec{
+  flex:0 0 auto;font-family:var(--mono);font-size:8.5px;
+  text-transform:uppercase;letter-spacing:.04em;padding-top:.25rem;opacity:.8;
+}
 .linkrow em{font-style:italic;color:var(--ink-2)}
 /* Scoped to .linkrow so it outweighs `.linkrow span`, which otherwise also
    matched this span and let the arrow column grow -- every row started its
@@ -801,23 +881,6 @@ kbd{
   font-family:var(--mono);font-size:9px;color:var(--ink-3);
   flex:0 0 11px;padding-top:.15rem;
 }
-.picker{
-  max-height:190px;overflow-y:auto;border:1px solid var(--line);
-  border-radius:3px;background:var(--raise);margin-top:.4rem;
-}
-.picker label{
-  display:flex;gap:.45rem;align-items:center;padding:.3rem .5rem;
-  font-size:.79rem;cursor:pointer;border-bottom:1px solid var(--line-soft);
-}
-.picker label:last-child{border-bottom:0}
-.picker label:hover{background:var(--raise-2)}
-.picker input{
-  appearance:none;width:12px;height:12px;flex:0 0 auto;
-  border:1px solid var(--line);border-radius:2px;cursor:pointer;
-}
-.picker input:checked{background:var(--accent);border-color:var(--accent)}
-.picker em{font-style:normal;color:var(--ink-3);font-size:.72rem;margin-left:auto}
-
 @media (max-width:900px){
   .mapscrim{padding:0}
   .mapwin{height:100%;width:100%;border-radius:0}
@@ -1153,10 +1216,24 @@ body.resizing .work,body.resizing .pane-resize{transition:none}
       <span class="storage-warn" id="storageWarn" hidden
             title="The browser will not accept any more data. Download the session as JSON before you lose it.">not saving</span>
       <span class="live" id="liveBadge"><i></i><span id="liveWord">recording</span></span>
-      <span class="clock-wrap">
-        <button class="clock" id="clock" type="button" data-state="running"
-                aria-haspopup="menu" title="Session clock">00:00:00</button>
-        <span class="clock-menu" id="clockMenu" role="menu">
+      <span class="clock-wrap" id="clockWrap">
+        <span class="clock" id="clock" data-state="running" title="Session clock">00:00:00</span>
+        <button class="clock-gear" id="clockGear" type="button" aria-haspopup="menu"
+                aria-expanded="false" aria-controls="clockMenu" title="Clock controls">
+          <svg viewBox="0 0 16 16" aria-hidden="true">
+            <circle cx="8" cy="8" r="1.7"/>
+            <circle cx="8" cy="8" r="4.3"/>
+            <line x1="12.3" y1="8" x2="14.3" y2="8"/>
+            <line x1="11.04" y1="11.04" x2="12.45" y2="12.45"/>
+            <line x1="8" y1="12.3" x2="8" y2="14.3"/>
+            <line x1="4.96" y1="11.04" x2="3.55" y2="12.45"/>
+            <line x1="3.7" y1="8" x2="1.7" y2="8"/>
+            <line x1="4.96" y1="4.96" x2="3.55" y2="3.55"/>
+            <line x1="8" y1="3.7" x2="8" y2="1.7"/>
+            <line x1="11.04" y1="4.96" x2="12.45" y2="3.55"/>
+          </svg>
+        </button>
+        <span class="clock-menu" id="clockMenu" role="menu" hidden>
           <button class="clock-act" id="clockToggle" type="button" role="menuitem">Pause</button>
           <button class="clock-act" id="clockReset" type="button" role="menuitem">Reset</button>
           <button class="clock-act" id="clockHide" type="button" role="menuitem">Hide</button>
@@ -1318,54 +1395,98 @@ body.resizing .work,body.resizing .pane-resize{transition:none}
         </div>
       </div>
 
-      <section class="shotsync" id="shotSync">
-        <span class="label">screenshot folder</span>
-        <p id="shotSyncState">Checking.</p>
-        <div class="row-inline">
-          <button class="btn" type="button" id="shotConnect">Connect folder</button>
-          <button class="btn" type="button" id="shotFlush" hidden>Write to the folder</button>
-          <button class="btn btn-ghost" type="button" id="shotForget" hidden>Disconnect</button>
-        </div>
-      </section>
-
       <div class="rv-stats" id="rvStats"></div>
 
-      <div class="rv-cols">
-        <div>
-          <div class="rv-sec">
-            <span class="label">next walkthrough</span>
-            <h2>What to ask next</h2>
-            <p>Generated from what you captured. Tick anything you already confirmed; the area meters move with it.</p>
-            <div id="rvGaps"></div>
-          </div>
+      <!-- Inventory answers "what did we find"; the session record answers
+           "when, and in what order". Two questions, two tabs. -->
+      <nav class="rv-tabs" id="rvTabs" role="tablist" aria-label="Review sections">
+        <button class="rv-tab on" type="button" role="tab" data-tab="overview"
+                id="rvTabOverview" aria-selected="true" aria-controls="rvPanelOverview">Overview</button>
+        <button class="rv-tab" type="button" role="tab" data-tab="record"
+                id="rvTabRecord" aria-selected="false" aria-controls="rvPanelRecord">Session Record<u id="rvTabCount"></u></button>
+        <button class="rv-tab" type="button" role="tab" data-tab="inventory"
+                id="rvTabInventory" aria-selected="false" aria-controls="rvPanelInventory">Inventory</button>
+        <button class="rv-tab" type="button" role="tab" data-tab="coverage"
+                id="rvTabCoverage" aria-selected="false" aria-controls="rvPanelCoverage">Coverage</button>
+        <button class="rv-tab" type="button" role="tab" data-tab="evidence"
+                id="rvTabEvidence" aria-selected="false" aria-controls="rvPanelEvidence">Evidence</button>
+      </nav>
 
-          <div class="rv-sec">
-            <span class="label">captured knowledge</span>
-            <h2>Everything on the record</h2>
-            <div id="rvInventory"></div>
+      <div class="rv-panel on" id="rvPanelOverview" role="tabpanel" aria-labelledby="rvTabOverview">
+        <div class="rv-cols">
+          <div>
+            <div class="rv-sec">
+              <span class="label">next walkthrough</span>
+              <h2>What to ask next</h2>
+              <p>Generated from what you captured. Tick anything you already confirmed; the area meters move with it.</p>
+              <div id="rvGaps"></div>
+            </div>
+          </div>
+          <div>
+            <div class="rv-sec">
+              <span class="label">ioe readiness</span>
+              <h2>Inputs, outputs, exceptions</h2>
+              <div class="ioe" id="rvIoe"></div>
+              <p style="margin-top:.8rem">Tag data items as input or output during capture and this fills itself.</p>
+            </div>
           </div>
         </div>
+      </div>
 
-        <div>
-          <div class="rv-sec">
-            <span class="label">pdd readiness</span>
-            <h2>Coverage by document section</h2>
-            <p>How much evidence exists for each section of the Process Definition Document.</p>
-            <div id="rvCoverage"></div>
+      <div class="rv-panel" id="rvPanelRecord" role="tabpanel" aria-labelledby="rvTabRecord">
+        <div class="rv-sec">
+          <span class="label">chronological</span>
+          <h2>Session record<span class="rec-count" id="rvRecCount"></span></h2>
+          <p>Every capture, note, mark and follow-up in the order it happened. The tape beside
+             the capture console keeps the last fourteen; nothing is ever dropped, it is all here.</p>
+          <div class="rec-tools">
+            <input class="inp" type="search" id="rvRecSearch" placeholder="Search this session"
+                   autocomplete="off">
+            <select class="inp" id="rvRecKind" aria-label="Filter by type"></select>
+            <select class="inp" id="rvRecSort" aria-label="Order">
+              <option value="new">Newest first</option>
+              <option value="old">Oldest first</option>
+            </select>
           </div>
+          <div id="rvRecord"></div>
+          <button class="btn rec-more" type="button" id="rvRecMore" hidden></button>
+        </div>
+      </div>
 
-          <div class="rv-sec">
-            <span class="label">ioe readiness</span>
-            <h2>Inputs, outputs, exceptions</h2>
-            <div class="ioe" id="rvIoe"></div>
-            <p style="margin-top:.8rem">Tag data items as input or output during capture and this fills itself.</p>
-          </div>
+      <div class="rv-panel" id="rvPanelInventory" role="tabpanel" aria-labelledby="rvTabInventory">
+        <div class="rv-sec">
+          <span class="label">captured knowledge</span>
+          <h2>Everything on the record</h2>
+          <p>Grouped by area, which is how the document is written. For the order things were
+             found in, use the session record.</p>
+          <div id="rvInventory"></div>
+        </div>
+      </div>
 
-          <div class="rv-sec">
-            <span class="label">session notes</span>
-            <h2>Parked thoughts and marks</h2>
-            <div id="rvNotes"></div>
+      <div class="rv-panel" id="rvPanelCoverage" role="tabpanel" aria-labelledby="rvTabCoverage">
+        <div class="rv-sec">
+          <span class="label">pdd readiness</span>
+          <h2>Coverage by document section</h2>
+          <p>How much evidence exists for each section of the Process Definition Document.</p>
+          <div id="rvCoverage"></div>
+        </div>
+      </div>
+
+      <div class="rv-panel" id="rvPanelEvidence" role="tabpanel" aria-labelledby="rvTabEvidence">
+        <section class="shotsync" id="shotSync">
+          <span class="label">screenshot folder</span>
+          <p id="shotSyncState">Checking.</p>
+          <div class="row-inline">
+            <button class="btn" type="button" id="shotConnect">Connect folder</button>
+            <button class="btn" type="button" id="shotFlush" hidden>Write to the folder</button>
+            <button class="btn btn-ghost" type="button" id="shotForget" hidden>Disconnect</button>
           </div>
+        </section>
+
+        <div class="rv-sec">
+          <span class="label">session notes</span>
+          <h2>Parked thoughts and marks</h2>
+          <div id="rvNotes"></div>
         </div>
       </div>
     </div>
@@ -2411,10 +2532,17 @@ function renderTape(){
   });
 
   if(rows.length > shown.length){
+    /* "all kept in review" was true and useless: it named no place to go. The
+       count is still the honest part -- what follows it is now the way in. */
     const m = document.createElement("div");
-    m.className = "label";
-    m.style.paddingTop = ".6rem";
-    m.textContent = "+" + (rows.length - shown.length) + " earlier, all kept in review";
+    m.className = "tape-more";
+    m.innerHTML = '<span class="label">+' + (rows.length - shown.length) + " earlier</span>";
+    const b = document.createElement("button");
+    b.className = "icon-btn tape-more-btn"; b.type = "button";
+    b.innerHTML = "View full session record <u>→</u>";
+    b.title = "Every entry in this session, in order";
+    b.addEventListener("click", openSessionRecord);
+    m.appendChild(b);
     wrap.appendChild(m);
   }
   lastCount = rows.length;
@@ -2669,6 +2797,170 @@ $("scrim").addEventListener("mousedown", e => {
 $("finishBtn").addEventListener("click", () => setView("review"));
 $("backBtn").addEventListener("click", () => setView("capture"));
 
+/* ---------- tabs ---------- */
+/* Inventory answers "what did we find" and groups by area; the session record
+   answers "when, and in what order" and groups by the clock. Both are worth
+   keeping, and stacking one under the other on a single page made the second
+   one look like a footnote to the first. */
+let rvTab = "overview";
+
+function setReviewTab(name){
+  rvTab = name;
+  document.querySelectorAll("#rvTabs .rv-tab").forEach(b => {
+    const on = b.dataset.tab === name;
+    b.classList.toggle("on", on);
+    b.setAttribute("aria-selected", on ? "true" : "false");
+  });
+  document.querySelectorAll(".rv-panel").forEach(p2 =>
+    p2.classList.toggle("on", p2.id === "rvPanel" + name[0].toUpperCase() + name.slice(1)));
+  if(name === "record") renderRecord();
+}
+
+document.querySelectorAll("#rvTabs .rv-tab").forEach(b =>
+  b.addEventListener("click", () => setReviewTab(b.dataset.tab)));
+
+/* ---------- session record ---------- */
+/* Everything is held in memory and only a window of it is ever in the DOM.
+   A session of five hundred entries has to stay usable, and five hundred rows
+   each carrying a thread and a strip of thumbnails does not. */
+const REC_PAGE = 25;
+let recShown = REC_PAGE;
+let recQuery = "";
+let recKind = "";
+let recSort = "new";
+
+/* The replies are part of the entry, so they are part of what a search looks
+   through. Finding the row but not the sentence you remembered would make the
+   search feel broken. */
+function recHaystack(r){
+  return (r.text + " " + r.kind + " " + r.at + " " +
+          (r.ent.replies || []).map(x => x.text).join(" ")).toLowerCase();
+}
+
+function recordRows(){
+  let rows = entities();                 /* already newest-first */
+  if(recKind) rows = rows.filter(r => r.kind === recKind);
+  if(recQuery){
+    const q = recQuery.toLowerCase();
+    rows = rows.filter(r => recHaystack(r).indexOf(q) > -1);
+  }
+  if(recSort === "old") rows = rows.slice().reverse();
+  return rows;
+}
+
+function renderRecordKinds(){
+  const sel = $("rvRecKind");
+  const counts = new Map();
+  entities().forEach(r => counts.set(r.kind, (counts.get(r.kind) || 0) + 1));
+  if(recKind && !counts.has(recKind)) recKind = "";
+  const total = entities().length;
+  sel.innerHTML = '<option value="">All types (' + total + ")</option>" +
+    [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .map(([k, n]) => '<option value="' + esc(k) + '"' + (k === recKind ? " selected" : "") +
+                       ">" + esc(k) + " (" + n + ")</option>").join("");
+}
+
+function recordRow(r){
+  const d = document.createElement("div");
+  d.className = "rec-row";
+  d.dataset.entry = r.id;
+  d.style.setProperty("--kind", kindColor(r.kind));
+
+  const t = document.createElement("time");
+  t.textContent = r.at;
+
+  const body = document.createElement("div");
+  body.className = "rec-body";
+  body.innerHTML =
+    '<span class="k"><i class="kdot' + (r.kind === "Mark" ? " ring" : "") + '" style="' +
+    (r.kind === "Mark" ? "border-color:" : "background:") + kindColor(r.kind) + '"></i>' +
+    esc(r.kind) + "</span>" +
+    '<span class="ttext">' + esc(r.text) + "</span>";
+
+  if((r.ent.shots || []).length) body.appendChild(shotThumbs(r.ent.shots));
+  if((r.ent.replies || []).length) body.insertAdjacentHTML("beforeend", threadHtml(r.ent));
+
+  /* An item has a sheet behind it -- tags, relations, screenshots, the lot.
+     Notes and marks are only ever what the row already shows. */
+  if(r.ent.section){
+    const open = document.createElement("button");
+    open.className = "icon-btn rec-open"; open.type = "button";
+    open.textContent = "Open";
+    open.title = "Open this item";
+    open.addEventListener("click", () => openSheet(r.id));
+    body.appendChild(open);
+  }
+
+  d.appendChild(t);
+  d.appendChild(body);
+  return d;
+}
+
+function renderRecord(){
+  renderRecordKinds();
+  const rows = recordRows();
+  const total = entities().length;
+  const shown = rows.slice(0, recShown);
+
+  $("rvRecCount").textContent = total + (total === 1 ? " entry" : " entries");
+  $("rvTabCount").textContent = total || "";
+
+  const wrap = $("rvRecord");
+  wrap.innerHTML = "";
+  if(!shown.length){
+    wrap.innerHTML = '<div class="empty">' +
+      (total ? "Nothing in this session matches that."
+             : "Captures, notes and marks appear here as you make them.") + "</div>";
+    $("rvRecMore").hidden = true;
+    return;
+  }
+
+  const frag = document.createDocumentFragment();
+  shown.forEach(r => frag.appendChild(recordRow(r)));
+  wrap.appendChild(frag);
+  hydrateShots();
+
+  const left = rows.length - shown.length;
+  const more = $("rvRecMore");
+  more.hidden = !left;
+  more.textContent = "Load " + Math.min(REC_PAGE, left) + " earlier";
+
+  /* Filtering narrows the list, so say what you are looking at rather than
+     leaving the header count arguing with the rows on screen. */
+  if(rows.length !== total){
+    $("rvRecCount").textContent = "showing " + shown.length + " of " + rows.length +
+      " matched, " + total + " in the session";
+  }else if(left){
+    $("rvRecCount").textContent = shown.length + " of " + total + " entries";
+  }
+}
+
+/* A new search re-windows from the top; loading more never does. */
+function recordReset(){ recShown = REC_PAGE; renderRecord(); }
+
+$("rvRecSearch").addEventListener("input", e => {
+  recQuery = e.target.value.trim();
+  recordReset();
+});
+$("rvRecKind").addEventListener("change", e => { recKind = e.target.value; recordReset(); });
+$("rvRecSort").addEventListener("change", e => { recSort = e.target.value; recordReset(); });
+$("rvRecMore").addEventListener("click", () => {
+  recShown += REC_PAGE;
+  renderRecord();
+  /* Put the keyboard where the new rows start, so a long record can be walked
+     with the button alone. */
+  const rows = $("rvRecord").children;
+  const first = rows[recShown - REC_PAGE];
+  if(first) first.scrollIntoView({block:"center"});
+});
+
+/* Reached from the tape, which shows only the last fourteen. */
+function openSessionRecord(){
+  setView("review");
+  setReviewTab("record");
+  $("rvPanelRecord").scrollIntoView({block:"start"});
+}
+
 function renderReview(){
   const gaps = buildGaps();
   const open = gaps.filter(g => !g.done);
@@ -2756,6 +3048,8 @@ function renderReview(){
     "<div><b>" + inputs + "</b><span>inputs</span></div>" +
     "<div><b>" + outputs + "</b><span>outputs</span></div>" +
     "<div><b>" + exc + "</b><span>exceptions</span></div>";
+
+  renderRecord();
 
   const nw = $("rvNotes");
   nw.innerHTML = "";
@@ -2854,7 +3148,11 @@ $("themeBtn").addEventListener("click", () => {
 document.addEventListener("keydown", e => {
   const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
   if((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "m"){ e.preventDefault(); markMoment(); return; }
-  if(e.key === "Escape" && $("scrim").classList.contains("on")){ closeSheet(); return; }
+  /* Marking it handled is what stops the map underneath from closing too.
+     These listeners share one document and all of them see the key. */
+  if(e.key === "Escape" && $("scrim").classList.contains("on")){
+    e.preventDefault(); closeSheet(); return;
+  }
   if(typing && document.activeElement !== document.body) return;
   if(/^[1-9]$/.test(e.key)){
     const sec = SECTIONS[Number(e.key)-1];
@@ -2910,6 +3208,30 @@ function startClock(){
   runningSince = S.paused ? 0 : Date.now();
   paintClock();
 }
+
+/* Opened by the gear and closed by anything that means "I am done here":
+   the gear again, Escape, or a click anywhere outside it. */
+function setClockMenu(on){
+  $("clockMenu").hidden = !on;
+  $("clockGear").setAttribute("aria-expanded", on ? "true" : "false");
+  /* Reset arms on the first press. Leaving it armed behind a closed menu
+     would put a live confirm one blind click away the next time it opens. */
+  if(!on) disarm();
+}
+
+$("clockGear").addEventListener("click", e => {
+  e.stopPropagation();
+  setClockMenu($("clockMenu").hidden);
+});
+document.addEventListener("click", e => {
+  if(!$("clockMenu").hidden && !$("clockWrap").contains(e.target)) setClockMenu(false);
+});
+document.addEventListener("keydown", e => {
+  if(e.key === "Escape" && !$("clockMenu").hidden){
+    setClockMenu(false);
+    $("clockGear").focus();
+  }
+});
 
 $("clockToggle").addEventListener("click", () => {
   if(runningSince){ S.seconds = elapsed(); runningSince = 0; S.paused = true; }
@@ -3830,8 +4152,30 @@ function selectNode(id){
   renderMapDetail();
 }
 
-/* ----- detail panel and many-to-many linking ----- */
-let linkPicks = [];
+/* ----- detail panel ----- */
+/* Reading happens here, changing happens in the sheet. The panel used to
+   carry a relation builder of its own, which meant two places to learn and
+   two places to keep right; Edit opens the same sheet the rest of the app
+   uses, and that one manages relations already. */
+
+/* threadHtml is shared with the review and the record, and neither of those
+   wants a strip of thumbnails in the middle of a quote. The map panel does:
+   a screenshot attached to a follow-up is part of what is known about this
+   node, and dropping it was the one thing the panel silently lost. */
+function detailThread(item){
+  const box = document.createElement("div");
+  box.className = "thread";
+  (item.replies || []).forEach(r => {
+    const d = document.createElement("div");
+    d.className = "reply";
+    d.innerHTML = "<time>" + esc(r.at) + "</time><span>" + esc(r.text) + "</span>";
+    const shots = (r.shots || []).filter(id => S.shots[id]);
+    if(shots.length) d.querySelector("span").appendChild(shotThumbs(shots));
+    box.appendChild(d);
+  });
+  return box;
+}
+
 function renderMapDetail(){
   const body = $("mapBody"), panel = $("mapDetail");
   const item = M.sel ? S.items.find(i => i.id === M.sel) : null;
@@ -3841,39 +4185,41 @@ function renderMapDetail(){
   const out = item.relations.map(r => ({dir:"out", type:r.type, other:S.items.find(i => i.id === r.targetId)})).filter(r => r.other);
   const inc = incoming(item.id).map(r => ({dir:"in", type:r.type, other:r.from}));
 
-  /* Every block here is optional except the header and the linker. An item
-     that was captured in two seconds and never touched again should read as
-     one line and a name, not as five headings each announcing that it has
-     nothing under it. */
+  /* Every block is optional. An item captured in two seconds and never touched
+     again should read as its area, its name and the time -- not as five
+     headings each announcing that it has nothing under it. */
   const shots = (item.shots || []).filter(id => S.shots[id]);
   const notes = item.replies || [];
   const rels = out.concat(inc);
+  const node = M.nodes.find(n => n.id === item.id);
   const block = (cond, html) => cond ? html : "";
+  const plural = (n, word) => n + " " + word + (n === 1 ? "" : "s");
 
   panel.innerHTML =
-    '<span class="label">' + esc(item.section.toLowerCase()) + "</span>" +
+    '<div class="dhead">' +
+      '<span class="label">' + esc(item.section.toLowerCase()) + "</span>" +
+      '<button class="btn" type="button" id="dEdit" title="Open this item for editing">Edit</button>' +
+    "</div>" +
     "<h3>" + esc(item.name) + "</h3>" +
     block(item.at, '<div class="dmeta">captured ' + esc(item.at || "") + "</div>") +
+    /* A ghost is on screen because something it is wired to matched, not
+       because it matched. Without saying so the filter looks broken. */
+    block(node && node.ghost,
+      '<div class="dnote">Shown because it is linked to a match, not because it ' +
+      "matches the filter itself.</div>") +
     block(item.tags.length, '<div class="taglist" id="dTags"></div>') +
     block(notes.length,
-      '<span class="label">' + notes.length + (notes.length === 1 ? " note" : " notes") + "</span>" +
-      threadHtml(item)) +
+      '<span class="label">' + plural(notes.length, "note") + "</span>" +
+      '<div id="dThread"></div>') +
     block(shots.length,
-      '<span class="label">' + shots.length +
-      (shots.length === 1 ? " screenshot" : " screenshots") + "</span>" +
+      '<span class="label">' + plural(shots.length, "screenshot") + "</span>" +
       '<div id="dShots"></div>') +
     block(rels.length,
-      '<span class="label">relations (' + rels.length + ")</span>" +
-      '<div id="dLinks"></div>') +
-    '<span class="label">link to other items</span>' +
-    '<select class="inp" id="dType">' +
-      '<option value="">Pick a relation type</option>' +
-      ["reads from","writes to","connects to","sends to","receives from","depends on","owned by","triggered by","used by","relates to"]
-        .map(o => "<option>" + o + "</option>").join("") +
-    "</select>" +
-    '<input class="mapsearch" id="dFind" placeholder="Filter the list" style="margin-top:.4rem">' +
-    '<div class="picker" id="dPicker"></div>' +
-    '<button class="btn btn-solid" id="dLink" style="width:100%;margin-top:.5rem">Create links</button>';
+      '<span class="label">' + plural(rels.length, "relation") + "</span>" +
+      '<div id="dLinks"></div>' +
+      '<div class="dhint">Pick one to follow it. Edit to add or remove.</div>');
+
+  $("dEdit").addEventListener("click", () => openSheet(item.id));
 
   const dt = $("dTags");
   if(dt) item.tags.forEach(t => {
@@ -3889,62 +4235,35 @@ function renderMapDetail(){
     dt.appendChild(b);
   });
 
+  if(notes.length) $("dThread").appendChild(detailThread(item));
+
   if(shots.length){
     $("dShots").appendChild(shotThumbs(shots));
-    hydrateShots();
   }
+  if(notes.length || shots.length) hydrateShots();
 
+  /* A relation names another node, so it is also the way to it. Following one
+     is what the panel is for; the sheet is where they are changed. */
   const dl = $("dLinks");
   if(dl) rels.forEach(r => {
-    const row = document.createElement("div");
+    const row = document.createElement("button");
+    row.type = "button";
     row.className = "linkrow";
+    row.title = "Select " + r.other.name;
     row.innerHTML = '<span class="dir">' + (r.dir === "out" ? "→" : "←") + "</span>" +
-                    "<span><em>" + esc(r.type) + "</em> " + esc(r.other.name) + "</span>";
-    const rm = document.createElement("button");
-    rm.className = "icon-btn danger"; rm.type = "button"; rm.textContent = "×";
-    rm.title = "Remove this relation";
-    rm.addEventListener("click", () => confirmAction(rm, "Confirm", () => {
-      const src = r.dir === "out" ? item : r.other;
-      const tgt = r.dir === "out" ? r.other : item;
-      src.relations = src.relations.filter(x => !(x.targetId === tgt.id && x.type === r.type));
-      save(); renderAll(); rebuildMap(false);
-    }));
-    row.appendChild(rm);
+                    "<span><em>" + esc(r.type) + "</em> " + esc(r.other.name) + "</span>" +
+                    '<span class="dsec" style="color:' + secColor(r.other.section) + '">' +
+                    esc(r.other.section.toLowerCase()) + "</span>";
+    row.addEventListener("click", () => {
+      M.sel = null;                       /* selectNode toggles, so clear first */
+      selectNode(r.other.id);
+      if(!M.nodes.some(n => n.id === r.other.id)){
+        toast(r.other.name + " is filtered off the map");
+      }
+      panel.scrollTop = 0;
+    });
     dl.appendChild(row);
   });
-
-  linkPicks = [];
-  paintPicker("");
-  $("dFind").addEventListener("input", e => paintPicker(e.target.value.trim().toLowerCase()));
-  $("dLink").addEventListener("click", () => {
-    const type = $("dType").value;
-    if(!type){ toast("Pick a relation type first"); return; }
-    if(!linkPicks.length){ toast("Tick at least one item"); return; }
-    linkPicks.forEach(id => {
-      if(id === item.id) return;
-      if(!item.relations.some(r => r.targetId === id && r.type === type)) item.relations.push({type:type, targetId:id});
-    });
-    toast(linkPicks.length + (linkPicks.length === 1 ? " link created" : " links created"));
-    linkPicks = [];
-    save(); renderAll(); rebuildMap(false);
-  });
-
-  function paintPicker(q){
-    const p = $("dPicker");
-    p.innerHTML = "";
-    const list = S.items.filter(i => i.id !== item.id &&
-      (!q || (i.name + " " + i.tags.join(" ")).toLowerCase().includes(q)));
-    if(!list.length){ p.innerHTML = '<div class="empty" style="padding:.5rem;font-size:.78rem">Nothing to link to.</div>'; return; }
-    list.forEach(i => {
-      const l = document.createElement("label");
-      l.innerHTML = '<input type="checkbox"' + (linkPicks.includes(i.id) ? " checked" : "") + ">" +
-                    "<span>" + esc(i.name) + "</span><em>" + esc(i.section.toLowerCase()) + "</em>";
-      l.querySelector("input").addEventListener("change", e => {
-        linkPicks = e.target.checked ? linkPicks.concat(i.id) : linkPicks.filter(x => x !== i.id);
-      });
-      p.appendChild(l);
-    });
-  }
 }
 
 window.addEventListener("resize", () => {
@@ -3953,8 +4272,19 @@ window.addEventListener("resize", () => {
 });
 document.addEventListener("keydown", e => {
   /* Escape gets you out of whatever you are in the middle of: a drag first,
-     and only then the map itself. */
-  if(e.key === "Escape" && $("mapScrim").classList.contains("on") && !cancelDrag()) closeMap();
+     then the map itself -- but never through something stacked on top of it.
+     Edit opens the sheet over the map, and one press should close the sheet
+     and leave the map where it was.
+
+     Two tests, because every one of these listeners is on the same document
+     and the order they run in is the order the modules loaded. An overlay
+     registered earlier (the sheet) has already closed itself by now, so it
+     leaves defaultPrevented behind; one registered later (the screenshot
+     viewer) has not run yet, so it is still open to look at. */
+  const stacked = $("scrim").classList.contains("on") ||
+                  $("shotScrim").classList.contains("on");
+  if(e.key === "Escape" && $("mapScrim").classList.contains("on") &&
+     !stacked && !e.defaultPrevented && !cancelDrag()) closeMap();
   if((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "g"){
     e.preventDefault();
     $("mapScrim").classList.contains("on") ? closeMap() : openMap();
@@ -5310,7 +5640,9 @@ function closeShot(){ $("shotScrim").classList.remove("on"); }
 $("shotClose").addEventListener("click", closeShot);
 $("shotScrim").addEventListener("mousedown", e => { if(e.target === $("shotScrim")) closeShot(); });
 document.addEventListener("keydown", e => {
-  if(e.key === "Escape" && $("shotScrim").classList.contains("on")) closeShot();
+  if(e.key === "Escape" && $("shotScrim").classList.contains("on")){
+    e.preventDefault(); closeShot();
+  }
 });
 
 /* ---------- the keystroke ----------

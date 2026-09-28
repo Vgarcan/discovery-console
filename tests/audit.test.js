@@ -49,7 +49,30 @@ function boot(opts){
     }
   });
   dom.window.addEventListener("error", e => errs.push(e.message));
+  bridge(dom.window);
   return { w: dom.window, d: dom.window.document, errs };
+}
+
+/* The bundle is a classic script, so its top-level `let S` and `const M` go
+   into the global lexical environment and never become properties of window.
+   `w.S` and `w.M` from out here are plain undefined -- which is silent, so
+   every assertion reading through them was comparing against nothing.
+   Function declarations do land on window, which is why those always worked.
+   An indirect eval runs in global scope and can see the lexical bindings, so
+   route the few the suite reaches for through one. */
+const BRIDGED = ["S", "M", "recShown"];
+function bridge(win){
+  BRIDGED.forEach(name => {
+    if(typeof win[name] !== "undefined") return;
+    try{
+      win.eval(name);                       /* throws if the binding is absent */
+      Object.defineProperty(win, name, {
+        configurable: true,
+        get: () => win.eval(name),
+        set: v => win.eval("(function(v){ " + name + " = v; })")(v)
+      });
+    }catch(e){ /* not in this build; leave it undefined */ }
+  });
 }
 
 const wait = ms => new Promise(r => setTimeout(r, ms || 60));
@@ -254,14 +277,27 @@ async function run(){
 
   a.clickNode(0);
   ok("selecting a node opens the detail panel", d.getElementById("mapBody").classList.contains("detail"));
-  d.getElementById("dType").value = "connects to";
-  const boxes = [...d.querySelectorAll("#dPicker input")].slice(0,2);
-  boxes.forEach(b => { b.checked = true; b.dispatchEvent(new w.Event("change", { bubbles:true })); });
-  d.getElementById("dLink").click();
-  eq("two links created at once", d.querySelectorAll("#mapEdges .edge").length, 3);
-  const removable = d.querySelector("#dLinks .icon-btn");
-  removable.click();
-  eq("a relation can be removed from the map", d.querySelectorAll("#mapEdges .edge").length, 2);
+
+  /* Reading happens in the panel, changing happens in the sheet. The panel
+     used to carry a relation builder of its own, which meant two places to
+     learn and two places to keep right. */
+  ok("the panel carries no relation builder",
+     !d.getElementById("dType") && !d.getElementById("dPicker") &&
+     !d.getElementById("dLink") && !d.getElementById("dFind"));
+  ok("it offers Edit instead", !!d.getElementById("dEdit"));
+  d.getElementById("dEdit").click();
+  await wait(60);
+  ok("which opens the sheet on that item",
+     d.getElementById("scrim").classList.contains("on"));
+  ok("and the sheet is the thing that manages relations",
+     !!d.getElementById("fRelType") && !!d.getElementById("fRelList"));
+
+  /* Edit opens over the map, so one Escape closes the sheet and leaves the
+     map where it was. Every one of these listeners is on the same document. */
+  d.dispatchEvent(new w.KeyboardEvent("keydown", { key:"Escape", bubbles:true }));
+  ok("Escape closes the sheet", !d.getElementById("scrim").classList.contains("on"));
+  ok("and leaves the map open", d.getElementById("mapScrim").classList.contains("on"));
+
   d.querySelector("#mapLegend button").click();
   ok("legend hides an area", d.querySelectorAll("#mapNodes .node").length < 3);
   d.querySelector("#mapLegend button").click();
@@ -1052,6 +1088,158 @@ async function run(){
 
   ok("no page errors without a folder API", ctxF.errs.length === 0, ctxF.errs.join(" | "));
 
+  group("Session record");
+  /* The tape holds the last fourteen because that is what is useful mid-call.
+     Everything else was reachable only in principle -- the footer said "all
+     kept in review" and named no way to get there. The record is that way. */
+  const bigStore = JSON.parse(stored);
+  const baseTs = 1758780000000;
+  for(let k = 0; k < 120; k++){
+    const ts = baseTs + k * 60000;
+    const at = String(7 + Math.floor(k / 60)).padStart(2, "0") + ":" +
+               String(k % 60).padStart(2, "0");
+    bigStore.items.push({id:"big" + k, section:"Process", name:"Filler " + k,
+      tags:[], relations:[], shots:[],
+      replies: k === 5 ? [{text:"a distinctive marzipan remark", at:at, ts:ts + 1, shots:[]}] : [],
+      at:at, ts:ts});
+  }
+  const ctxR = boot({ storage: JSON.stringify(bigStore) });
+  const aR = api(ctxR); await wait(150);
+  const dR = ctxR.d, wR = ctxR.w;
+  const totalR = wR.entities().length;
+
+  eq("the tape is still fourteen rows", dR.querySelectorAll("#tape .tape-row").length, 14);
+  const tapeFoot = aR.text("tape").slice(-120);
+  ok("and says how many it is not showing",
+     tapeFoot.indexOf("+" + (totalR - 14) + " earlier") > -1, tapeFoot);
+  ok("it offers a way to the rest rather than asserting they exist somewhere",
+     tapeFoot.indexOf("View full session record") > -1 &&
+     tapeFoot.indexOf("kept in review") === -1, tapeFoot);
+
+  dR.querySelector(".tape-more-btn").click();
+  await wait(90);
+  ok("following it lands on the record", dR.getElementById("rvPanelRecord")
+     .classList.contains("on"));
+  ok("and only that tab is open",
+     dR.querySelectorAll(".rv-panel.on").length === 1);
+  ok("with the tab marked selected",
+     dR.getElementById("rvTabRecord").getAttribute("aria-selected") === "true");
+
+  /* A classic pager would ask which of six pages an 08:14 note is on. A window
+     that grows on request asks nothing. */
+  eq("only a window of it is in the DOM",
+     dR.querySelectorAll("#rvRecord .rec-row").length, 25);
+  ok("while the header counts the whole session",
+     aR.text("rvRecCount").indexOf(String(totalR)) > -1, aR.text("rvRecCount"));
+  ok("the button says how many more, not which page",
+     aR.text("rvRecMore").indexOf("Load ") === 0 &&
+     aR.text("rvRecMore").indexOf("Page") === -1, aR.text("rvRecMore"));
+
+  const rowTimes = () => [...dR.querySelectorAll("#rvRecord .rec-row > time")]
+    .map(t => t.textContent);
+  const desc = rowTimes();
+  ok("newest first", desc.join("|") === desc.slice().sort().reverse().join("|"), desc.slice(0, 4));
+
+  dR.getElementById("rvRecMore").click();
+  await wait(60);
+  eq("loading more grows the window", dR.querySelectorAll("#rvRecord .rec-row").length, 50);
+  let guard = 0;
+  while(!dR.getElementById("rvRecMore").hidden && guard++ < 40){
+    dR.getElementById("rvRecMore").click();
+    await wait(10);
+  }
+  eq("every entry is reachable", dR.querySelectorAll("#rvRecord .rec-row").length, totalR);
+  ok("and the button retires", dR.getElementById("rvRecMore").hidden);
+
+  /* Three tools, and no more. A record with twenty filters is a database. */
+  eq("search, type and order -- nothing else",
+     dR.querySelectorAll(".rec-tools > *").length, 3);
+
+  const search = dR.getElementById("rvRecSearch");
+  search.value = "marzipan";
+  search.dispatchEvent(new wR.Event("input", { bubbles:true }));
+  await wait(40);
+  eq("a word that exists only inside a reply still finds its entry",
+     dR.querySelectorAll("#rvRecord .rec-row").length, 1);
+  eq("and it is the right one",
+     dR.querySelector("#rvRecord .ttext").textContent, "Filler 5");
+  ok("the header says what you are looking at rather than the raw total",
+     aR.text("rvRecCount").indexOf("matched") > -1, aR.text("rvRecCount"));
+
+  search.value = "zzzznothing";
+  search.dispatchEvent(new wR.Event("input", { bubbles:true }));
+  await wait(40);
+  ok("a search with no matches says so rather than going blank",
+     !!dR.querySelector("#rvRecord .empty"));
+  ok("and offers nothing to load", dR.getElementById("rvRecMore").hidden);
+
+  search.value = "";
+  search.dispatchEvent(new wR.Event("input", { bubbles:true }));
+  await wait(40);
+  eq("clearing it re-windows from the top instead of keeping a stale page",
+     dR.querySelectorAll("#rvRecord .rec-row").length, 25);
+
+  const kindSel = dR.getElementById("rvRecKind");
+  ok("the type list is built from what the session holds",
+     kindSel.options.length > 2 && kindSel.options[0].value === "", kindSel.options.length);
+  kindSel.value = "Note";
+  kindSel.dispatchEvent(new wR.Event("change", { bubbles:true }));
+  await wait(40);
+  ok("picking one keeps only that type",
+     [...dR.querySelectorAll("#rvRecord .rec-row .k")]
+       .every(k => k.textContent.trim() === "Note"));
+  kindSel.value = "";
+  kindSel.dispatchEvent(new wR.Event("change", { bubbles:true }));
+  await wait(40);
+
+  const sortSel = dR.getElementById("rvRecSort");
+  sortSel.value = "old";
+  sortSel.dispatchEvent(new wR.Event("change", { bubbles:true }));
+  await wait(40);
+  const asc = rowTimes();
+  ok("oldest first reverses it", asc.join("|") === asc.slice().sort().join("|"), asc.slice(0, 4));
+  eq("and re-windows from the new top",
+     dR.querySelectorAll("#rvRecord .rec-row").length, 25);
+  sortSel.value = "new";
+  sortSel.dispatchEvent(new wR.Event("change", { bubbles:true }));
+  await wait(40);
+
+  /* "Without losing information": a row carries what the entry carries. */
+  wR.recShown = 1000;
+  wR.renderRecord();
+  eq("every reply in the session is on the record",
+     dR.querySelectorAll("#rvRecord .thread .reply").length,
+     [...wR.S.items, ...wR.S.notes, ...wR.S.marks]
+       .reduce((a, e) => a + (e.replies || []).length, 0));
+  ok("notes and marks are in it, not only items",
+     new Set([...dR.querySelectorAll("#rvRecord .rec-row .k")]
+       .map(k => k.textContent.trim())).size > 2);
+
+  const openBtn = dR.querySelector("#rvRecord .rec-open");
+  openBtn.click();
+  await wait(40);
+  ok("an item opens its own sheet from the record",
+     dR.getElementById("scrim").classList.contains("on") &&
+     dR.getElementById("fName").value ===
+       openBtn.closest(".rec-row").querySelector(".ttext").textContent,
+     dR.getElementById("fName").value);
+  dR.getElementById("scrim").classList.remove("on");
+
+  /* Inventory answers "what did we find", the record answers "when". Both. */
+  dR.getElementById("rvTabInventory").click();
+  await wait(40);
+  ok("the inventory is still there, on its own tab",
+     dR.getElementById("rvPanelInventory").classList.contains("on") &&
+     dR.getElementById("rvInventory").textContent.length > 0);
+  ok("and the record is put away", !dR.getElementById("rvPanelRecord")
+     .classList.contains("on"));
+  dR.getElementById("rvTabEvidence").click();
+  await wait(40);
+  ok("the screenshot folder panel is on Evidence",
+     dR.getElementById("rvPanelEvidence").classList.contains("on") &&
+     !!dR.getElementById("shotSync"));
+  ok("no page errors anywhere in the record", ctxR.errs.length === 0, ctxR.errs.join(" | "));
+
   group("Notes and marks can be corrected");
   /* A mark arrived as "Moment 3" and stayed that way, and neither a mark nor a
      note could be renamed, edited or removed from anywhere in the console. */
@@ -1182,9 +1370,42 @@ async function run(){
   eq("it starts running", dC.getElementById("clock").dataset.state, "running");
   eq("and the badge says so", aC.text("liveWord"), "recording");
 
+  /* The controls used to appear whenever the pointer crossed the digits, so a
+     menu turned up while you were only reading the time. They have a handle of
+     their own now and the digits are just digits. */
+  ok("the digits are not a control", dC.getElementById("clock").tagName !== "BUTTON");
+  ok("there is a gear beside them", !!dC.getElementById("clockGear"));
+  ok("the menu starts closed", dC.getElementById("clockMenu").hidden);
+  eq("and the gear says so",
+     dC.getElementById("clockGear").getAttribute("aria-expanded"), "false");
+  dC.getElementById("clockGear").click();
+  ok("the gear opens it", !dC.getElementById("clockMenu").hidden);
+  eq("and updates what it announces",
+     dC.getElementById("clockGear").getAttribute("aria-expanded"), "true");
+  dC.getElementById("clockGear").click();
+  ok("pressing it again closes it", dC.getElementById("clockMenu").hidden);
+  dC.getElementById("clockGear").click();
+  dC.dispatchEvent(new wC.KeyboardEvent("keydown", { key:"Escape", bubbles:true }));
+  ok("Escape closes it", dC.getElementById("clockMenu").hidden);
+  dC.getElementById("clockGear").click();
+  dC.getElementById("stage").dispatchEvent(new wC.MouseEvent("click", { bubbles:true }));
+  ok("so does a click anywhere else", dC.getElementById("clockMenu").hidden);
+
+  /* Reset arms on the first press. Closing the menu on top of an armed Reset
+     would leave a live confirm one blind click away the next time it opens. */
+  dC.getElementById("clockGear").click();
+  dC.getElementById("clockReset").click();
+  eq("the first press on reset arms it", aC.text("clockReset"), "Confirm");
+  dC.getElementById("clockGear").click();
+  eq("closing the menu disarms it", aC.text("clockReset"), "Reset");
+  dC.getElementById("clockGear").click();
+
   wC.S.seconds = 100;
-  const t0 = wC.elapsed();
+  /* Read the count after pausing, not before: a second boundary between the
+     read and the click would make these disagree for a reason that has
+     nothing to do with whether pause works. */
   dC.getElementById("clockToggle").click();
+  const t0 = wC.elapsed();
   await wait(1100);
   eq("pause stops the count", wC.elapsed(), t0);
   eq("the state says paused", dC.getElementById("clock").dataset.state, "paused");

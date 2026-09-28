@@ -134,14 +134,30 @@
    belongs to the panel and not to each block -- whichever ones turn up should
    sit apart the same way. */
 .mapdetail > .label{display:block;margin:1rem 0 .3rem}
-.mapdetail > .label:first-child{margin:0}
+.dhead{display:flex;align-items:center;justify-content:space-between;gap:.6rem}
+.dhead .label{margin:0}
+.dhead .btn{padding:.2rem .55rem;font-size:.76rem;flex:0 0 auto}
+.dnote{
+  font-size:.76rem;color:var(--ink-3);line-height:1.4;margin-top:.5rem;
+  padding-left:.5rem;border-left:2px solid var(--line);
+}
+.dhint{font-size:.72rem;color:var(--ink-3);margin-top:.4rem}
 .mapdetail .dmeta{font-family:var(--mono);font-size:9.5px;color:var(--ink-3);margin-top:.25rem}
 .mapdetail .taglist{margin-top:.55rem}
+/* A relation names another node, so the row is the way to it. */
 .linkrow{
-  display:flex;align-items:flex-start;gap:.4rem;padding:.38rem 0;
+  display:flex;align-items:flex-start;gap:.4rem;padding:.38rem .3rem .38rem 0;
   border-bottom:1px solid var(--line-soft);font-size:.79rem;
+  width:100%;background:none;border-top:0;border-left:0;border-right:0;
+  color:inherit;font-family:inherit;text-align:left;cursor:pointer;
 }
+.linkrow:hover{background:var(--raise)}
+.linkrow:last-child{border-bottom:0}
 .linkrow span{flex:1 1 auto}
+.linkrow .dsec{
+  flex:0 0 auto;font-family:var(--mono);font-size:8.5px;
+  text-transform:uppercase;letter-spacing:.04em;padding-top:.25rem;opacity:.8;
+}
 .linkrow em{font-style:italic;color:var(--ink-2)}
 /* Scoped to .linkrow so it outweighs `.linkrow span`, which otherwise also
    matched this span and let the arrow column grow -- every row started its
@@ -150,23 +166,6 @@
   font-family:var(--mono);font-size:9px;color:var(--ink-3);
   flex:0 0 11px;padding-top:.15rem;
 }
-.picker{
-  max-height:190px;overflow-y:auto;border:1px solid var(--line);
-  border-radius:3px;background:var(--raise);margin-top:.4rem;
-}
-.picker label{
-  display:flex;gap:.45rem;align-items:center;padding:.3rem .5rem;
-  font-size:.79rem;cursor:pointer;border-bottom:1px solid var(--line-soft);
-}
-.picker label:last-child{border-bottom:0}
-.picker label:hover{background:var(--raise-2)}
-.picker input{
-  appearance:none;width:12px;height:12px;flex:0 0 auto;
-  border:1px solid var(--line);border-radius:2px;cursor:pointer;
-}
-.picker input:checked{background:var(--accent);border-color:var(--accent)}
-.picker em{font-style:normal;color:var(--ink-3);font-size:.72rem;margin-left:auto}
-
 @media (max-width:900px){
   .mapscrim{padding:0}
   .mapwin{height:100%;width:100%;border-radius:0}

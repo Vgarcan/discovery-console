@@ -243,10 +243,17 @@ function renderTape(){
   });
 
   if(rows.length > shown.length){
+    /* "all kept in review" was true and useless: it named no place to go. The
+       count is still the honest part -- what follows it is now the way in. */
     const m = document.createElement("div");
-    m.className = "label";
-    m.style.paddingTop = ".6rem";
-    m.textContent = "+" + (rows.length - shown.length) + " earlier, all kept in review";
+    m.className = "tape-more";
+    m.innerHTML = '<span class="label">+' + (rows.length - shown.length) + " earlier</span>";
+    const b = document.createElement("button");
+    b.className = "icon-btn tape-more-btn"; b.type = "button";
+    b.innerHTML = "View full session record <u>→</u>";
+    b.title = "Every entry in this session, in order";
+    b.addEventListener("click", openSessionRecord);
+    m.appendChild(b);
     wrap.appendChild(m);
   }
   lastCount = rows.length;

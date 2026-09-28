@@ -186,11 +186,16 @@ and your panel widths survive; the session does not.
 
 ### The clock
 
-Hover the session clock and it offers **Pause**, **Reset** and **Hide**. Pausing also stops the
-`recording` badge from claiming otherwise. Reset takes two presses, like everything else here
-that cannot be undone. Hide leaves `--:--:--` in its place — still there to hover, so you can
-bring it back, and still counting underneath: a marked moment and the Review figure both
-report the real elapsed time.
+The gear beside the session clock opens **Pause**, **Reset** and **Hide**. It used to open on
+hover over the digits, which put a menu on screen every time you glanced at the time; the gear
+is a thing you have to aim at, and the digits are just digits again. Press it again, press
+Escape, or click anywhere else to close it.
+
+Pausing also stops the `recording` badge from claiming otherwise. Reset takes two presses, like
+everything else here that cannot be undone — and closing the menu on top of a half-armed Reset
+disarms it, so reopening never leaves a live confirm under your cursor. Hide leaves `--:--:--`
+in its place, and the clock keeps counting underneath: a marked moment and the Review figure
+both report the real elapsed time.
 
 It reads the wall clock rather than counting its own ticks. A browser throttles a hidden tab's
 timers to roughly once a minute, so a tick count quietly lost most of an hour every time the
@@ -201,9 +206,14 @@ that is not time on the call. Opening someone else's session pauses it, for the 
 
 Three tabs on the right, one at a time.
 
-**Tape** is everything you captured, newest first, colour coded by area. Marks use a ring
-instead of a filled dot. The chips at the top filter by kind, so one click gets you just the
-notes, or just the exceptions.
+**Tape** is the last fourteen things you captured, newest first, colour coded by area. Marks
+use a ring instead of a filled dot. The chips at the top filter by kind, so one click gets you
+just the notes, or just the exceptions.
+
+Fourteen is deliberate. Mid-call the tape is a glance, not a database: long enough to see what
+just happened, short enough that it never becomes the thing you are reading instead of
+listening. Under them it says how many it is not showing — **+86 earlier** — and offers
+**View full session record →**, which is where all of them live.
 
 Every entry can be replied to. A reply is a follow-up on that specific fact, and the thread
 stays attached to it everywhere: the tape, the item list, the review, the export.
@@ -322,13 +332,28 @@ off them, which in the sample session is two exceptions and the system they arri
 ### The panel on the right
 
 Selecting a node opens everything the session holds about it: when it was captured, its tags
-(clickable, they filter the map), its notes with their times, its screenshots, and its
-relations in both directions with an `×` on each.
+(clickable, they filter the map), its notes with their times, the screenshots on the item **and
+the ones attached to a follow-up**, and its relations in both directions — each naming the area
+its other end sits in.
 
 Every one of those blocks is omitted when the item has nothing in it. An item that was captured
 in two seconds and never touched again reads as its area, its name and the time — not as five
-headings each announcing that there is nothing underneath. The only thing always present is the
-linker at the bottom, because that is an action rather than a fact.
+headings each announcing that there is nothing underneath.
+
+**Reading happens here, changing happens in the sheet.** The panel used to carry a relation
+builder of its own: two places to learn, and two places to keep right. **Edit** in the corner
+opens the same sheet the rest of the app uses, which manages relations already — and manages
+them better, because it stages changes and lets you back out.
+
+The relations that remain are read-only, and they are the way to the other end: pick one and
+the map selects that node, so a chain can be walked a hop at a time without going back to the
+search box. If the other end is filtered off the map it says so rather than leaving you
+looking at an empty canvas.
+
+A node that is on screen only because something it is wired to matched the filter says that
+too — otherwise the filter looks broken.
+
+![Everything the session holds about one node](docs/images/14-map-panel.png)
 
 ### An area this build does not declare
 
@@ -372,16 +397,44 @@ selectable; names there are worth copying.
 
 ### Review
 
-What you have, what is still open, and how much of the PDD each section can support.
+Five tabs: **Overview**, **Session Record**, **Inventory**, **Coverage**, **Evidence**. The
+session's vital signs sit above them and stay put.
 
 ![The review view](docs/images/07-review.png)
 
-The open questions are tickable here too, grouped by area, so a five-minute post-call pass
-turns a vague sense of "we covered most of it" into a list you can send the client.
+**Overview** is what is still open. The questions are tickable here too, grouped by area, so a
+five-minute post-call pass turns a vague sense of "we covered most of it" into a list you can
+send the client. Beside them, the inputs/outputs/exceptions count.
 
-The coverage bars measure how much of each PDD section the evidence actually fills, section
-by section, and show the fraction. A section reading `not landing 1/4` has items captured
-against it that are not reaching any field — usually a missing tag or a missing reply.
+**Coverage** measures how much of each PDD section the evidence actually fills, section by
+section, and shows the fraction. A section reading `not landing 1/4` has items captured against
+it that are not reaching any field — usually a missing tag or a missing reply.
+
+**Evidence** holds the screenshot folder panel and anything parked without being classified.
+
+### Inventory and Session Record
+
+These answer two different questions and both are worth keeping.
+
+**Inventory** answers *what did we find*. It groups by area, which is the shape the document
+gets written in: Systems, Data, Process, Rules, Exceptions.
+
+**Session Record** answers *when, and in what order*. It groups by the clock, and it holds
+every entry in the session — items, notes, marks and the replies hanging off them — with
+nothing summarised away.
+
+![The session record](docs/images/13-session-record.png)
+
+Three tools, and deliberately only three. **Search** looks through the text, the type, the time
+and the replies, so a word you only remember from a follow-up still finds its entry. **Type**
+narrows to one kind, counted. **Order** flips newest-first to oldest-first. Twenty filters
+would turn this into a database and lose the thing it is good at.
+
+**No page numbers.** A pager makes you answer "which of six pages is the 08:14 note on", which
+is not a question anyone can answer. The record shows the first 25 and grows on request —
+**Load 25 earlier** — while all of them stay in memory behind the search. A session of 500
+entries opens as fast as one of fifty, because 25 rows are drawn either way; any one of those
+500 is one search and one press away, and **Open** takes an item straight to its sheet.
 
 ### The PDD draft
 

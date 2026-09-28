@@ -35,10 +35,24 @@
       <span class="storage-warn" id="storageWarn" hidden
             title="The browser will not accept any more data. Download the session as JSON before you lose it.">not saving</span>
       <span class="live" id="liveBadge"><i></i><span id="liveWord">recording</span></span>
-      <span class="clock-wrap">
-        <button class="clock" id="clock" type="button" data-state="running"
-                aria-haspopup="menu" title="Session clock">00:00:00</button>
-        <span class="clock-menu" id="clockMenu" role="menu">
+      <span class="clock-wrap" id="clockWrap">
+        <span class="clock" id="clock" data-state="running" title="Session clock">00:00:00</span>
+        <button class="clock-gear" id="clockGear" type="button" aria-haspopup="menu"
+                aria-expanded="false" aria-controls="clockMenu" title="Clock controls">
+          <svg viewBox="0 0 16 16" aria-hidden="true">
+            <circle cx="8" cy="8" r="1.7"/>
+            <circle cx="8" cy="8" r="4.3"/>
+            <line x1="12.3" y1="8" x2="14.3" y2="8"/>
+            <line x1="11.04" y1="11.04" x2="12.45" y2="12.45"/>
+            <line x1="8" y1="12.3" x2="8" y2="14.3"/>
+            <line x1="4.96" y1="11.04" x2="3.55" y2="12.45"/>
+            <line x1="3.7" y1="8" x2="1.7" y2="8"/>
+            <line x1="4.96" y1="4.96" x2="3.55" y2="3.55"/>
+            <line x1="8" y1="3.7" x2="8" y2="1.7"/>
+            <line x1="11.04" y1="4.96" x2="12.45" y2="3.55"/>
+          </svg>
+        </button>
+        <span class="clock-menu" id="clockMenu" role="menu" hidden>
           <button class="clock-act" id="clockToggle" type="button" role="menuitem">Pause</button>
           <button class="clock-act" id="clockReset" type="button" role="menuitem">Reset</button>
           <button class="clock-act" id="clockHide" type="button" role="menuitem">Hide</button>
@@ -200,54 +214,98 @@
         </div>
       </div>
 
-      <section class="shotsync" id="shotSync">
-        <span class="label">screenshot folder</span>
-        <p id="shotSyncState">Checking.</p>
-        <div class="row-inline">
-          <button class="btn" type="button" id="shotConnect">Connect folder</button>
-          <button class="btn" type="button" id="shotFlush" hidden>Write to the folder</button>
-          <button class="btn btn-ghost" type="button" id="shotForget" hidden>Disconnect</button>
-        </div>
-      </section>
-
       <div class="rv-stats" id="rvStats"></div>
 
-      <div class="rv-cols">
-        <div>
-          <div class="rv-sec">
-            <span class="label">next walkthrough</span>
-            <h2>What to ask next</h2>
-            <p>Generated from what you captured. Tick anything you already confirmed; the area meters move with it.</p>
-            <div id="rvGaps"></div>
-          </div>
+      <!-- Inventory answers "what did we find"; the session record answers
+           "when, and in what order". Two questions, two tabs. -->
+      <nav class="rv-tabs" id="rvTabs" role="tablist" aria-label="Review sections">
+        <button class="rv-tab on" type="button" role="tab" data-tab="overview"
+                id="rvTabOverview" aria-selected="true" aria-controls="rvPanelOverview">Overview</button>
+        <button class="rv-tab" type="button" role="tab" data-tab="record"
+                id="rvTabRecord" aria-selected="false" aria-controls="rvPanelRecord">Session Record<u id="rvTabCount"></u></button>
+        <button class="rv-tab" type="button" role="tab" data-tab="inventory"
+                id="rvTabInventory" aria-selected="false" aria-controls="rvPanelInventory">Inventory</button>
+        <button class="rv-tab" type="button" role="tab" data-tab="coverage"
+                id="rvTabCoverage" aria-selected="false" aria-controls="rvPanelCoverage">Coverage</button>
+        <button class="rv-tab" type="button" role="tab" data-tab="evidence"
+                id="rvTabEvidence" aria-selected="false" aria-controls="rvPanelEvidence">Evidence</button>
+      </nav>
 
-          <div class="rv-sec">
-            <span class="label">captured knowledge</span>
-            <h2>Everything on the record</h2>
-            <div id="rvInventory"></div>
+      <div class="rv-panel on" id="rvPanelOverview" role="tabpanel" aria-labelledby="rvTabOverview">
+        <div class="rv-cols">
+          <div>
+            <div class="rv-sec">
+              <span class="label">next walkthrough</span>
+              <h2>What to ask next</h2>
+              <p>Generated from what you captured. Tick anything you already confirmed; the area meters move with it.</p>
+              <div id="rvGaps"></div>
+            </div>
+          </div>
+          <div>
+            <div class="rv-sec">
+              <span class="label">ioe readiness</span>
+              <h2>Inputs, outputs, exceptions</h2>
+              <div class="ioe" id="rvIoe"></div>
+              <p style="margin-top:.8rem">Tag data items as input or output during capture and this fills itself.</p>
+            </div>
           </div>
         </div>
+      </div>
 
-        <div>
-          <div class="rv-sec">
-            <span class="label">pdd readiness</span>
-            <h2>Coverage by document section</h2>
-            <p>How much evidence exists for each section of the Process Definition Document.</p>
-            <div id="rvCoverage"></div>
+      <div class="rv-panel" id="rvPanelRecord" role="tabpanel" aria-labelledby="rvTabRecord">
+        <div class="rv-sec">
+          <span class="label">chronological</span>
+          <h2>Session record<span class="rec-count" id="rvRecCount"></span></h2>
+          <p>Every capture, note, mark and follow-up in the order it happened. The tape beside
+             the capture console keeps the last fourteen; nothing is ever dropped, it is all here.</p>
+          <div class="rec-tools">
+            <input class="inp" type="search" id="rvRecSearch" placeholder="Search this session"
+                   autocomplete="off">
+            <select class="inp" id="rvRecKind" aria-label="Filter by type"></select>
+            <select class="inp" id="rvRecSort" aria-label="Order">
+              <option value="new">Newest first</option>
+              <option value="old">Oldest first</option>
+            </select>
           </div>
+          <div id="rvRecord"></div>
+          <button class="btn rec-more" type="button" id="rvRecMore" hidden></button>
+        </div>
+      </div>
 
-          <div class="rv-sec">
-            <span class="label">ioe readiness</span>
-            <h2>Inputs, outputs, exceptions</h2>
-            <div class="ioe" id="rvIoe"></div>
-            <p style="margin-top:.8rem">Tag data items as input or output during capture and this fills itself.</p>
-          </div>
+      <div class="rv-panel" id="rvPanelInventory" role="tabpanel" aria-labelledby="rvTabInventory">
+        <div class="rv-sec">
+          <span class="label">captured knowledge</span>
+          <h2>Everything on the record</h2>
+          <p>Grouped by area, which is how the document is written. For the order things were
+             found in, use the session record.</p>
+          <div id="rvInventory"></div>
+        </div>
+      </div>
 
-          <div class="rv-sec">
-            <span class="label">session notes</span>
-            <h2>Parked thoughts and marks</h2>
-            <div id="rvNotes"></div>
+      <div class="rv-panel" id="rvPanelCoverage" role="tabpanel" aria-labelledby="rvTabCoverage">
+        <div class="rv-sec">
+          <span class="label">pdd readiness</span>
+          <h2>Coverage by document section</h2>
+          <p>How much evidence exists for each section of the Process Definition Document.</p>
+          <div id="rvCoverage"></div>
+        </div>
+      </div>
+
+      <div class="rv-panel" id="rvPanelEvidence" role="tabpanel" aria-labelledby="rvTabEvidence">
+        <section class="shotsync" id="shotSync">
+          <span class="label">screenshot folder</span>
+          <p id="shotSyncState">Checking.</p>
+          <div class="row-inline">
+            <button class="btn" type="button" id="shotConnect">Connect folder</button>
+            <button class="btn" type="button" id="shotFlush" hidden>Write to the folder</button>
+            <button class="btn btn-ghost" type="button" id="shotForget" hidden>Disconnect</button>
           </div>
+        </section>
+
+        <div class="rv-sec">
+          <span class="label">session notes</span>
+          <h2>Parked thoughts and marks</h2>
+          <div id="rvNotes"></div>
         </div>
       </div>
     </div>
