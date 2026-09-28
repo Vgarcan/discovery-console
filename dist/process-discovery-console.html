@@ -385,7 +385,10 @@ kbd{
 .icon-btn.armed:hover,.btn.armed:hover,.clock-act.armed:hover{
   background:var(--alert);border-color:var(--alert);color:#ffffff;filter:brightness(1.08);
 }
-.item-acts.arming,.reply.arming .icon-btn,.linkrow.arming .icon-btn{opacity:1}
+/* These rows only show their actions on hover. Arming one and then moving
+   the pointer away used to hide a live confirm rather than cancel it. */
+.item-acts.arming,.entry-acts.arming,.reply.arming .icon-btn,
+.linkrow.arming .icon-btn{opacity:1}
 
 .empty{
   padding:1.6rem 0;color:var(--ink-3);font-size:.85rem;max-width:46ch;
@@ -488,10 +491,34 @@ kbd{
 #rvRecSearch{flex:1 1 220px;min-width:0}
 #rvRecKind,#rvRecSort{flex:0 0 auto;width:auto;padding-right:1.6rem}
 .rec-row{
-  display:grid;grid-template-columns:auto minmax(0,1fr);gap:.7rem;
-  padding:.5rem 0 .5rem .6rem;border-bottom:1px solid var(--line-soft);
+  display:grid;grid-template-columns:auto auto minmax(0,1fr);gap:.55rem;
+  padding:.5rem 0 .5rem .4rem;border-bottom:1px solid var(--line-soft);
   border-left:2px solid var(--kind,var(--line));
+  position:relative;
 }
+/* The handle takes the drag so the pointer never fights the text underneath,
+   and touch-action stops a phone scrolling the page instead of moving a row. */
+.rec-grip{
+  background:none;border:0;color:var(--ink-3);cursor:grab;
+  font-size:.8rem;line-height:1;padding:.25rem .15rem;align-self:start;
+  /* Faint rather than invisible: a handle nobody can see is a feature nobody
+     knows is there. It comes up to full strength on the row you are on. */
+  opacity:.3;transition:opacity .12s;touch-action:none;
+}
+.rec-row:hover .rec-grip,.rec-grip:focus-visible{opacity:1}
+.rec-grip:disabled{cursor:default;opacity:.1}
+.rec-row.dragging{opacity:.45}
+.rec-row.dragging .rec-grip{cursor:grabbing;opacity:1}
+/* Where it would land. A line rather than a gap, so nothing below it moves
+   about while the pointer is still deciding. */
+.rec-row.drop-before::before,.rec-row.drop-after::after{
+  content:"";position:absolute;left:0;right:0;height:2px;
+  background:var(--accent);pointer-events:none;
+}
+.rec-row.drop-before::before{top:-1px}
+.rec-row.drop-after::after{bottom:-1px}
+.rec-lock{font-size:.76rem;color:var(--ink-3);margin:0 0 .7rem;max-width:60ch}
+.rec-order{margin-top:.6rem}
 .rec-row:last-of-type{border-bottom:0}
 .rec-row > time{
   font-family:var(--mono);font-size:.72rem;color:var(--ink-3);
@@ -1472,7 +1499,9 @@ body.resizing .work,body.resizing .pane-resize{transition:none}
           <span class="label">chronological</span>
           <h2>Session record<span class="rec-count" id="rvRecCount"></span></h2>
           <p>Every capture, note, mark and follow-up in the order it happened. The tape beside
-             the capture console keeps the last fourteen; nothing is ever dropped, it is all here.</p>
+             the capture console keeps the last fourteen; nothing is ever dropped, it is all here.
+             Drag a row by its handle to move it — or focus the handle and use the arrow keys —
+             and the new order sticks. The capture times never change with it.</p>
           <div class="rec-tools">
             <input class="inp" type="search" id="rvRecSearch" placeholder="Search this session"
                    autocomplete="off">
@@ -1482,8 +1511,12 @@ body.resizing .work,body.resizing .pane-resize{transition:none}
               <option value="old">Oldest first</option>
             </select>
           </div>
+          <p class="rec-lock" id="rvRecLock" hidden>Reordering is off while a search or a
+             type filter is on — the rows you can see are not next to each other in the record.</p>
           <div id="rvRecord"></div>
           <button class="btn rec-more" type="button" id="rvRecMore" hidden></button>
+          <button class="btn btn-ghost rec-order" type="button" id="rvRecOrder" hidden
+                  title="Put every entry back where its capture time says it goes">Back to capture order</button>
         </div>
       </div>
 
@@ -2023,6 +2056,10 @@ function load(){
     if(!e.id) e.id = uid();
     if(!e.ts) e.ts = ++seq;
     if(!Array.isArray(e.replies)) e.replies = [];
+    /* Where the entry sits in the record, when that is no longer where its
+       capture time would put it. Anything that is not a usable number is
+       dropped rather than kept, and the entry falls back to its timestamp. */
+    if("ord" in e && !(typeof e.ord === "number" && isFinite(e.ord))) delete e.ord;
     if(!Array.isArray(e.relations) && list === S.items) e.relations = [];
     /* A tag list that arrived as a bare string is one tag, not a broken
        field, so it is wrapped rather than dropped. Everything downstream --
@@ -2064,7 +2101,7 @@ function confirmAction(btn, label, fn){
   disarm();
   armed = {
     btn:btn, label:btn.textContent, at:Date.now(),
-    host:btn.closest(".item-acts, .reply, .linkrow")
+    host:btn.closest(".item-acts, .entry-acts, .reply, .linkrow")
   };
   btn.textContent = label;
   btn.classList.add("armed");
@@ -2303,6 +2340,21 @@ $("detailBtn").addEventListener("click", () => openSheet(null, capture.value.tri
 /* 05-items.js
    The captured-item list for the active area, with relations in both directions. */
 /* ---------- items ---------- */
+/* Deleting an item is three things, and it used to be spelled out in one
+   place while the tape could not do it at all. Anywhere it is offered, it does
+   all three: the item goes, the relations pointing at it go with it, and the
+   screenshots nothing references any more are cleared out of the store. */
+function deleteItem(id){
+  const item = S.items.find(i => i.id === id);
+  if(!item) return false;
+  S.items = S.items.filter(i => i.id !== id);
+  S.items.forEach(i => i.relations = i.relations.filter(r => r.targetId !== id));
+  renderAll(); save();
+  pruneShots();
+  toast("Item deleted");
+  return true;
+}
+
 function renderItems(){
   let items = inSection(S.active);
   if(stageTags.length) items = items.filter(i => stageTags.some(t => i.tags.includes(t)));
@@ -2345,11 +2397,8 @@ function renderItems(){
     el.querySelector("[data-map]").addEventListener("click", () => { M.sel = item.id; M.tags = []; M.q = ""; M.hidden = []; $("mapSearch").value = ""; openMap(); });
     el.querySelector("[data-edit]").addEventListener("click", () => openSheet(item.id));
     const delBtn = el.querySelector("[data-del]");
-    delBtn.addEventListener("click", () => confirmAction(delBtn, "Confirm delete", () => {
-      S.items = S.items.filter(i => i.id !== item.id);
-      S.items.forEach(i => i.relations = i.relations.filter(r => r.targetId !== item.id));
-      renderAll(); save(); toast("Item deleted");
-    }));
+    delBtn.addEventListener("click", () => confirmAction(delBtn, "Confirm delete",
+      () => deleteItem(item.id)));
     wrap.appendChild(el);
   });
 }
@@ -2372,13 +2421,62 @@ function kindColor(kind){
   return SEC_COLOR[kind] || "var(--ink-3)";
 }
 
+/* An entry carries the time it was captured and, separately, where it sits in
+   the record. They start out the same and a reorder only moves the second, so
+   dragging a note next to the thing it explains never rewrites the clock: the
+   tape, the marks and the PDD all keep saying when it actually happened. */
+function ordOf(e){ return typeof e.ord === "number" ? e.ord : (e.ts || 0); }
+function anyReordered(){
+  return [...S.items, ...S.notes, ...S.marks].some(e => typeof e.ord === "number");
+}
+
 function entities(){
   return [
     ...S.items.map(i => ({id:i.id, kind:i.section, text:i.name, at:i.at, ts:i.ts||0, ent:i})),
     ...S.notes.map(n => ({id:n.id, kind:"Note", text:n.text, at:n.at, ts:n.ts||0, ent:n})),
     ...S.marks.map((m,idx) => ({id:m.id, kind:"Mark",
        text:(m.label || "").trim() || "Moment " + (idx+1), at:m.at, ts:m.ts||0, ent:m}))
-  ].sort((a,b) => b.ts - a.ts);
+  ].sort((a,b) => ordOf(b.ent) - ordOf(a.ent));
+}
+
+/* Midpoints run out of room after about forty bisections between the same two
+   neighbours. Spreading everything out again costs one pass and makes the next
+   forty available. */
+function renumberOrd(){
+  const list = entities();
+  const base = Date.now();
+  list.forEach((r, i) => { r.ent.ord = base - i * 1000; });
+}
+
+/* Put `id` at position `k` of `list`, where `list` is what the record is
+   showing with the dragged entry already taken out of it. */
+function placeEntry(list, id, k, ascending){
+  const ent = [...S.items, ...S.notes, ...S.marks].find(e => e.id === id);
+  if(!ent) return false;
+  const step = ascending ? 1000 : -1000;
+  const compute = () => {
+    const a = k > 0 ? ordOf(list[k - 1].ent) : null;
+    const b = k < list.length ? ordOf(list[k].ent) : null;
+    if(a === null && b === null) return ent.ts || Date.now();
+    if(a === null) return b - step;
+    if(b === null) return a + step;
+    return (a + b) / 2;
+  };
+  let next = compute();
+  const a = k > 0 ? ordOf(list[k - 1].ent) : null;
+  const b = k < list.length ? ordOf(list[k].ent) : null;
+  /* No room left between the two neighbours, so spread everything and retry.
+     That is a change to the session in itself, so it counts as one even if
+     the entry then lands back on the number it already had. */
+  let spread = false;
+  if((a !== null && next === a) || (b !== null && next === b)){
+    renumberOrd();
+    spread = true;
+    next = compute();
+  }
+  const same = ordOf(ent) === next;
+  ent.ord = next;
+  return spread || !same;
 }
 
 /* ----- threads ----- */
@@ -2502,21 +2600,37 @@ function entryEditor(r){
 function entryActions(r){
   const wrap = document.createElement("span");
   wrap.className = "entry-acts";
-  if(r.kind !== "Note" && r.kind !== "Mark") return wrap;
+  const isEntry = r.kind === "Note" || r.kind === "Mark";
 
   const ed = document.createElement("button");
   ed.className = "icon-btn"; ed.type = "button";
   ed.textContent = r.kind === "Mark" ? "Name" : "Edit";
-  ed.title = r.kind === "Mark" ? "Name this moment" : "Edit this note";
-  ed.addEventListener("click", () => { editingEntry = r.id; renderAll(); });
+  ed.title = r.kind === "Mark" ? "Name this moment"
+           : r.kind === "Note" ? "Edit this note"
+           : "Open this item for editing";
+  /* A note is a line of text, so it is corrected where it stands. An item has
+     tags, relations and screenshots behind it, so it goes to the sheet -- the
+     same one the item list and the map open. Anything captured used to have
+     neither here: a screenshot filed as Evidence arrived named after the clock
+     and there was no way to rename it, let alone take it back. */
+  ed.addEventListener("click", () => {
+    if(isEntry){ editingEntry = r.id; renderAll(); }
+    else openSheet(r.id);
+  });
 
   const rm = document.createElement("button");
   rm.className = "icon-btn danger"; rm.type = "button"; rm.textContent = "Delete";
+  rm.title = isEntry ? "Delete this entry" : "Delete this item";
   rm.addEventListener("click", () => confirmAction(rm, "Confirm delete", () => {
-    if(r.kind === "Note") S.notes = S.notes.filter(n => n.id !== r.id);
-    else S.marks = S.marks.filter(m => m.id !== r.id);
-    save(); renderAll();
-    toast(r.kind === "Note" ? "Note deleted" : "Moment deleted");
+    if(r.kind === "Note"){
+      S.notes = S.notes.filter(n => n.id !== r.id);
+      save(); renderAll(); toast("Note deleted");
+    }else if(r.kind === "Mark"){
+      S.marks = S.marks.filter(m => m.id !== r.id);
+      save(); renderAll(); toast("Moment deleted");
+    }else{
+      deleteItem(r.id);
+    }
   }));
 
   wrap.appendChild(ed); wrap.appendChild(rm);
@@ -2572,6 +2686,9 @@ function renderTape(){
   shown.forEach((r,i) => {
     const d = document.createElement("div");
     d.className = "tape-row" + (i === 0 && rows.length > lastCount ? " fresh" : "");
+    /* Two items can share a name, so the row says which entry it is -- the
+       same way the session record's rows do. */
+    d.dataset.entry = r.id;
     d.style.setProperty("--kind", kindColor(r.kind));
 
     const t = document.createElement("time");
@@ -2927,11 +3044,28 @@ function renderRecordKinds(){
                        ">" + esc(k) + " (" + n + ")</option>").join("");
 }
 
+/* Reordering is only honest when what you can see is what there is. With a
+   search or a type filter on, two rows next to each other on screen can have
+   a dozen entries between them, and dropping one "between" them would be a
+   guess dressed up as a decision. */
+function recLocked(){ return !!(recQuery || recKind); }
+
 function recordRow(r){
   const d = document.createElement("div");
   d.className = "rec-row";
   d.dataset.entry = r.id;
   d.style.setProperty("--kind", kindColor(r.kind));
+
+  const grip = document.createElement("button");
+  grip.className = "rec-grip";
+  grip.type = "button";
+  grip.dataset.grip = r.id;
+  grip.textContent = "∷";
+  grip.disabled = recLocked();
+  grip.setAttribute("aria-label", "Move " + r.text);
+  grip.title = recLocked()
+    ? "Clear the search and the type filter to reorder"
+    : "Drag to move this entry, or press the up and down arrows";
 
   const t = document.createElement("time");
   t.textContent = r.at;
@@ -2958,10 +3092,108 @@ function recordRow(r){
     body.appendChild(open);
   }
 
+  d.appendChild(grip);
   d.appendChild(t);
   d.appendChild(body);
   return d;
 }
+
+/* ----- reordering ----- */
+const REC_SLOP = 4;
+let recDrag = null;
+
+function recRows(){ return [...$("rvRecord").querySelectorAll(".rec-row")]; }
+
+/* Where the row would land if the pointer were let go here: the number of
+   rows whose middle is above it, counting the dragged row out. */
+function dropIndex(y){
+  const rows = recRows().filter(el => el !== recDrag.el);
+  let k = 0;
+  rows.forEach(el => {
+    const b = el.getBoundingClientRect();
+    if(y > b.top + b.height / 2) k++;
+  });
+  return k;
+}
+
+function paintDrop(k){
+  const rows = recRows().filter(el => el !== recDrag.el);
+  rows.forEach((el, i) => {
+    el.classList.toggle("drop-before", i === k);
+    el.classList.toggle("drop-after", k === rows.length && i === rows.length - 1);
+  });
+}
+
+function clearDropMarks(){
+  recRows().forEach(el => el.classList.remove("drop-before", "drop-after", "dragging"));
+}
+
+function applyMove(id, k){
+  const list = recordRows().filter(r => r.id !== id);
+  if(!placeEntry(list, id, k, recSort === "old")) return false;
+  save();
+  renderAll();
+  return true;
+}
+
+$("rvRecord").addEventListener("pointerdown", e => {
+  const grip = e.target.closest("[data-grip]");
+  if(!grip || grip.disabled) return;
+  e.preventDefault();
+  const el = grip.closest(".rec-row");
+  recDrag = {id:grip.dataset.grip, el:el, y:e.clientY, moved:false, k:null};
+  grip.setPointerCapture(e.pointerId);
+});
+
+$("rvRecord").addEventListener("pointermove", e => {
+  if(!recDrag) return;
+  /* A press that has not travelled is still a press, so a grip can be clicked
+     and focused for the keyboard without the list jumping. */
+  if(!recDrag.moved && Math.abs(e.clientY - recDrag.y) < REC_SLOP) return;
+  if(!recDrag.moved){ recDrag.moved = true; recDrag.el.classList.add("dragging"); }
+  recDrag.k = dropIndex(e.clientY);
+  paintDrop(recDrag.k);
+});
+
+function endRecDrag(){
+  if(!recDrag) return;
+  const drag = recDrag;
+  recDrag = null;
+  clearDropMarks();
+  if(!drag.moved || drag.k === null) return;
+  if(applyMove(drag.id, drag.k)){
+    const grip = $("rvRecord").querySelector('[data-grip="' + drag.id + '"]');
+    if(grip) grip.focus();
+  }
+}
+$("rvRecord").addEventListener("pointerup", endRecDrag);
+$("rvRecord").addEventListener("pointercancel", endRecDrag);
+
+/* A list you can only reorder by dragging is a list some people cannot
+   reorder at all. */
+$("rvRecord").addEventListener("keydown", e => {
+  const grip = e.target.closest && e.target.closest("[data-grip]");
+  if(!grip || grip.disabled) return;
+  const dir = e.key === "ArrowUp" ? -1 : e.key === "ArrowDown" ? 1 : 0;
+  if(!dir) return;
+  e.preventDefault();
+  const rows = recordRows();
+  const at = rows.findIndex(r => r.id === grip.dataset.grip);
+  if(at < 0) return;
+  const k = at + dir;
+  if(k < 0 || k > rows.length - 1) return;
+  if(applyMove(grip.dataset.grip, k)){
+    const again = $("rvRecord").querySelector('[data-grip="' + grip.dataset.grip + '"]');
+    if(again) again.focus();
+  }
+});
+
+$("rvRecOrder").addEventListener("click", () =>
+  confirmAction($("rvRecOrder"), "Confirm", () => {
+    [...S.items, ...S.notes, ...S.marks].forEach(e => { delete e.ord; });
+    save(); renderAll();
+    toast("Back to the order things were captured in");
+  }));
 
 function renderRecord(){
   renderRecordKinds();
@@ -2986,6 +3218,11 @@ function renderRecord(){
   shown.forEach(r => frag.appendChild(recordRow(r)));
   wrap.appendChild(frag);
   hydrateShots();
+
+  /* Only offered once something has actually been moved: nothing to undo is
+     not a state that needs a button. */
+  $("rvRecOrder").hidden = !anyReordered();
+  $("rvRecLock").hidden = !recLocked();
 
   const left = rows.length - shown.length;
   const more = $("rvRecMore");
@@ -5123,6 +5360,10 @@ function normalise(list, seq){
     if(!c.id) c.id = uid();
     if(!c.ts) c.ts = ++seq.n;
     if(!Array.isArray(c.replies)) c.replies = [];
+    /* Where the entry sits in the record, when that is no longer where its
+       capture time would put it. Anything that is not a usable number is
+       dropped rather than kept, and the entry falls back to its timestamp. */
+    if("ord" in c && !(typeof c.ord === "number" && isFinite(c.ord))) delete c.ord;
     /* A tag list that arrived as a bare string is one tag, not a broken
        field, so it is wrapped rather than dropped. Everything downstream --
        the rail, the map, the PDD -- calls .forEach on this. */

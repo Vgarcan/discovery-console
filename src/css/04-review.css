@@ -50,10 +50,34 @@
 #rvRecSearch{flex:1 1 220px;min-width:0}
 #rvRecKind,#rvRecSort{flex:0 0 auto;width:auto;padding-right:1.6rem}
 .rec-row{
-  display:grid;grid-template-columns:auto minmax(0,1fr);gap:.7rem;
-  padding:.5rem 0 .5rem .6rem;border-bottom:1px solid var(--line-soft);
+  display:grid;grid-template-columns:auto auto minmax(0,1fr);gap:.55rem;
+  padding:.5rem 0 .5rem .4rem;border-bottom:1px solid var(--line-soft);
   border-left:2px solid var(--kind,var(--line));
+  position:relative;
 }
+/* The handle takes the drag so the pointer never fights the text underneath,
+   and touch-action stops a phone scrolling the page instead of moving a row. */
+.rec-grip{
+  background:none;border:0;color:var(--ink-3);cursor:grab;
+  font-size:.8rem;line-height:1;padding:.25rem .15rem;align-self:start;
+  /* Faint rather than invisible: a handle nobody can see is a feature nobody
+     knows is there. It comes up to full strength on the row you are on. */
+  opacity:.3;transition:opacity .12s;touch-action:none;
+}
+.rec-row:hover .rec-grip,.rec-grip:focus-visible{opacity:1}
+.rec-grip:disabled{cursor:default;opacity:.1}
+.rec-row.dragging{opacity:.45}
+.rec-row.dragging .rec-grip{cursor:grabbing;opacity:1}
+/* Where it would land. A line rather than a gap, so nothing below it moves
+   about while the pointer is still deciding. */
+.rec-row.drop-before::before,.rec-row.drop-after::after{
+  content:"";position:absolute;left:0;right:0;height:2px;
+  background:var(--accent);pointer-events:none;
+}
+.rec-row.drop-before::before{top:-1px}
+.rec-row.drop-after::after{bottom:-1px}
+.rec-lock{font-size:.76rem;color:var(--ink-3);margin:0 0 .7rem;max-width:60ch}
+.rec-order{margin-top:.6rem}
 .rec-row:last-of-type{border-bottom:0}
 .rec-row > time{
   font-family:var(--mono);font-size:.72rem;color:var(--ink-3);

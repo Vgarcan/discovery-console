@@ -16,13 +16,62 @@ function kindColor(kind){
   return SEC_COLOR[kind] || "var(--ink-3)";
 }
 
+/* An entry carries the time it was captured and, separately, where it sits in
+   the record. They start out the same and a reorder only moves the second, so
+   dragging a note next to the thing it explains never rewrites the clock: the
+   tape, the marks and the PDD all keep saying when it actually happened. */
+function ordOf(e){ return typeof e.ord === "number" ? e.ord : (e.ts || 0); }
+function anyReordered(){
+  return [...S.items, ...S.notes, ...S.marks].some(e => typeof e.ord === "number");
+}
+
 function entities(){
   return [
     ...S.items.map(i => ({id:i.id, kind:i.section, text:i.name, at:i.at, ts:i.ts||0, ent:i})),
     ...S.notes.map(n => ({id:n.id, kind:"Note", text:n.text, at:n.at, ts:n.ts||0, ent:n})),
     ...S.marks.map((m,idx) => ({id:m.id, kind:"Mark",
        text:(m.label || "").trim() || "Moment " + (idx+1), at:m.at, ts:m.ts||0, ent:m}))
-  ].sort((a,b) => b.ts - a.ts);
+  ].sort((a,b) => ordOf(b.ent) - ordOf(a.ent));
+}
+
+/* Midpoints run out of room after about forty bisections between the same two
+   neighbours. Spreading everything out again costs one pass and makes the next
+   forty available. */
+function renumberOrd(){
+  const list = entities();
+  const base = Date.now();
+  list.forEach((r, i) => { r.ent.ord = base - i * 1000; });
+}
+
+/* Put `id` at position `k` of `list`, where `list` is what the record is
+   showing with the dragged entry already taken out of it. */
+function placeEntry(list, id, k, ascending){
+  const ent = [...S.items, ...S.notes, ...S.marks].find(e => e.id === id);
+  if(!ent) return false;
+  const step = ascending ? 1000 : -1000;
+  const compute = () => {
+    const a = k > 0 ? ordOf(list[k - 1].ent) : null;
+    const b = k < list.length ? ordOf(list[k].ent) : null;
+    if(a === null && b === null) return ent.ts || Date.now();
+    if(a === null) return b - step;
+    if(b === null) return a + step;
+    return (a + b) / 2;
+  };
+  let next = compute();
+  const a = k > 0 ? ordOf(list[k - 1].ent) : null;
+  const b = k < list.length ? ordOf(list[k].ent) : null;
+  /* No room left between the two neighbours, so spread everything and retry.
+     That is a change to the session in itself, so it counts as one even if
+     the entry then lands back on the number it already had. */
+  let spread = false;
+  if((a !== null && next === a) || (b !== null && next === b)){
+    renumberOrd();
+    spread = true;
+    next = compute();
+  }
+  const same = ordOf(ent) === next;
+  ent.ord = next;
+  return spread || !same;
 }
 
 /* ----- threads ----- */
@@ -146,21 +195,37 @@ function entryEditor(r){
 function entryActions(r){
   const wrap = document.createElement("span");
   wrap.className = "entry-acts";
-  if(r.kind !== "Note" && r.kind !== "Mark") return wrap;
+  const isEntry = r.kind === "Note" || r.kind === "Mark";
 
   const ed = document.createElement("button");
   ed.className = "icon-btn"; ed.type = "button";
   ed.textContent = r.kind === "Mark" ? "Name" : "Edit";
-  ed.title = r.kind === "Mark" ? "Name this moment" : "Edit this note";
-  ed.addEventListener("click", () => { editingEntry = r.id; renderAll(); });
+  ed.title = r.kind === "Mark" ? "Name this moment"
+           : r.kind === "Note" ? "Edit this note"
+           : "Open this item for editing";
+  /* A note is a line of text, so it is corrected where it stands. An item has
+     tags, relations and screenshots behind it, so it goes to the sheet -- the
+     same one the item list and the map open. Anything captured used to have
+     neither here: a screenshot filed as Evidence arrived named after the clock
+     and there was no way to rename it, let alone take it back. */
+  ed.addEventListener("click", () => {
+    if(isEntry){ editingEntry = r.id; renderAll(); }
+    else openSheet(r.id);
+  });
 
   const rm = document.createElement("button");
   rm.className = "icon-btn danger"; rm.type = "button"; rm.textContent = "Delete";
+  rm.title = isEntry ? "Delete this entry" : "Delete this item";
   rm.addEventListener("click", () => confirmAction(rm, "Confirm delete", () => {
-    if(r.kind === "Note") S.notes = S.notes.filter(n => n.id !== r.id);
-    else S.marks = S.marks.filter(m => m.id !== r.id);
-    save(); renderAll();
-    toast(r.kind === "Note" ? "Note deleted" : "Moment deleted");
+    if(r.kind === "Note"){
+      S.notes = S.notes.filter(n => n.id !== r.id);
+      save(); renderAll(); toast("Note deleted");
+    }else if(r.kind === "Mark"){
+      S.marks = S.marks.filter(m => m.id !== r.id);
+      save(); renderAll(); toast("Moment deleted");
+    }else{
+      deleteItem(r.id);
+    }
   }));
 
   wrap.appendChild(ed); wrap.appendChild(rm);
@@ -216,6 +281,9 @@ function renderTape(){
   shown.forEach((r,i) => {
     const d = document.createElement("div");
     d.className = "tape-row" + (i === 0 && rows.length > lastCount ? " fresh" : "");
+    /* Two items can share a name, so the row says which entry it is -- the
+       same way the session record's rows do. */
+    d.dataset.entry = r.id;
     d.style.setProperty("--kind", kindColor(r.kind));
 
     const t = document.createElement("time");

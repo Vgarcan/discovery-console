@@ -257,7 +257,9 @@
           <span class="label">chronological</span>
           <h2>Session record<span class="rec-count" id="rvRecCount"></span></h2>
           <p>Every capture, note, mark and follow-up in the order it happened. The tape beside
-             the capture console keeps the last fourteen; nothing is ever dropped, it is all here.</p>
+             the capture console keeps the last fourteen; nothing is ever dropped, it is all here.
+             Drag a row by its handle to move it — or focus the handle and use the arrow keys —
+             and the new order sticks. The capture times never change with it.</p>
           <div class="rec-tools">
             <input class="inp" type="search" id="rvRecSearch" placeholder="Search this session"
                    autocomplete="off">
@@ -267,8 +269,12 @@
               <option value="old">Oldest first</option>
             </select>
           </div>
+          <p class="rec-lock" id="rvRecLock" hidden>Reordering is off while a search or a
+             type filter is on — the rows you can see are not next to each other in the record.</p>
           <div id="rvRecord"></div>
           <button class="btn rec-more" type="button" id="rvRecMore" hidden></button>
+          <button class="btn btn-ghost rec-order" type="button" id="rvRecOrder" hidden
+                  title="Put every entry back where its capture time says it goes">Back to capture order</button>
         </div>
       </div>
 

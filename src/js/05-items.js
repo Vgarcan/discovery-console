@@ -1,6 +1,21 @@
 /* 05-items.js
    The captured-item list for the active area, with relations in both directions. */
 /* ---------- items ---------- */
+/* Deleting an item is three things, and it used to be spelled out in one
+   place while the tape could not do it at all. Anywhere it is offered, it does
+   all three: the item goes, the relations pointing at it go with it, and the
+   screenshots nothing references any more are cleared out of the store. */
+function deleteItem(id){
+  const item = S.items.find(i => i.id === id);
+  if(!item) return false;
+  S.items = S.items.filter(i => i.id !== id);
+  S.items.forEach(i => i.relations = i.relations.filter(r => r.targetId !== id));
+  renderAll(); save();
+  pruneShots();
+  toast("Item deleted");
+  return true;
+}
+
 function renderItems(){
   let items = inSection(S.active);
   if(stageTags.length) items = items.filter(i => stageTags.some(t => i.tags.includes(t)));
@@ -43,11 +58,8 @@ function renderItems(){
     el.querySelector("[data-map]").addEventListener("click", () => { M.sel = item.id; M.tags = []; M.q = ""; M.hidden = []; $("mapSearch").value = ""; openMap(); });
     el.querySelector("[data-edit]").addEventListener("click", () => openSheet(item.id));
     const delBtn = el.querySelector("[data-del]");
-    delBtn.addEventListener("click", () => confirmAction(delBtn, "Confirm delete", () => {
-      S.items = S.items.filter(i => i.id !== item.id);
-      S.items.forEach(i => i.relations = i.relations.filter(r => r.targetId !== item.id));
-      renderAll(); save(); toast("Item deleted");
-    }));
+    delBtn.addEventListener("click", () => confirmAction(delBtn, "Confirm delete",
+      () => deleteItem(item.id)));
     wrap.appendChild(el);
   });
 }

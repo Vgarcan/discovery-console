@@ -67,11 +67,28 @@ function renderRecordKinds(){
                        ">" + esc(k) + " (" + n + ")</option>").join("");
 }
 
+/* Reordering is only honest when what you can see is what there is. With a
+   search or a type filter on, two rows next to each other on screen can have
+   a dozen entries between them, and dropping one "between" them would be a
+   guess dressed up as a decision. */
+function recLocked(){ return !!(recQuery || recKind); }
+
 function recordRow(r){
   const d = document.createElement("div");
   d.className = "rec-row";
   d.dataset.entry = r.id;
   d.style.setProperty("--kind", kindColor(r.kind));
+
+  const grip = document.createElement("button");
+  grip.className = "rec-grip";
+  grip.type = "button";
+  grip.dataset.grip = r.id;
+  grip.textContent = "∷";
+  grip.disabled = recLocked();
+  grip.setAttribute("aria-label", "Move " + r.text);
+  grip.title = recLocked()
+    ? "Clear the search and the type filter to reorder"
+    : "Drag to move this entry, or press the up and down arrows";
 
   const t = document.createElement("time");
   t.textContent = r.at;
@@ -98,10 +115,108 @@ function recordRow(r){
     body.appendChild(open);
   }
 
+  d.appendChild(grip);
   d.appendChild(t);
   d.appendChild(body);
   return d;
 }
+
+/* ----- reordering ----- */
+const REC_SLOP = 4;
+let recDrag = null;
+
+function recRows(){ return [...$("rvRecord").querySelectorAll(".rec-row")]; }
+
+/* Where the row would land if the pointer were let go here: the number of
+   rows whose middle is above it, counting the dragged row out. */
+function dropIndex(y){
+  const rows = recRows().filter(el => el !== recDrag.el);
+  let k = 0;
+  rows.forEach(el => {
+    const b = el.getBoundingClientRect();
+    if(y > b.top + b.height / 2) k++;
+  });
+  return k;
+}
+
+function paintDrop(k){
+  const rows = recRows().filter(el => el !== recDrag.el);
+  rows.forEach((el, i) => {
+    el.classList.toggle("drop-before", i === k);
+    el.classList.toggle("drop-after", k === rows.length && i === rows.length - 1);
+  });
+}
+
+function clearDropMarks(){
+  recRows().forEach(el => el.classList.remove("drop-before", "drop-after", "dragging"));
+}
+
+function applyMove(id, k){
+  const list = recordRows().filter(r => r.id !== id);
+  if(!placeEntry(list, id, k, recSort === "old")) return false;
+  save();
+  renderAll();
+  return true;
+}
+
+$("rvRecord").addEventListener("pointerdown", e => {
+  const grip = e.target.closest("[data-grip]");
+  if(!grip || grip.disabled) return;
+  e.preventDefault();
+  const el = grip.closest(".rec-row");
+  recDrag = {id:grip.dataset.grip, el:el, y:e.clientY, moved:false, k:null};
+  grip.setPointerCapture(e.pointerId);
+});
+
+$("rvRecord").addEventListener("pointermove", e => {
+  if(!recDrag) return;
+  /* A press that has not travelled is still a press, so a grip can be clicked
+     and focused for the keyboard without the list jumping. */
+  if(!recDrag.moved && Math.abs(e.clientY - recDrag.y) < REC_SLOP) return;
+  if(!recDrag.moved){ recDrag.moved = true; recDrag.el.classList.add("dragging"); }
+  recDrag.k = dropIndex(e.clientY);
+  paintDrop(recDrag.k);
+});
+
+function endRecDrag(){
+  if(!recDrag) return;
+  const drag = recDrag;
+  recDrag = null;
+  clearDropMarks();
+  if(!drag.moved || drag.k === null) return;
+  if(applyMove(drag.id, drag.k)){
+    const grip = $("rvRecord").querySelector('[data-grip="' + drag.id + '"]');
+    if(grip) grip.focus();
+  }
+}
+$("rvRecord").addEventListener("pointerup", endRecDrag);
+$("rvRecord").addEventListener("pointercancel", endRecDrag);
+
+/* A list you can only reorder by dragging is a list some people cannot
+   reorder at all. */
+$("rvRecord").addEventListener("keydown", e => {
+  const grip = e.target.closest && e.target.closest("[data-grip]");
+  if(!grip || grip.disabled) return;
+  const dir = e.key === "ArrowUp" ? -1 : e.key === "ArrowDown" ? 1 : 0;
+  if(!dir) return;
+  e.preventDefault();
+  const rows = recordRows();
+  const at = rows.findIndex(r => r.id === grip.dataset.grip);
+  if(at < 0) return;
+  const k = at + dir;
+  if(k < 0 || k > rows.length - 1) return;
+  if(applyMove(grip.dataset.grip, k)){
+    const again = $("rvRecord").querySelector('[data-grip="' + grip.dataset.grip + '"]');
+    if(again) again.focus();
+  }
+});
+
+$("rvRecOrder").addEventListener("click", () =>
+  confirmAction($("rvRecOrder"), "Confirm", () => {
+    [...S.items, ...S.notes, ...S.marks].forEach(e => { delete e.ord; });
+    save(); renderAll();
+    toast("Back to the order things were captured in");
+  }));
 
 function renderRecord(){
   renderRecordKinds();
@@ -126,6 +241,11 @@ function renderRecord(){
   shown.forEach(r => frag.appendChild(recordRow(r)));
   wrap.appendChild(frag);
   hydrateShots();
+
+  /* Only offered once something has actually been moved: nothing to undo is
+     not a state that needs a button. */
+  $("rvRecOrder").hidden = !anyReordered();
+  $("rvRecLock").hidden = !recLocked();
 
   const left = rows.length - shown.length;
   const more = $("rvRecMore");

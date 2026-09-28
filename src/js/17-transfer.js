@@ -32,6 +32,10 @@ function normalise(list, seq){
     if(!c.id) c.id = uid();
     if(!c.ts) c.ts = ++seq.n;
     if(!Array.isArray(c.replies)) c.replies = [];
+    /* Where the entry sits in the record, when that is no longer where its
+       capture time would put it. Anything that is not a usable number is
+       dropped rather than kept, and the entry falls back to its timestamp. */
+    if("ord" in c && !(typeof c.ord === "number" && isFinite(c.ord))) delete c.ord;
     /* A tag list that arrived as a bare string is one tag, not a broken
        field, so it is wrapped rather than dropped. Everything downstream --
        the rail, the map, the PDD -- calls .forEach on this. */

@@ -185,6 +185,10 @@ function load(){
     if(!e.id) e.id = uid();
     if(!e.ts) e.ts = ++seq;
     if(!Array.isArray(e.replies)) e.replies = [];
+    /* Where the entry sits in the record, when that is no longer where its
+       capture time would put it. Anything that is not a usable number is
+       dropped rather than kept, and the entry falls back to its timestamp. */
+    if("ord" in e && !(typeof e.ord === "number" && isFinite(e.ord))) delete e.ord;
     if(!Array.isArray(e.relations) && list === S.items) e.relations = [];
     /* A tag list that arrived as a bare string is one tag, not a broken
        field, so it is wrapped rather than dropped. Everything downstream --
@@ -226,7 +230,7 @@ function confirmAction(btn, label, fn){
   disarm();
   armed = {
     btn:btn, label:btn.textContent, at:Date.now(),
-    host:btn.closest(".item-acts, .reply, .linkrow")
+    host:btn.closest(".item-acts, .entry-acts, .reply, .linkrow")
   };
   btn.textContent = label;
   btn.classList.add("armed");

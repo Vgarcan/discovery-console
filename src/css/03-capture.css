@@ -177,7 +177,10 @@ kbd{
 .icon-btn.armed:hover,.btn.armed:hover,.clock-act.armed:hover{
   background:var(--alert);border-color:var(--alert);color:#ffffff;filter:brightness(1.08);
 }
-.item-acts.arming,.reply.arming .icon-btn,.linkrow.arming .icon-btn{opacity:1}
+/* These rows only show their actions on hover. Arming one and then moving
+   the pointer away used to hide a live confirm rather than cancel it. */
+.item-acts.arming,.entry-acts.arming,.reply.arming .icon-btn,
+.linkrow.arming .icon-btn{opacity:1}
 
 .empty{
   padding:1.6rem 0;color:var(--ink-3);font-size:.85rem;max-width:46ch;

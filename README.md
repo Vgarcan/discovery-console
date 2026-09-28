@@ -227,9 +227,20 @@ already captured. Tick one when the client confirms it, and the area meter moves
 
 **Note** parks anything you have no time to classify.
 
-Every note and every mark can be corrected from the tape. **Edit** rewrites a note, **Name**
-gives a mark something better than `Moment 3`, and **Delete** takes two presses like everything
-else here that cannot be undone. A mark whose name is cleared goes back to its number.
+Every row on the tape can be corrected from the tape. **Edit** rewrites a note where it
+stands; **Name** gives a mark something better than `Moment 3`; and on anything captured,
+**Edit** opens the same sheet the item list and the map open, because an item has tags,
+relations and screenshots behind it that a one-line input cannot hold. A mark whose name is
+cleared goes back to its number.
+
+That last one matters for screenshots. Paste one with nothing focused and it is filed as its
+own Evidence item named `Screenshot 12:56 PM` — which is the moment you want to rename it.
+Until now the tape would show it and offer nothing.
+
+**Delete** takes two presses, like everything else here that cannot be undone, and deleting an
+item does three things wherever you press it: the item goes, the relations pointing at it go
+with it — a dangling one draws an edge to a node that is not there — and any screenshot
+nothing references any more is cleared out of the store.
 
 **Mark** sits in the top bar next to the clock rather than in the capture bar, because what it
 records is the time, not whatever you happen to be typing.
@@ -435,6 +446,25 @@ is not a question anyone can answer. The record shows the first 25 and grows on 
 **Load 25 earlier** — while all of them stay in memory behind the search. A session of 500
 entries opens as fast as one of fifty, because 25 rows are drawn either way; any one of those
 500 is one search and one press away, and **Open** takes an item straight to its sheet.
+
+### Moving an entry
+
+Drag a row by the handle on its left and it stays where you put it. What this is for: you go
+back afterwards, add the thing that explains an earlier capture, and want the two read
+together rather than forty minutes apart.
+
+**It does not touch the clock.** An entry carries the time it was captured and, separately,
+where it sits in the record. A move changes the second and never the first, so a marked
+moment still says 08:47, the elapsed figures still add up, and nothing in the PDD shifts. It
+is one order for the session, so the tape reads the same way round.
+
+Dragging is off while a search or a type filter is on, and the handles say so. Two rows next
+to each other on a filtered screen can have a dozen entries between them, and dropping one
+"between" them would be a guess dressed up as a decision.
+
+A list you can only reorder by dragging is a list some people cannot reorder at all, so focus
+a handle and the arrow keys move the row. **Back to capture order** appears once anything has
+been moved and puts the lot back — two presses, like everything else here that cannot be undone.
 
 ### The PDD draft
 
@@ -743,6 +773,9 @@ Four things worth knowing:
   capture: text typed into a `TBC`, and images placed into a document slot. Both are keyed by
   the cell they fill. Nothing in the session points at a `pddShots` image, which is why the
   screenshot prune has to be told about them.
+- `ord` appears on an entry only once it has been moved in the session record. It is a sort
+  key, not a time: everything falls back to `ts` without it, so a session nobody has reordered
+  carries none at all.
 
 Older session files without ids, timestamps, reply arrays, a project id or a screenshot
 manifest are migrated on load, so an export from an earlier version still opens.

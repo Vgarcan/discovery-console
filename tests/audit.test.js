@@ -1276,6 +1276,166 @@ async function run(){
      !!dR.getElementById("shotSync"));
   ok("no page errors anywhere in the record", ctxR.errs.length === 0, ctxR.errs.join(" | "));
 
+  group("The tape can correct what it shows");
+  /* A screenshot pasted with nothing focused is filed as its own Evidence
+     item, named after the clock. From the tape there was no way to rename it,
+     open it or take it back: notes and marks had actions, anything captured
+     had none. */
+  const ctxT = boot({ storage: stored }); const aT = api(ctxT); await wait(150);
+  const dT = ctxT.d, wT = ctxT.w;
+  const rowOf = id => dT.querySelector('#tape .tape-row[data-entry="' + id + '"]');
+  const actsOf = id => [...rowOf(id).querySelectorAll(".entry-acts .icon-btn")]
+    .map(b => b.textContent);
+
+  const anItem = wT.entities().find(r => r.kind !== "Note" && r.kind !== "Mark");
+  ok("every tape row says which entry it is, because two items can share a name",
+     [...dT.querySelectorAll("#tape .tape-row")].every(r => !!r.dataset.entry));
+  ok("an item on the tape can be reached at all", !!rowOf(anItem.id));
+  eq("and it offers the same two things a note does",
+     actsOf(anItem.id).join(","), "Edit,Delete");
+
+  /* A note is a line of text, corrected where it stands. An item has tags,
+     relations and screenshots behind it, so it goes to the sheet. */
+  rowOf(anItem.id).querySelectorAll(".entry-acts .icon-btn")[0].click();
+  await wait(60);
+  ok("Edit on an item opens the sheet",
+     dT.getElementById("scrim").classList.contains("on"));
+  eq("on that item", dT.getElementById("fName").value, anItem.text);
+  dT.getElementById("fName").value = "Renamed from the tape";
+  dT.getElementById("fSave").click();
+  await wait(80);
+  eq("and the rename sticks",
+     wT.S.items.find(i => i.id === anItem.id).name, "Renamed from the tape");
+  eq("and the tape says so", rowOf(anItem.id).querySelector(".ttext").textContent,
+     "Renamed from the tape");
+
+  const aNote = wT.S.notes[0];
+  rowOf(aNote.id).querySelectorAll(".entry-acts .icon-btn")[0].click();
+  await wait(60);
+  ok("Edit on a note still corrects it where it stands, without a sheet",
+     !dT.getElementById("scrim").classList.contains("on") &&
+     !!dT.querySelector("#tape .entry-edit"));
+  dT.dispatchEvent(new wT.KeyboardEvent("keydown", { key:"Escape", bubbles:true }));
+  await wait(60);
+
+  /* Deleting an item is three things, and doing only the first leaves the map
+     drawing an edge to a node that is not there. */
+  const doomed = wT.S.items.find(i =>
+    wT.S.items.some(x => x.relations.some(r => r.targetId === i.id)));
+  const pointers = () => wT.S.items
+    .filter(x => x.relations.some(r => r.targetId === doomed.id)).length;
+  ok("the demo has an item something points at", pointers() > 0);
+  /* it has to be on the tape to be deleted from it */
+  doomed.ord = Date.now() + 1000;
+  wT.renderAll();
+  const del = () => rowOf(doomed.id).querySelectorAll(".entry-acts .icon-btn")[1];
+  del().click();
+  ok("the first press only arms it", !!wT.S.items.find(i => i.id === doomed.id));
+  eq("and relabels", del().textContent, "Confirm delete");
+  ok("an armed row keeps its actions on screen rather than hiding a live confirm",
+     rowOf(doomed.id).querySelector(".entry-acts").classList.contains("arming"));
+  await wait(450);
+  del().click();
+  await wait(60);
+  ok("the second press deletes it", !wT.S.items.find(i => i.id === doomed.id));
+  eq("and nothing is left pointing at a ghost", pointers(), 0);
+  ok("no page errors correcting from the tape", ctxT.errs.length === 0, ctxT.errs.join(" | "));
+
+  group("Reordering the record");
+  /* An entry carries the time it was captured and, separately, where it sits
+     in the record. Dragging a note next to the thing it explains moves the
+     second and never the first, so the tape, the marks and the PDD all keep
+     saying when it actually happened. */
+  const ctxO = boot({ storage: stored }); const aO = api(ctxO); await wait(150);
+  const dO = ctxO.d, wO = ctxO.w;
+  aO.view("review");
+  wO.setReviewTab("record");
+  await wait(80);
+
+  const ids = () => [...dO.querySelectorAll("#rvRecord .rec-row")].map(r => r.dataset.entry);
+  const clocks = () => {
+    const o = {};
+    [...wO.S.items, ...wO.S.notes, ...wO.S.marks].forEach(e => { o[e.id] = e.at + "/" + e.ts; });
+    return JSON.stringify(o);
+  };
+  const start = ids();
+  const beforeClocks = clocks();
+
+  ok("nothing has been reordered yet", !wO.anyReordered());
+  ok("so nothing is offered back", dO.getElementById("rvRecOrder").hidden);
+  eq("every row has a handle",
+     dO.querySelectorAll("#rvRecord .rec-grip").length,
+     dO.querySelectorAll("#rvRecord .rec-row").length);
+
+  const moved = start[3];
+  ok("a move lands where it was asked to go",
+     wO.applyMove(moved, 0) && ids()[0] === moved, ids().slice(0, 4));
+  ok("and everything else keeps its order",
+     ids().filter(x => x !== moved).join("|") ===
+     start.filter(x => x !== moved).join("|"));
+  eq("not one capture time was rewritten", clocks(), beforeClocks);
+  ok("the move is written down against the entry",
+     typeof [...wO.S.items, ...wO.S.notes, ...wO.S.marks]
+       .find(e => e.id === moved).ord === "number");
+  ok("and it is offered back now", !dO.getElementById("rvRecOrder").hidden);
+
+  /* One order for the session, so the tape reads the same way. */
+  aO.view("capture");
+  await wait(60);
+  eq("the tape reads in the same order",
+     [...dO.querySelectorAll("#tape .tape-row .ttext")].map(t => t.textContent).join("|"),
+     wO.entities().slice(0, 14).map(r => r.text).join("|"));
+  aO.view("review");
+  wO.setReviewTab("record");
+  await wait(60);
+
+  /* Reordering is only honest when what you can see is what there is: with a
+     filter on, two rows next to each other can have a dozen between them. */
+  const search = dO.getElementById("rvRecSearch");
+  search.value = "return";
+  search.dispatchEvent(new wO.Event("input", { bubbles:true }));
+  await wait(40);
+  ok("a filter disables every handle",
+     [...dO.querySelectorAll("#rvRecord .rec-grip")].every(g => g.disabled));
+  ok("and says why", !dO.getElementById("rvRecLock").hidden);
+  const lockedOrder = wO.recordRows().map(r => r.id).join("|");
+  const g0 = dO.querySelector("#rvRecord .rec-grip");
+  g0.dispatchEvent(new wO.KeyboardEvent("keydown", { key:"ArrowUp", bubbles:true }));
+  await wait(40);
+  eq("and the keyboard cannot get round it",
+     wO.recordRows().map(r => r.id).join("|"), lockedOrder);
+  search.value = "";
+  search.dispatchEvent(new wO.Event("input", { bubbles:true }));
+  await wait(40);
+  ok("clearing it turns them back on",
+     [...dO.querySelectorAll("#rvRecord .rec-grip")].every(g => !g.disabled));
+
+  /* Midpoints run out after about forty bisections between the same pair. */
+  const rr = wO.recordRows();
+  const top = rr[0].ent, second = rr[1].ent;
+  const X = wO.ordOf(top);
+  top.ord = X;
+  second.ord = X - 1e-6;
+  ok("two entries can be squeezed until no number fits between them",
+     (wO.ordOf(top) + wO.ordOf(second)) / 2 === wO.ordOf(top));
+  ok("a move into that gap still completes", wO.applyMove(rr[2].id, 1));
+  ok("and the order comes out strictly descending", (() => {
+    const o = wO.entities().map(r => wO.ordOf(r.ent));
+    for(let i = 1; i < o.length; i++) if(!(o[i] < o[i - 1])) return false;
+    return true;
+  })());
+
+  dO.getElementById("rvRecOrder").click();
+  ok("putting it back arms first", wO.anyReordered());
+  await wait(450);
+  dO.getElementById("rvRecOrder").click();
+  ok("the second press clears every override", !wO.anyReordered());
+  ok("and the record is chronological again", (() => {
+    const o = wO.entities().map(r => r.ts);
+    return o.join("|") === o.slice().sort((a, b) => b - a).join("|");
+  })());
+  ok("no page errors reordering", ctxO.errs.length === 0, ctxO.errs.join(" | "));
+
   group("Notes and marks can be corrected");
   /* A mark arrived as "Moment 3" and stayed that way, and neither a mark nor a
      note could be renamed, edited or removed from anywhere in the console. */
