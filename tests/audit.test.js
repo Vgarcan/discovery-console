@@ -409,8 +409,8 @@ async function run(){
   a.view("pdd");
   ok("pdd fills from the demo", a.text("pddMeta").startsWith("93 of 94"), a.text("pddMeta"));
   eq("by-hand fields counted separately",
-     d.querySelector("#pddMeta .byhand-count").textContent, "33");
-  eq("and marked in the document", d.querySelectorAll("#pddDoc .tbc.byhand").length, 33);
+     d.querySelector("#pddMeta .byhand-count").textContent, "34");
+  eq("and marked in the document", d.querySelectorAll("#pddDoc .tbc.byhand").length, 34);
   ok("only one cell is a real open question",
      d.querySelectorAll("#pddDoc .tbc").length - d.querySelectorAll("#pddDoc .tbc.byhand").length === 1,
      String(d.querySelectorAll("#pddDoc .tbc").length));
@@ -849,7 +849,7 @@ async function run(){
   ok("PDD-05: the header scores cells", aS.text("pddMeta").startsWith("103 of 112"),
      aS.text("pddMeta"));
   eq("PDD-02: by-hand fields counted apart",
-     dS.querySelector("#pddMeta .byhand-count").textContent, "38");
+     dS.querySelector("#pddMeta .byhand-count").textContent, "39");
   eq("only nine cells are open questions",
      dS.querySelectorAll("#pddDoc .tbc").length - dS.querySelectorAll("#pddDoc .tbc.byhand").length, 9);
 
@@ -1006,16 +1006,49 @@ async function run(){
   await wait(80);
 
   eq("2.9 gathers every screenshot, wherever it hangs",
-     dG.querySelectorAll("#pddDoc .pdd-gallery")[1].querySelectorAll(".pdd-fig").length, 2);
+     dG.querySelectorAll("#pddDoc .pdd-gallery")[0].querySelectorAll(".pdd-fig").length, 2);
   ok("each caption says what it was captured against",
      [...dG.querySelectorAll("#pddDoc .pdd-fig figcaption")]
        .some(c => c.textContent.indexOf(sysItem.name) === 0 &&
                   c.textContent.indexOf("systems") > -1),
      [...dG.querySelectorAll("#pddDoc .pdd-fig figcaption")].map(c => c.textContent));
-  eq("2.2 shows only the ones filed as evidence",
-     dG.querySelectorAll("#pddDoc .pdd-gallery")[0].querySelectorAll(".pdd-fig").length, 1);
+
+  /* 2.2 is the authoritative As-Is map. It used to fill itself from every
+     piece of evidence in the session, which put green-screen captures where a
+     process diagram belongs -- so it is a by-hand slot now, and nothing lands
+     in it on its own. */
+  const sec22 = [...dG.querySelectorAll("#pddDoc .pdd-sec")]
+    .find(x => x.textContent.indexOf("2.2 ") === 0);
+  eq("2.2 helps itself to nothing", sec22.querySelectorAll(".pdd-fig").length, 0);
+  eq("exactly one gallery is drawn, and it is 2.9",
+     dG.querySelectorAll("#pddDoc .pdd-gallery").length, 1);
+  ok("2.2 offers the slot instead", !!sec22.querySelector("[data-paste]"));
+  ok("and reads as an outstanding by-hand field until it is filled",
+     !!sec22.querySelector(".tbc.byhand"));
+  ok("captured references are still listed there, because those are fact",
+     sec22.querySelectorAll(".pdd-list li").length > 0);
+
+  wG.S.pddShots["2.2|map"] = ["shot-g1"];
+  wG.renderPDD();
+  const sec22b = [...dG.querySelectorAll("#pddDoc .pdd-sec")]
+    .find(x => x.textContent.indexOf("2.2 ") === 0);
+  eq("an image placed by hand appears there", sec22b.querySelectorAll(".pdd-figures .pdd-fig").length, 1);
+  ok("and the TBC goes", !sec22b.querySelector(".tbc.byhand"));
+  eq("2.9 is unchanged by it, because it only gathers what was captured",
+     dG.querySelectorAll("#pddDoc .pdd-gallery")[0].querySelectorAll(".pdd-fig").length, 2);
   ok("pictures are not scored as answered fields",
      aG.text("pddMeta").indexOf("93 of 94") === 0, aG.text("pddMeta"));
+
+  /* Nothing in the session points at a document image, so the pruner has to
+     be told about it or the next pass deletes the process map. */
+  wG.pruneShots();
+  ok("the pruner leaves an image placed in the document alone",
+     !!wG.S.shots["shot-g1"], Object.keys(wG.S.shots));
+
+  eq("rubbish in the field is dropped rather than trusted",
+     JSON.stringify(wG.normalisePddShots({ok:["a"], bad:"not a list", empty:[], mixed:["b", 7]})),
+     '{"ok":["a"],"mixed":["b"]}');
+  wG.S.pddShots = {};
 
   const gmd = wG.pddMarkdown();
   ok("the markdown points at the folder, not at a blob",
@@ -1030,6 +1063,9 @@ async function run(){
   wG.renderPDD();
   eq("a session with none of them draws no gallery",
      dG.querySelectorAll("#pddDoc .pdd-gallery").length, 0);
+  ok("but 2.2 still offers its slot, because that is where the map goes",
+     !![...dG.querySelectorAll("#pddDoc .pdd-sec")]
+       .find(x => x.textContent.indexOf("2.2 ") === 0).querySelector("[data-paste]"));
   ok("no page errors drawing the gallery", ctxG.errs.length === 0, ctxG.errs.join(" | "));
 
   group("Screenshot folder");

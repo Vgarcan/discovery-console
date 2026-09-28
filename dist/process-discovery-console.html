@@ -1136,14 +1136,43 @@ body.resizing .work,body.resizing .pane-resize{transition:none}
 }
 .pdd-input:focus{outline:0}
 .pdd-meta .byhand-count{margin-left:1.1rem}
+/* 2.9 is a contact sheet: what was captured, at a size you can scan. Click one
+   and it opens full size, which is where anybody actually reads it. */
 .pdd-gallery{
-  display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
-  gap:.9rem;margin:.6rem 0 0;
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));
+  gap:.7rem;margin:.6rem 0 0;
   /* Without this the figures are stretched to the row height, which is worked
      out from the image alone, and every caption spills out of its own box and
      lands on whatever follows the gallery. */
   align-items:start;
 }
+.pdd-gallery .pdd-fig img{height:84px;object-fit:cover}
+.pdd-gallery figcaption{
+  font-size:.68rem;line-height:1.3;
+  /* Two lines, then an ellipsis: a long caption under a small thumbnail makes
+     the rows ragged and pushes the next one off the screen. */
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+}
+
+/* 2.2 is the map itself, so it is shown at a size you can read rather than
+   scan, and it holds whatever the analyst put there -- nothing arrives on
+   its own. */
+.pdd-figures{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+  gap:.9rem;margin:.5rem 0 0;align-items:start;
+}
+.pdd-figures .pdd-fig{position:relative}
+.pdd-fig-x{
+  position:absolute;top:.3rem;right:.3rem;line-height:1;
+  background:var(--canvas);color:var(--ink-2);cursor:pointer;
+  border:1px solid var(--line);border-radius:3px;padding:.05rem .3rem;
+  font-size:.8rem;opacity:0;transition:opacity .12s;
+}
+.pdd-fig:hover .pdd-fig-x,.pdd-fig-x:focus{opacity:1}
+.pdd-figbar{display:flex;flex-wrap:wrap;align-items:center;gap:.4rem;margin-top:.5rem}
+.pdd-figbar .btn{cursor:pointer}
+.pdd-fighint{font-size:.74rem;color:var(--ink-3);flex:1 1 220px;min-width:0}
+
 .pdd-fig{margin:0}
 .pdd-fig img{
   width:100%;display:block;cursor:zoom-in;
@@ -1169,8 +1198,13 @@ body.resizing .work,body.resizing .pane-resize{transition:none}
   .tbc{border-color:#888888}
   .tbc.byhand{color:#444444}
   .pdd-hand{border-bottom-color:#999999}
-  /* Two to a row on paper, and never split across a page break. */
-  .pdd-gallery{grid-template-columns:repeat(2,1fr);gap:.6rem}
+  /* A contact sheet on paper too: four to a row for 2.9, two for the map,
+     and never split across a page break. */
+  .pdd-gallery{grid-template-columns:repeat(4,1fr);gap:.5rem}
+  .pdd-gallery .pdd-fig img{height:auto}
+  .pdd-figures{grid-template-columns:repeat(2,1fr);gap:.6rem}
+  /* The controls are for filling the slot, not part of the document. */
+  .pdd-figbar,.pdd-fig-x{display:none}
   .pdd-fig{break-inside:avoid;page-break-inside:avoid}
   .pdd-fig img{border-color:#999999;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .pdd-fig figcaption{color:#444444}
@@ -1820,6 +1854,11 @@ let S = {
   resolved:[],
   shots:{},
   manual:{},
+  /* Images placed into a document slot by hand, keyed by that slot. Separate
+     from S.manual because those are typed strings and these are lists of
+     screenshot ids, and separate from the items because a process map belongs
+     to the document, not to anything that was captured during the call. */
+  pddShots:{},
   seconds:0,
   paused:false,
   theme:"dark"
@@ -1873,6 +1912,19 @@ function normaliseManual(raw){
   return out;
 }
 
+/* Same shape on the way in as on the way out: slot -> list of ids. Anything
+   else in the file is dropped rather than trusted. */
+function normalisePddShots(raw){
+  const out = {};
+  if(!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
+  Object.keys(raw).forEach(k => {
+    if(!Array.isArray(raw[k])) return;
+    const ids = raw[k].filter(x => typeof x === "string" && x);
+    if(ids.length) out[k] = ids;
+  });
+  return out;
+}
+
 function normaliseShots(raw, prj){
   const out = {};
   if(!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
@@ -1892,6 +1944,19 @@ function normaliseShots(raw, prj){
 /* Anything that points at a screenshot the manifest has never heard of gets a
    bare entry rather than being dropped: the id is still enough to go and look
    for the file, and a blank where a screenshot should be is worth seeing. */
+/* A document slot names screenshots the same way an item does, so a file that
+   arrives without them still has to say what it is missing rather than drop
+   the reference and pretend the slot was always empty. */
+function attachPddShots(slots, manifest, prj){
+  let orphans = 0;
+  Object.keys(slots || {}).forEach(k => {
+    slots[k].forEach(id => {
+      if(!manifest[id]){ manifest[id] = shotEntry(prj); orphans++; }
+    });
+  });
+  return orphans;
+}
+
 function attachShots(list, manifest, prj){
   let orphans = 0;
   const keep = ids => {
@@ -1951,6 +2016,8 @@ function load(){
   if(!S.id) S.id = newProjectId();
   S.shots = normaliseShots(S.shots, S.id);
   S.manual = normaliseManual(S.manual);
+  S.pddShots = normalisePddShots(S.pddShots);
+  attachPddShots(S.pddShots, S.shots, S.id);
   let seq = 0;
   [S.items, S.notes, S.marks].forEach(list => (list || []).forEach(e => {
     if(!e.id) e.id = uid();
@@ -4532,9 +4599,10 @@ function shotOwners(){
   return out;
 }
 
-function shotsOf(items){
-  return items.filter(i => (i.shots || []).length)
-              .map(i => ({name:i.name, note:firstReply(i), shots:(i.shots || []).slice()}));
+/* What the analyst has placed into one document slot by hand. */
+const PDD_MAP_SLOT = "2.2|map";
+function slotShots(key){
+  return ((S.pddShots && S.pddShots[key]) || []).filter(id => S.shots[id]);
 }
 
 function pddModel(){
@@ -4613,10 +4681,17 @@ function pddModel(){
      {type:"hint", text:"Write this up as one short paragraph: trigger, objective, major phases, final result."}
    ]},
 
+   /* This section is the authoritative As-Is map, not a pile of whatever was
+      screenshotted during the call. It used to fill itself from every piece of
+      evidence in the session, which put green-screen captures where a process
+      diagram belongs. It is a by-hand slot now, like the fields the console
+      has no way to capture: the analyst puts the map there. */
    {no:"2.2", title:"Process Map(s)", blocks:[
+     {type:"figures", key:PDD_MAP_SLOT, label:"Process map",
+      hint:"Paste or choose the map itself — a diagram, or a picture of the " +
+           "relationship map. Nothing lands here on its own."},
      {type:"list", label:"Available references",
       items:byTag("Evidence","Recording","URL","SOP","Screenshot").map(e => e.name + (firstReply(e) ? " — " + firstReply(e) : ""))},
-     {type:"gallery", items:shotsOf(byTag("Evidence","Recording","URL","SOP","Screenshot"))},
      {type:"hint", text:"Insert the authoritative As-Is map only when the real current-project file exists. Never fabricate a link."}
    ]},
 
@@ -4702,7 +4777,11 @@ function pddStats(model){
     (s.blocks||[]).forEach(b => {
       if(b.type === "field"){ score(b.value); return; }
       if(b.type === "list" || b.type === "numbered"){ score(b.items && b.items.length ? true : TBC); return; }
-      if(b.type === "gallery") return;   /* pictures, not a field to answer */
+      /* 2.9 gathers what was captured, so it is not a field anybody answers.
+         2.2 is a slot somebody has to fill, so it is scored exactly like the
+         other by-hand fields: outstanding until it has something in it. */
+      if(b.type === "gallery") return;
+      if(b.type === "figures"){ score({byHand:true, value:slotShots(b.key).length}); return; }
       if(b.type === "table") b.rows.forEach(r => r.forEach(c => score(c)));
     });
   });
@@ -4766,9 +4845,58 @@ function editManualCell(host){
   input.addEventListener("blur", () => close(true));
 }
 
+/* ----- images placed into a document slot ----- */
+function addSlotShot(key, file){
+  if(!file) return;
+  takeShot(file).then(id => {
+    if(!id) return;
+    S.pddShots = S.pddShots || {};
+    S.pddShots[key] = (S.pddShots[key] || []).concat(id);
+    save();
+    renderPDD();
+  });
+}
+
 $("pddDoc").addEventListener("click", e => {
+  const drop = e.target.closest("[data-drop]");
+  if(drop){
+    const key = drop.dataset.drop, id = drop.dataset.id;
+    /* Taking a picture out of the document is not deleting it: it may still be
+       hanging off the item it was captured against. The prune is what decides
+       whether the bytes go, and it counts every other reference first. */
+    confirmAction(drop, "×?", () => {
+      S.pddShots[key] = (S.pddShots[key] || []).filter(x => x !== id);
+      if(!S.pddShots[key].length) delete S.pddShots[key];
+      save(); renderPDD();
+    });
+    return;
+  }
+
+  const paste = e.target.closest("[data-paste]");
+  if(paste){
+    const key = paste.dataset.paste;
+    clipboardImageFile().then(file => {
+      if(!file){ toast("Nothing to paste. Copy an image first."); return; }
+      addSlotShot(key, file);
+    });
+    return;
+  }
+
   const host = e.target.closest("[data-mk]");
-  if(host) editManualCell(host);
+  if(host){ editManualCell(host); return; }
+
+  /* The draft draws its own thumbnails rather than going through shotThumbs,
+     so it has to hand the click on as well. At this size a picture is not
+     much use until it can be opened. */
+  const img = e.target.closest("img.shot-img");
+  if(img && img.dataset.shot) openShot(img.dataset.shot);
+});
+
+$("pddDoc").addEventListener("change", e => {
+  const pick = e.target.closest("[data-pick]");
+  if(!pick || !pick.files || !pick.files[0]) return;
+  addSlotShot(pick.dataset.pick, pick.files[0]);
+  pick.value = "";
 });
 $("pddDoc").addEventListener("keydown", e => {
   if(e.key !== "Enter" && e.key !== " ") return;
@@ -4836,6 +4964,27 @@ function renderPDD(){
           (b.note ? '<p class="pdd-note">' + esc(b.note) + "</p>" : ""));
         return;
       }
+      if(b.type === "figures"){
+        const ids = slotShots(b.key);
+        s.insertAdjacentHTML("beforeend",
+          '<div class="pdd-key pdd-sublabel">' + esc(b.label) + "</div>" +
+          (ids.length
+            ? '<div class="pdd-figures">' + ids.map(id =>
+                '<figure class="pdd-fig"><img class="shot-img" data-shot="' + esc(id) +
+                '" alt="' + esc(b.label) + '">' +
+                '<button class="pdd-fig-x" type="button" data-drop="' + esc(b.key) +
+                '" data-id="' + esc(id) + '" title="Take this out of the document">' +
+                "×</button></figure>").join("") + "</div>"
+            : '<div class="pdd-val"><span class="tbc byhand">TBC</span></div>') +
+          '<div class="pdd-figbar">' +
+            '<button class="btn" type="button" data-paste="' + esc(b.key) + '">Paste image</button>' +
+            '<label class="btn" for="pddFile-' + esc(b.key) + '">Choose file</label>' +
+            '<input type="file" accept="image/*" hidden id="pddFile-' + esc(b.key) +
+            '" data-pick="' + esc(b.key) + '">' +
+            '<span class="pdd-fighint">' + esc(b.hint) + "</span>" +
+          "</div>");
+        return;
+      }
       if(b.type === "table"){
         s.insertAdjacentHTML("beforeend",
           (b.label ? '<div class="pdd-key pdd-sublabel">' + esc(b.label) + "</div>" : "") +
@@ -4877,6 +5026,15 @@ function pddMarkdown(){
         if(b.label) L.push("", "**" + b.label + "**", "");
         if(b.items && b.items.length) b.items.forEach((x,i) => L.push((b.type === "numbered" ? (i+1)+". " : "- ") + flat(x)));
         else L.push("- TBC");
+        L.push("");
+        return;
+      }
+      if(b.type === "figures"){
+        const ids = slotShots(b.key);
+        L.push("", "**" + b.label + "**", "");
+        if(!ids.length){ L.push("TBC (by hand)", ""); return; }
+        ids.forEach(id => L.push("![" + flat(b.label) + "](assets/shots/" +
+          shotPrj(id) + "/" + id + shotExt(id) + ")"));
         L.push("");
         return;
       }
@@ -5009,6 +5167,7 @@ function doReplace(){
     S.resolved = Array.isArray(o.resolved) ? o.resolved.filter(r => typeof r === "string") : [];
     S.shots = normaliseShots(o.shots, S.id);
     S.manual = normaliseManual(o.manual);
+    S.pddShots = normalisePddShots(o.pddShots);
     const loose = [S.items, S.notes, S.marks]
       .reduce((n, list) => n + attachShots(list, S.shots, S.id), 0);
     if(typeof o.seconds === "number") S.seconds = o.seconds;
@@ -5036,6 +5195,13 @@ $("importMerge").addEventListener("click", () => {
     const fromPrj = typeof o.id === "string" && o.id ? o.id : S.id;
     Object.assign(S.shots, normaliseShots(o.shots, fromPrj));
     Object.assign(S.manual, normaliseManual(o.manual));
+    /* A slot is a slot: two sessions merged both want section 2.2, so the
+       images join rather than one silently winning. */
+    const incomingSlots = normalisePddShots(o.pddShots);
+    Object.keys(incomingSlots).forEach(k => {
+      S.pddShots[k] = (S.pddShots[k] || []).concat(
+        incomingSlots[k].filter(id => (S.pddShots[k] || []).indexOf(id) < 0));
+    });
     incoming.forEach(i => { const old = i.id; i.id = uid(); map[old] = i.id; });
     /* Filter on the ORIGINAL target, then rewrite it. Rewriting first and then
        testing the new id against a map keyed by the old ones dropped every
@@ -5698,6 +5864,9 @@ function pruneShots(){
     (e.replies || []).forEach(r => (r.shots || []).forEach(id => used.add(id)));
   });
   walk(S.items); walk(S.notes); walk(S.marks);
+  /* Placed into a document slot by hand. Nothing in the session points at
+     these, so without this the next prune would delete the process map. */
+  Object.keys(S.pddShots || {}).forEach(k => (S.pddShots[k] || []).forEach(id => used.add(id)));
   /* Held on purpose rather than orphaned: one is waiting for the item it will
      belong to, the other for the sheet to be saved. */
   pendingShots.forEach(id => used.add(id));

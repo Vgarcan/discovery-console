@@ -65,14 +65,43 @@
 }
 .pdd-input:focus{outline:0}
 .pdd-meta .byhand-count{margin-left:1.1rem}
+/* 2.9 is a contact sheet: what was captured, at a size you can scan. Click one
+   and it opens full size, which is where anybody actually reads it. */
 .pdd-gallery{
-  display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
-  gap:.9rem;margin:.6rem 0 0;
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));
+  gap:.7rem;margin:.6rem 0 0;
   /* Without this the figures are stretched to the row height, which is worked
      out from the image alone, and every caption spills out of its own box and
      lands on whatever follows the gallery. */
   align-items:start;
 }
+.pdd-gallery .pdd-fig img{height:84px;object-fit:cover}
+.pdd-gallery figcaption{
+  font-size:.68rem;line-height:1.3;
+  /* Two lines, then an ellipsis: a long caption under a small thumbnail makes
+     the rows ragged and pushes the next one off the screen. */
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+}
+
+/* 2.2 is the map itself, so it is shown at a size you can read rather than
+   scan, and it holds whatever the analyst put there -- nothing arrives on
+   its own. */
+.pdd-figures{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+  gap:.9rem;margin:.5rem 0 0;align-items:start;
+}
+.pdd-figures .pdd-fig{position:relative}
+.pdd-fig-x{
+  position:absolute;top:.3rem;right:.3rem;line-height:1;
+  background:var(--canvas);color:var(--ink-2);cursor:pointer;
+  border:1px solid var(--line);border-radius:3px;padding:.05rem .3rem;
+  font-size:.8rem;opacity:0;transition:opacity .12s;
+}
+.pdd-fig:hover .pdd-fig-x,.pdd-fig-x:focus{opacity:1}
+.pdd-figbar{display:flex;flex-wrap:wrap;align-items:center;gap:.4rem;margin-top:.5rem}
+.pdd-figbar .btn{cursor:pointer}
+.pdd-fighint{font-size:.74rem;color:var(--ink-3);flex:1 1 220px;min-width:0}
+
 .pdd-fig{margin:0}
 .pdd-fig img{
   width:100%;display:block;cursor:zoom-in;
@@ -98,8 +127,13 @@
   .tbc{border-color:#888888}
   .tbc.byhand{color:#444444}
   .pdd-hand{border-bottom-color:#999999}
-  /* Two to a row on paper, and never split across a page break. */
-  .pdd-gallery{grid-template-columns:repeat(2,1fr);gap:.6rem}
+  /* A contact sheet on paper too: four to a row for 2.9, two for the map,
+     and never split across a page break. */
+  .pdd-gallery{grid-template-columns:repeat(4,1fr);gap:.5rem}
+  .pdd-gallery .pdd-fig img{height:auto}
+  .pdd-figures{grid-template-columns:repeat(2,1fr);gap:.6rem}
+  /* The controls are for filling the slot, not part of the document. */
+  .pdd-figbar,.pdd-fig-x{display:none}
   .pdd-fig{break-inside:avoid;page-break-inside:avoid}
   .pdd-fig img{border-color:#999999;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .pdd-fig figcaption{color:#444444}

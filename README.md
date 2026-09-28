@@ -465,14 +465,32 @@ it becomes the Description.
 
 ![Exceptions, with business actions filled from thread replies](docs/images/09-pdd-exceptions.png)
 
-**Screenshots land in the document.** Section 2.9 gathers every one in the session, wherever it
-was captured — against a system, a note, a marked moment, a reply — captioned with the thing it
-belongs to. Section 2.2 shows the ones filed as evidence. They print: **Print / Save as PDF**
-waits for the images before opening the dialog, so the PDF never comes out with empty frames.
+**Screenshots land in the document, in two different ways.**
+
+**2.9 Screenshots/Video** is a contact sheet of what the session captured: every screenshot,
+wherever it hangs — a system, a note, a marked moment, a reply — as a small thumbnail with a
+two-line caption saying what it was taken against. Several to a row, four on paper. Click one
+to see it full size; it is a sheet to scan, not to read from.
+
+**2.2 Process Map(s)** is not filled by the console at all. It used to help itself to every
+piece of evidence in the session, which put green-screen captures where a process diagram
+belongs. It is a by-hand slot now, like the `TBC` fields the console has no way to capture:
+**Paste image** takes whatever is on the clipboard, **Choose file** takes one off disk, and
+until something is there it reads `TBC` and counts as an outstanding by-hand field. It holds
+several, and each has an `×` to take it back out — two presses, like everything else here
+that cannot be undone.
+
+Taking a picture out of 2.2 is not deleting it: it may still be hanging off the item it was
+captured against, and only the prune decides whether the bytes go. The prune counts document
+slots as references, or the next pass would quietly eat the process map.
+
+Both print. **Print / Save as PDF** waits for the images before opening the dialog, so the PDF
+never comes out with empty frames, and the paste/choose controls are print-hidden — they are
+how the slot gets filled, not part of the document.
 
 In the Markdown they come out as `![caption](assets/shots/prj-8f3a2c/shot-01k2f7.webp)` —
 relative to the project root, so an exported `.md` dropped there resolves them, and anywhere
-else still says which file goes with which caption.
+else still says which file goes with which caption. An empty 2.2 writes `TBC (by hand)`.
 
 ### Filling in the rest
 
@@ -721,6 +739,10 @@ Four things worth knowing:
 - The first entry in `replies` is the long-form answer when the PDD draft is built.
 - `resolved` holds `"Area::gap text"` keys. These drive the coverage meters, so they are the
   closest thing to a completeness score.
+- `manual` and `pddShots` are the two things that belong to the *document* rather than to the
+  capture: text typed into a `TBC`, and images placed into a document slot. Both are keyed by
+  the cell they fill. Nothing in the session points at a `pddShots` image, which is why the
+  screenshot prune has to be told about them.
 
 Older session files without ids, timestamps, reply arrays, a project id or a screenshot
 manifest are migrated on load, so an export from an earlier version still opens.

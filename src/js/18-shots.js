@@ -481,6 +481,9 @@ function pruneShots(){
     (e.replies || []).forEach(r => (r.shots || []).forEach(id => used.add(id)));
   });
   walk(S.items); walk(S.notes); walk(S.marks);
+  /* Placed into a document slot by hand. Nothing in the session points at
+     these, so without this the next prune would delete the process map. */
+  Object.keys(S.pddShots || {}).forEach(k => (S.pddShots[k] || []).forEach(id => used.add(id)));
   /* Held on purpose rather than orphaned: one is waiting for the item it will
      belong to, the other for the sheet to be saved. */
   pendingShots.forEach(id => used.add(id));

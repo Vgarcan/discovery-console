@@ -47,9 +47,10 @@ function shotOwners(){
   return out;
 }
 
-function shotsOf(items){
-  return items.filter(i => (i.shots || []).length)
-              .map(i => ({name:i.name, note:firstReply(i), shots:(i.shots || []).slice()}));
+/* What the analyst has placed into one document slot by hand. */
+const PDD_MAP_SLOT = "2.2|map";
+function slotShots(key){
+  return ((S.pddShots && S.pddShots[key]) || []).filter(id => S.shots[id]);
 }
 
 function pddModel(){
@@ -128,10 +129,17 @@ function pddModel(){
      {type:"hint", text:"Write this up as one short paragraph: trigger, objective, major phases, final result."}
    ]},
 
+   /* This section is the authoritative As-Is map, not a pile of whatever was
+      screenshotted during the call. It used to fill itself from every piece of
+      evidence in the session, which put green-screen captures where a process
+      diagram belongs. It is a by-hand slot now, like the fields the console
+      has no way to capture: the analyst puts the map there. */
    {no:"2.2", title:"Process Map(s)", blocks:[
+     {type:"figures", key:PDD_MAP_SLOT, label:"Process map",
+      hint:"Paste or choose the map itself — a diagram, or a picture of the " +
+           "relationship map. Nothing lands here on its own."},
      {type:"list", label:"Available references",
       items:byTag("Evidence","Recording","URL","SOP","Screenshot").map(e => e.name + (firstReply(e) ? " — " + firstReply(e) : ""))},
-     {type:"gallery", items:shotsOf(byTag("Evidence","Recording","URL","SOP","Screenshot"))},
      {type:"hint", text:"Insert the authoritative As-Is map only when the real current-project file exists. Never fabricate a link."}
    ]},
 
@@ -217,7 +225,11 @@ function pddStats(model){
     (s.blocks||[]).forEach(b => {
       if(b.type === "field"){ score(b.value); return; }
       if(b.type === "list" || b.type === "numbered"){ score(b.items && b.items.length ? true : TBC); return; }
-      if(b.type === "gallery") return;   /* pictures, not a field to answer */
+      /* 2.9 gathers what was captured, so it is not a field anybody answers.
+         2.2 is a slot somebody has to fill, so it is scored exactly like the
+         other by-hand fields: outstanding until it has something in it. */
+      if(b.type === "gallery") return;
+      if(b.type === "figures"){ score({byHand:true, value:slotShots(b.key).length}); return; }
       if(b.type === "table") b.rows.forEach(r => r.forEach(c => score(c)));
     });
   });
@@ -281,9 +293,58 @@ function editManualCell(host){
   input.addEventListener("blur", () => close(true));
 }
 
+/* ----- images placed into a document slot ----- */
+function addSlotShot(key, file){
+  if(!file) return;
+  takeShot(file).then(id => {
+    if(!id) return;
+    S.pddShots = S.pddShots || {};
+    S.pddShots[key] = (S.pddShots[key] || []).concat(id);
+    save();
+    renderPDD();
+  });
+}
+
 $("pddDoc").addEventListener("click", e => {
+  const drop = e.target.closest("[data-drop]");
+  if(drop){
+    const key = drop.dataset.drop, id = drop.dataset.id;
+    /* Taking a picture out of the document is not deleting it: it may still be
+       hanging off the item it was captured against. The prune is what decides
+       whether the bytes go, and it counts every other reference first. */
+    confirmAction(drop, "×?", () => {
+      S.pddShots[key] = (S.pddShots[key] || []).filter(x => x !== id);
+      if(!S.pddShots[key].length) delete S.pddShots[key];
+      save(); renderPDD();
+    });
+    return;
+  }
+
+  const paste = e.target.closest("[data-paste]");
+  if(paste){
+    const key = paste.dataset.paste;
+    clipboardImageFile().then(file => {
+      if(!file){ toast("Nothing to paste. Copy an image first."); return; }
+      addSlotShot(key, file);
+    });
+    return;
+  }
+
   const host = e.target.closest("[data-mk]");
-  if(host) editManualCell(host);
+  if(host){ editManualCell(host); return; }
+
+  /* The draft draws its own thumbnails rather than going through shotThumbs,
+     so it has to hand the click on as well. At this size a picture is not
+     much use until it can be opened. */
+  const img = e.target.closest("img.shot-img");
+  if(img && img.dataset.shot) openShot(img.dataset.shot);
+});
+
+$("pddDoc").addEventListener("change", e => {
+  const pick = e.target.closest("[data-pick]");
+  if(!pick || !pick.files || !pick.files[0]) return;
+  addSlotShot(pick.dataset.pick, pick.files[0]);
+  pick.value = "";
 });
 $("pddDoc").addEventListener("keydown", e => {
   if(e.key !== "Enter" && e.key !== " ") return;
@@ -351,6 +412,27 @@ function renderPDD(){
           (b.note ? '<p class="pdd-note">' + esc(b.note) + "</p>" : ""));
         return;
       }
+      if(b.type === "figures"){
+        const ids = slotShots(b.key);
+        s.insertAdjacentHTML("beforeend",
+          '<div class="pdd-key pdd-sublabel">' + esc(b.label) + "</div>" +
+          (ids.length
+            ? '<div class="pdd-figures">' + ids.map(id =>
+                '<figure class="pdd-fig"><img class="shot-img" data-shot="' + esc(id) +
+                '" alt="' + esc(b.label) + '">' +
+                '<button class="pdd-fig-x" type="button" data-drop="' + esc(b.key) +
+                '" data-id="' + esc(id) + '" title="Take this out of the document">' +
+                "×</button></figure>").join("") + "</div>"
+            : '<div class="pdd-val"><span class="tbc byhand">TBC</span></div>') +
+          '<div class="pdd-figbar">' +
+            '<button class="btn" type="button" data-paste="' + esc(b.key) + '">Paste image</button>' +
+            '<label class="btn" for="pddFile-' + esc(b.key) + '">Choose file</label>' +
+            '<input type="file" accept="image/*" hidden id="pddFile-' + esc(b.key) +
+            '" data-pick="' + esc(b.key) + '">' +
+            '<span class="pdd-fighint">' + esc(b.hint) + "</span>" +
+          "</div>");
+        return;
+      }
       if(b.type === "table"){
         s.insertAdjacentHTML("beforeend",
           (b.label ? '<div class="pdd-key pdd-sublabel">' + esc(b.label) + "</div>" : "") +
@@ -392,6 +474,15 @@ function pddMarkdown(){
         if(b.label) L.push("", "**" + b.label + "**", "");
         if(b.items && b.items.length) b.items.forEach((x,i) => L.push((b.type === "numbered" ? (i+1)+". " : "- ") + flat(x)));
         else L.push("- TBC");
+        L.push("");
+        return;
+      }
+      if(b.type === "figures"){
+        const ids = slotShots(b.key);
+        L.push("", "**" + b.label + "**", "");
+        if(!ids.length){ L.push("TBC (by hand)", ""); return; }
+        ids.forEach(id => L.push("![" + flat(b.label) + "](assets/shots/" +
+          shotPrj(id) + "/" + id + shotExt(id) + ")"));
         L.push("");
         return;
       }

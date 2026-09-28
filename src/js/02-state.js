@@ -16,6 +16,11 @@ let S = {
   resolved:[],
   shots:{},
   manual:{},
+  /* Images placed into a document slot by hand, keyed by that slot. Separate
+     from S.manual because those are typed strings and these are lists of
+     screenshot ids, and separate from the items because a process map belongs
+     to the document, not to anything that was captured during the call. */
+  pddShots:{},
   seconds:0,
   paused:false,
   theme:"dark"
@@ -69,6 +74,19 @@ function normaliseManual(raw){
   return out;
 }
 
+/* Same shape on the way in as on the way out: slot -> list of ids. Anything
+   else in the file is dropped rather than trusted. */
+function normalisePddShots(raw){
+  const out = {};
+  if(!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
+  Object.keys(raw).forEach(k => {
+    if(!Array.isArray(raw[k])) return;
+    const ids = raw[k].filter(x => typeof x === "string" && x);
+    if(ids.length) out[k] = ids;
+  });
+  return out;
+}
+
 function normaliseShots(raw, prj){
   const out = {};
   if(!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
@@ -88,6 +106,19 @@ function normaliseShots(raw, prj){
 /* Anything that points at a screenshot the manifest has never heard of gets a
    bare entry rather than being dropped: the id is still enough to go and look
    for the file, and a blank where a screenshot should be is worth seeing. */
+/* A document slot names screenshots the same way an item does, so a file that
+   arrives without them still has to say what it is missing rather than drop
+   the reference and pretend the slot was always empty. */
+function attachPddShots(slots, manifest, prj){
+  let orphans = 0;
+  Object.keys(slots || {}).forEach(k => {
+    slots[k].forEach(id => {
+      if(!manifest[id]){ manifest[id] = shotEntry(prj); orphans++; }
+    });
+  });
+  return orphans;
+}
+
 function attachShots(list, manifest, prj){
   let orphans = 0;
   const keep = ids => {
@@ -147,6 +178,8 @@ function load(){
   if(!S.id) S.id = newProjectId();
   S.shots = normaliseShots(S.shots, S.id);
   S.manual = normaliseManual(S.manual);
+  S.pddShots = normalisePddShots(S.pddShots);
+  attachPddShots(S.pddShots, S.shots, S.id);
   let seq = 0;
   [S.items, S.notes, S.marks].forEach(list => (list || []).forEach(e => {
     if(!e.id) e.id = uid();

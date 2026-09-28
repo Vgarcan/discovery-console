@@ -76,6 +76,7 @@ function doReplace(){
     S.resolved = Array.isArray(o.resolved) ? o.resolved.filter(r => typeof r === "string") : [];
     S.shots = normaliseShots(o.shots, S.id);
     S.manual = normaliseManual(o.manual);
+    S.pddShots = normalisePddShots(o.pddShots);
     const loose = [S.items, S.notes, S.marks]
       .reduce((n, list) => n + attachShots(list, S.shots, S.id), 0);
     if(typeof o.seconds === "number") S.seconds = o.seconds;
@@ -103,6 +104,13 @@ $("importMerge").addEventListener("click", () => {
     const fromPrj = typeof o.id === "string" && o.id ? o.id : S.id;
     Object.assign(S.shots, normaliseShots(o.shots, fromPrj));
     Object.assign(S.manual, normaliseManual(o.manual));
+    /* A slot is a slot: two sessions merged both want section 2.2, so the
+       images join rather than one silently winning. */
+    const incomingSlots = normalisePddShots(o.pddShots);
+    Object.keys(incomingSlots).forEach(k => {
+      S.pddShots[k] = (S.pddShots[k] || []).concat(
+        incomingSlots[k].filter(id => (S.pddShots[k] || []).indexOf(id) < 0));
+    });
     incoming.forEach(i => { const old = i.id; i.id = uid(); map[old] = i.id; });
     /* Filter on the ORIGINAL target, then rewrite it. Rewriting first and then
        testing the new id against a map keyed by the old ones dropped every
