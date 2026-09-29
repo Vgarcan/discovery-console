@@ -176,6 +176,20 @@ def main():
         shot(pg, "10-import-session", "#importScrim .sheet")
         ctx.close()
 
+        # 15. the guided tour, on a console with nothing in it yet
+        ctx = browser.new_context(viewport={"width": 1500, "height": 940},
+                                  device_scale_factor=1.5)
+        pg = ctx.new_page()
+        pg.goto("http://127.0.0.1:%d/index.html" % PORT)
+        pg.wait_for_selector(".channel")
+        pg.wait_for_timeout(900)
+        pg.click("#tourNext")          # 2: the areas rail
+        pg.wait_for_timeout(200)
+        pg.click("#tourNext")          # 3: the capture field, mid-screen
+        pg.wait_for_timeout(500)
+        shot(pg, "15-guided-tour")
+        ctx.close()
+
         # 11. light theme, panels collapsed
         ctx, pg = page()
         pg.click("#themeBtn")

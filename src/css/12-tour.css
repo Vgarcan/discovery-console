@@ -1,0 +1,42 @@
+/* 12-tour.css
+   The guided tour: a dimmed screen, a cut-out around the control being talked
+   about, and a card beside it. */
+/* ---------- tour ---------- */
+.tour{
+  position:fixed;inset:0;z-index:130;
+}
+/* The dimming is the hole's own shadow rather than a layer of its own, so the
+   control stays at full strength with nothing sitting on top of it. */
+.tour-hole{
+  position:fixed;border-radius:5px;
+  border:2px solid var(--accent);
+  box-shadow:0 0 0 9999px rgba(0,0,0,.66);
+  pointer-events:none;
+  transition:left .18s,top .18s,width .18s,height .18s;
+}
+/* With nothing to point at, the whole screen dims instead. A class rather
+   than :has(), so this does not quietly stop dimming on an older engine. */
+.tour[hidden]{display:none}
+.tour.dim::before{
+  content:"";position:fixed;inset:0;background:rgba(0,0,0,.66);
+}
+
+.tour-box{
+  position:fixed;z-index:1;width:min(340px,calc(100vw - 24px));
+  background:var(--surface);border:1px solid var(--line);border-radius:6px;
+  box-shadow:0 24px 60px rgba(0,0,0,.5);
+  padding:.9rem 1rem 1rem;
+}
+.tour-box.mid{left:50%;top:50%;transform:translate(-50%,-50%)}
+.tour-box h3{margin:.25rem 0 .35rem;font-size:1.02rem;font-weight:600;letter-spacing:-.02em}
+.tour-box p{
+  margin:0;font-size:.85rem;line-height:1.5;color:var(--ink-2);
+  /* The closing step carries a blank line before its last sentence. */
+  white-space:pre-line;
+}
+.tour-bar{display:flex;align-items:center;gap:.4rem;margin-top:1rem}
+.tour-spacer{flex:1 1 auto}
+
+@media (max-width:620px){
+  .tour-box{width:calc(100vw - 24px)}
+}

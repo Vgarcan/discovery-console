@@ -19,6 +19,7 @@
   <link rel="stylesheet" href="src/css/09-tape.css">
   <link rel="stylesheet" href="src/css/10-pdd.css">
   <link rel="stylesheet" href="src/css/11-transfer.css">
+  <link rel="stylesheet" href="src/css/12-tour.css">
   <!-- endbuild -->
 </head>
 <body>
@@ -97,6 +98,10 @@
         <span>PDD</span>
       </button>
       <span class="ico-spacer"></span>
+      <button class="ico" id="tourBtn" title="Show the guided tour again">
+        <svg viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="7.6"/><path d="M8.7 8.6a2.4 2.4 0 1 1 2.8 2.6c-.6.2-.9.7-.9 1.3v.4"/><circle cx="11" cy="15.4" r=".9" class="fill"/></svg>
+        <span>Guide</span>
+      </button>
       <button class="ico" id="themeBtn" title="Switch theme">
         <svg viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M11 4 A7 7 0 0 1 11 18 Z" class="fill"/></svg>
         <span>Theme</span>
@@ -529,6 +534,22 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- ============ GUIDED TOUR ============ -->
+<div class="tour" id="tourScrim" hidden>
+  <div class="tour-hole" id="tourHole" hidden></div>
+  <div class="tour-box" id="tourBox" role="dialog" aria-modal="true" aria-labelledby="tourTitle">
+    <span class="label" id="tourStep"></span>
+    <h3 id="tourTitle"></h3>
+    <p id="tourText"></p>
+    <div class="tour-bar">
+      <button class="btn btn-ghost" type="button" id="tourSkip">Skip</button>
+      <span class="tour-spacer"></span>
+      <button class="btn" type="button" id="tourBack">Back</button>
+      <button class="btn btn-solid" type="button" id="tourNext">Next</button>
+    </div>
+  </div>
+</div>
+
 <!-- build:js -->
 <script src="src/js/01-model.js"></script>
 <script src="src/js/02-state.js"></script>
@@ -549,7 +570,8 @@
 <script src="src/js/17-transfer.js"></script>
 <script src="src/js/18-shots.js"></script>
 <script src="src/js/19-render.js"></script>
-<script src="src/js/20-boot.js"></script>
+<script src="src/js/20-tour.js"></script>
+<script src="src/js/21-boot.js"></script>
 <!-- endbuild -->
 </body>
 </html>

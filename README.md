@@ -64,6 +64,33 @@ regression. `tests/audit.test.js` drives it and names the finding each assertion
 
 ## Using it in a session
 
+### The tour
+
+Open the console with nothing in it and a guided tour comes up on its own. Around twenty
+steps, and it **drives the app** rather than describing it from the capture screen: it opens
+each of the three inspector tabs, opens the map, walks all five Review tabs one at a time, and
+finishes in the document. "Review has five tabs" is a sentence; opening them is a tour.
+
+**Skip** leaves at any point, **Back** and **Next** or the arrow keys walk it, **Escape**
+closes it. However it ends, it puts the app back on the view, tab and map state it found you
+on.
+
+**It captures nothing.** No sample systems, no example notes, nothing to clear up afterwards:
+a tour that seeds a session is one whose first lesson is New session. The only thing it writes
+down is that it has been seen.
+
+It shows itself once, and only on a console that is empty — somebody halfway through a session
+does not need to be told where the capture field is, and somebody opening a colleague's session
+wants to read it rather than be introduced to it. **Guide**, at the bottom of the view bar,
+brings it back whenever you want it.
+
+A step whose control is not on the screen is dropped before the tour starts, so the count and
+the buttons always match what you are actually shown. The distinction that matters: a pane
+behind an unselected tab is hidden because the tour has not gone there *yet*, so it stays; a
+folded panel or a phone-width layout has no room for it, so it goes.
+
+![The guided tour, pointing at the capture field](docs/images/15-guided-tour.png)
+
 ### The nine areas
 
 The left panel is the structure. Each area asks one question, and the numbers `1` to `9`
@@ -262,7 +289,14 @@ grows with how connected a thing is, and colour is the area.
 ### Lanes
 
 The map opens in **lanes**: one horizontal band per area, top to bottom in the same order as
-the `1`–`9` rail, so an item's area is a position and not only a colour. Inside each band the
+the `1`–`9` rail, so an item's area is a position and not only a colour — with one exception.
+**Operations goes to the bottom.** It is volumes, timings and cutoffs: facts *about* the
+process rather than parts of it, and almost nothing is wired to it. Sitting fourth it pushed
+Rules, People and Exceptions a band further from the systems and data they connect to. Any
+area not named in `LANE_LAST` keeps its rail position, so adding one to the model still lands
+somewhere sensible.
+
+Inside each band the
 items that carry relations are packed into the middle and ordered by what they link to, and
 the ones with no relations fill outward from the ends where they cannot push the connected
 ones apart.
@@ -649,7 +683,7 @@ the rendered layout.
 
 For JS the numbering is execution order. The modules share a global scope on purpose rather
 than using ES modules, so the whole thing still runs from `file://` with no tooling.
-`20-boot.js` is the only module that calls anything at load time; every other module defines
+`21-boot.js` is the only module that calls anything at load time; every other module defines
 functions and attaches listeners.
 
 Three rules keep the boundaries honest, and `tools/audit.py` fails if any of them breaks:
@@ -678,6 +712,7 @@ Three rules keep the boundaries honest, and `tools/audit.py` fails if any of the
 | `09-tape.css` | Tape colour coding, kind filter, reply threads |
 | `10-pdd.css` | PDD draft document and the print stylesheet |
 | `11-transfer.css` | Import drop zone and paste fallback |
+| `12-tour.css` | The guided tour: the dimmed screen, the cut-out and the card |
 
 ### Behaviour
 
@@ -702,7 +737,8 @@ Three rules keep the boundaries honest, and `tools/audit.py` fails if any of the
 | `17-transfer.js` | JSON import, file saving via the downloads capability, starting a new session |
 | `18-shots.js` | Screenshots: the clipboard, shrinking, the IndexedDB store, thumbnails |
 | `19-render.js` | The single repaint orchestrator |
-| `20-boot.js` | Start-up only: restore, apply saved shell state, draw the first frame |
+| `20-tour.js` | The guided tour: which control each step points at, and the copy |
+| `21-boot.js` | Start-up only: restore, apply saved shell state, draw the first frame |
 
 ### Where to make a change
 

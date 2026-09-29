@@ -520,9 +520,18 @@ async function run(){
      dM.querySelectorAll("#mapLanes rect.lane").length, populated.length);
   eq("one label per band",
      dM.querySelectorAll("#mapLaneLabels span").length, populated.length);
-  eq("bands follow the rail order",
-     [...dM.querySelectorAll("#mapLaneLabels span")].map(x => x.firstChild.textContent).join(","),
-     populated.map(s2 => s2.toLowerCase()).join(","));
+  /* Rail order, with Operations moved to the bottom: it is volumes, timings
+     and cutoffs rather than parts of the process, and sitting fourth it pushed
+     the bands that are wired to each other apart. */
+  const laneNames = [...dM.querySelectorAll("#mapLaneLabels span")]
+    .map(x => x.firstChild.textContent);
+  eq("bands follow the lane order",
+     laneNames.join(","),
+     wM.laneOrder().filter(s2 => populated.indexOf(s2) > -1)
+                   .map(s2 => s2.toLowerCase()).join(","));
+  eq("which is the rail order except that Operations is last",
+     laneNames[laneNames.length - 1], "operations");
+  eq("and every populated area still gets a band", laneNames.length, populated.length);
 
   ok("every node is assigned to its own area's band",
      wM.M.nodes.every(n => wM.M.lanes[n.lane].sec === n.item.section));
@@ -1275,6 +1284,121 @@ async function run(){
      dR.getElementById("rvPanelEvidence").classList.contains("on") &&
      !!dR.getElementById("shotSync"));
   ok("no page errors anywhere in the record", ctxR.errs.length === 0, ctxR.errs.join(" | "));
+
+  group("The guided tour");
+  /* It points at the real controls and captures nothing. A tour that leaves
+     three made-up systems behind is one you have to clean up after, and the
+     first thing anybody would reach for is New session -- which is how a first
+     run ends up looking like a mess instead of an empty page. */
+  const ctxU = boot(); const aU = api(ctxU); await wait(200);
+  const dU = ctxU.d, wU = ctxU.w;
+  await wait(500);                       /* it comes up shortly after boot */
+
+  ok("an empty console is offered the tour without being asked",
+     !dU.getElementById("tourScrim").hidden);
+  ok("it starts at the first step",
+     aU.text("tourStep").indexOf("step 1 of ") === 0, aU.text("tourStep"));
+  const steps = Number(aU.text("tourStep").split(" of ")[1]);
+  ok("with a step for each part of the screen", steps >= 8, steps);
+  ok("no Back on the first one", dU.getElementById("tourBack").hidden);
+  ok("nothing to single out yet, so the whole screen dims",
+     dU.getElementById("tourHole").hidden &&
+     dU.getElementById("tourScrim").classList.contains("dim"));
+
+  dU.getElementById("tourNext").click();
+  await wait(60);
+  ok("the next step singles out a control",
+     !dU.getElementById("tourHole").hidden &&
+     !dU.getElementById("tourScrim").classList.contains("dim"));
+  ok("and Back is offered", !dU.getElementById("tourBack").hidden);
+  eq("the count keeps up", aU.text("tourStep"), "step 2 of " + steps);
+  dU.getElementById("tourBack").click();
+  await wait(40);
+  eq("Back goes back", aU.text("tourStep"), "step 1 of " + steps);
+
+  const titles = [];
+  for(let i = 1; i < steps; i++){
+    dU.getElementById("tourNext").click();
+    await wait(30);
+    titles.push(aU.text("tourTitle"));
+  }
+  ok("every step says something of its own",
+     titles.every(Boolean) && new Set(titles).size === titles.length, titles);
+  eq("the last one offers Done rather than Next", aU.text("tourNext"), "Done");
+  ok("and stops offering Skip, because there is nothing left to skip",
+     dU.getElementById("tourSkip").hidden);
+
+  dU.getElementById("tourNext").click();
+  await wait(60);
+  ok("Done closes it", dU.getElementById("tourScrim").hidden);
+  eq("and it captured nothing", wU.S.items.length + wU.S.notes.length +
+     wU.S.marks.length + Object.keys(wU.S.shots).length, 0);
+  ok("the only thing written down is that it has been seen", wU.S.ui.tourSeen === true);
+
+  /* Somebody halfway through a session does not need to be told where the
+     capture field is, and somebody opening a colleague's session wants to
+     read it rather than be introduced to it. */
+  const ctxU2 = boot({ storage: stored }); await wait(200);
+  await wait(500);
+  ok("a console with a session in it is not introduced to itself",
+     ctxU2.d.getElementById("tourScrim").hidden);
+  ok("even though that session has never seen the tour",
+     !(ctxU2.w.S.ui && ctxU2.w.S.ui.tourSeen));
+
+  /* It drives the app rather than describing it from the capture screen.
+     "Review has five tabs" is a sentence; opening them is a tour. */
+  const ctxU3 = boot({ storage: stored }); await wait(200);
+  const dU3 = ctxU3.d, wU3 = ctxU3.w;
+  dU3.getElementById("tourBtn").click();
+  await wait(60);
+  const walked = Number(ctxU3.w.document.getElementById("tourStep")
+    .textContent.split(" of ")[1]);
+  ok("the tour is exhaustive rather than one screen", walked >= 18, walked);
+
+  const been = {views:new Set(), tabs:new Set(), rvTabs:new Set(), map:false};
+  for(let i = 0; i < walked - 1; i++){
+    been.views.add(wU3.currentView);
+    been.tabs.add(wU3.S.ui.tab);
+    been.rvTabs.add(wU3.rvTab);
+    if(dU3.getElementById("mapScrim").classList.contains("on")) been.map = true;
+    dU3.getElementById("tourNext").click();
+    await wait(25);
+  }
+  ok("it opens the map", been.map);
+  ok("it visits every view",
+     ["capture", "review", "pdd"].every(v => been.views.has(v)), [...been.views]);
+  ok("it opens all three inspector tabs",
+     ["tape", "gaps", "note"].every(t => been.tabs.has(t)), [...been.tabs]);
+  ok("and all five review tabs",
+     ["overview", "record", "inventory", "coverage", "evidence"]
+       .every(t => been.rvTabs.has(t)), [...been.rvTabs]);
+
+  dU3.getElementById("tourNext").click();
+  await wait(60);
+  eq("and it puts the app back where it found it", wU3.currentView, "capture");
+  ok("with the map closed",
+     !dU3.getElementById("mapScrim").classList.contains("on"));
+  eq("and the inspector tab it started on", wU3.S.ui.tab, "tape");
+  eq("still having captured nothing", wU3.S.items.length + wU3.S.notes.length +
+     wU3.S.marks.length, 53 + 3 + 2);
+  ok("no page errors walking the app", ctxU3.errs.length === 0, ctxU3.errs.join(" | "));
+
+  ok("but Guide brings it back", !!ctxU2.d.getElementById("tourBtn"));
+  const beforeU = JSON.stringify([ctxU2.w.S.items.length, ctxU2.w.S.notes.length,
+                                  ctxU2.w.S.marks.length]);
+  ctxU2.d.getElementById("tourBtn").click();
+  await wait(60);
+  ok("and it opens on demand", !ctxU2.d.getElementById("tourScrim").hidden);
+  ctxU2.d.getElementById("tourSkip").click();
+  await wait(60);
+  ok("Skip closes it there and then", ctxU2.d.getElementById("tourScrim").hidden);
+  eq("with the session untouched",
+     JSON.stringify([ctxU2.w.S.items.length, ctxU2.w.S.notes.length,
+                     ctxU2.w.S.marks.length]), beforeU);
+  eq("and it did not become a fifth view",
+     ctxU2.d.querySelectorAll(".ico[data-view]").length, 4);
+  ok("no page errors from the tour", ctxU.errs.length === 0 && ctxU2.errs.length === 0,
+     ctxU.errs.concat(ctxU2.errs).join(" | "));
 
   group("The tape can correct what it shows");
   /* A screenshot pasted with nothing focused is filed as its own Evidence

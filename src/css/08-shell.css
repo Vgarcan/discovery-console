@@ -37,7 +37,12 @@
 .ico:hover{color:var(--ink);background:var(--raise)}
 .ico.on{color:var(--accent);border-left-color:var(--accent);background:var(--surface)}
 
-.col2{min-width:0;display:flex;flex-direction:column}
+/* A grid item defaults to min-height:auto, so this column refused to shrink
+   below its content and the row grew with it. The shell stayed the right size
+   but the view bar beside it was stretched to the full height of the captured
+   list -- on a real session that put the bottom of the bar a thousand pixels
+   below the window, with whatever was down there unreachable. */
+.col2{min-width:0;min-height:0;display:flex;flex-direction:column}
 .work{
   flex:1 1 auto;min-height:0;position:relative;
   display:grid;

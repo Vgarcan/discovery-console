@@ -16,3 +16,4 @@ renderAll();
 restoreShotDir().then(() => {
   if($("reviewView").classList.contains("on")) renderShotSync();
 });
+maybeStartTour();

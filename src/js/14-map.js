@@ -184,6 +184,17 @@ function labelWidth(n){
    Ordering, row assignment and band heights are one pass because they depend on
    each other -- a band is only as tall as the labels its own nodes turned out to
    need, and which row a label lands on is not known until the order settles. */
+/* The bands read in rail order with one exception: Operations goes to the
+   bottom. It is volumes, timings and cutoffs -- facts about the process rather
+   than parts of it -- and sitting fourth it pushed the bands that are actually
+   wired to each other apart. An area not named here keeps its rail position,
+   so adding one to the model still lands somewhere sensible. */
+const LANE_LAST = ["Operations"];
+function laneOrder(){
+  return SECTIONS.filter(s => LANE_LAST.indexOf(s) < 0)
+                 .concat(LANE_LAST.filter(s => SECTIONS.indexOf(s) > -1));
+}
+
 function layoutLanes(){
   M.nodes.forEach(n => {
     n.r = 5 + Math.min(7, n.deg * 1.6);
@@ -206,8 +217,8 @@ function layoutLanes(){
     const sec = n.item.section;
     if(SECTIONS.indexOf(sec) < 0 && extra.indexOf(sec) < 0) extra.push(sec);
   });
-  const present = SECTIONS.filter(sec => M.nodes.some(n => n.item.section === sec))
-                          .concat(extra.sort());
+  const present = laneOrder().filter(sec => M.nodes.some(n => n.item.section === sec))
+                             .concat(extra.sort());
   const index = {};
   present.forEach((sec, i) => index[sec] = i);
   M.nodes.forEach(n => { n.lane = index[n.item.section]; });
@@ -970,7 +981,8 @@ document.addEventListener("keydown", e => {
      leaves defaultPrevented behind; one registered later (the screenshot
      viewer) has not run yet, so it is still open to look at. */
   const stacked = $("scrim").classList.contains("on") ||
-                  $("shotScrim").classList.contains("on");
+                  $("shotScrim").classList.contains("on") ||
+                  !$("tourScrim").hidden;
   if(e.key === "Escape" && $("mapScrim").classList.contains("on") &&
      !stacked && !e.defaultPrevented && !cancelDrag()) closeMap();
   if((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "g"){
